@@ -1,0 +1,29 @@
+---
+description: Core Ribat architecture, product, workflow, and verification guidance
+alwaysApply: true
+---
+
+# Ribat Core
+
+- Ribat is a bilingual English/Arabic, multi-tenant education-operations platform.
+- Treat `docs/product/` as the source of truth for what to build and `docs/engineering/` as the source of truth for how to build it. Check the relevant document before changing domain behavior.
+- Treat `abrar/` as archived, read-only history. Never use it as a current specification or update it alongside active requirements.
+- Preserve the NestJS modular monolith in `apps/api` and the React/Vite PWA in `apps/web`. Keep shared contracts aligned across both applications.
+- Respect the documented phase and current implementation status. Do not expand deferred P2/P3 or SaaS-later scope unless the task explicitly requests it.
+- Record a new architectural constraint or reversal in `docs/engineering/00-decision-log.md` or an ADR; do not silently contradict an existing decision.
+
+# Non-negotiable invariants
+
+- Scope tenant-owned data by `organizationId`; cross-tenant resources must appear not found.
+- Enforce authentication, authorization, and contextual access on the server, never only in the UI.
+- Never commit secrets or log invite codes, OTPs, session/CSRF tokens, names, phone numbers, minor data, or other PII.
+- Preserve audit history and soft-delete semantics for sensitive/domain records.
+- Treat English and Arabic, including RTL layout, as first-class behavior.
+- Preserve offline attendance idempotency and conflict handling.
+
+# Workflow
+
+- Use Node.js 20+ and `pnpm`; run commands from the repository root when possible.
+- Make the smallest coherent change and avoid unrelated cleanup.
+- Add or update tests for changed behavior, especially tenant isolation, permissions, audit events, and offline replay.
+- Verify affected work with the narrowest relevant command, then use `pnpm lint`, `pnpm typecheck`, `pnpm test`, or `pnpm build` as risk warrants.

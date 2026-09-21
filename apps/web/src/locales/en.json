@@ -1,0 +1,11 @@
+{
+  "appName": "Ribat",
+  "tagline": "Mosque education operations platform",
+  "healthLive": "API live check",
+  "healthReady": "API ready check",
+  "statusOk": "OK",
+  "statusError": "Error",
+  "switchToArabic": "العربية",
+  "switchToEnglish": "English",
+  "loading": "Checking…"
+}

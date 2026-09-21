@@ -1,0 +1,13 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+*.log
+coverage
+.turbo
+BRIDGE-TO-JOB-SEARCH.md
+abrar
+graphify-out
+.cursor/projects
+apps/api/.env
