@@ -11,3 +11,6 @@ abrar
 graphify-out
 .cursor/projects
 apps/api/.env
+.gitignore
+.cursor
+.github
