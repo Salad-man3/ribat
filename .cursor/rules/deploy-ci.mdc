@@ -1,0 +1,28 @@
+---
+description: Docker, Compose, Caddy, backup, and GitHub Actions deployment invariants
+globs: "deploy/**,.github/workflows/**,apps/api/docker-entrypoint.sh"
+alwaysApply: false
+---
+
+# Deployment topology
+
+- Preserve the current single-container production shape: build the Vite PWA, build the NestJS API, and serve the compiled PWA from the API image behind Caddy.
+- Keep Node 20, pnpm with a frozen lockfile, PostgreSQL 16, and repository-root Docker build context aligned across CI, Dockerfiles, and Compose.
+- Run the production container as the existing non-root user with `tini`; do not weaken the health check or expose PostgreSQL publicly.
+- Keep production same-origin through Caddy. Development-only CORS behavior must not leak into production.
+- Run `prisma migrate deploy` before the API starts. A failed migration must stop startup rather than serving against an incompatible schema.
+
+# Secrets and safety
+
+- Reference secrets through environment variables or CI secret stores. Never place production URLs, passwords, session secrets, tokens, private keys, or `.env` contents in tracked files.
+- Preserve separate staging and production configuration and data volumes.
+- Treat backup and restore scripts as data-safety code: fail fast, quote variables, avoid leaking credentials, and retain encryption and integrity checks.
+- Do not add destructive cleanup, volume deletion, or irreversible migration steps without an explicit backup and rollback plan.
+
+# CI changes
+
+- Keep dependency installation reproducible with `pnpm install --frozen-lockfile`.
+- Preserve gates for API/web linting, recursive typecheck, Prisma validation, migrations, seed, API unit/e2e tests, and both builds unless the task explicitly changes the pipeline.
+- Keep image publication limited to intended push branches; pull requests must not publish or deploy.
+- Pin GitHub Actions to reviewed major versions or immutable SHAs and grant the minimum permissions required.
+- When runtime, schema, health endpoint, or artifact paths change, update CI, Dockerfile, Compose, entrypoint, Caddy, and engineering docs together.

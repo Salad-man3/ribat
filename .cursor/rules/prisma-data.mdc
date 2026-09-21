@@ -1,0 +1,28 @@
+---
+description: Prisma schema, migration, seed, and tenant-data conventions
+globs: "apps/api/prisma/**/*.prisma,apps/api/prisma/**/*.ts"
+alwaysApply: false
+---
+
+# Prisma and PostgreSQL
+
+- Treat `apps/api/prisma/schema.prisma` and committed migrations as the physical model; cross-check domain intent in `docs/engineering/05-database-schema.md`.
+- Every tenant-owned model must have a required `organizationId` relation. Platform-scoped exceptions must be explicit and documented.
+- Make business uniqueness tenant-aware with compound unique constraints such as `(organizationId, externalMemberId)`.
+- Add indexes for established access paths, especially organization scope combined with status, parent ID, date, or soft-delete filters.
+- Model relations explicitly and name multiple relations between the same models.
+- Preserve history with soft delete where product policy requires it; do not add cascade deletion for auditable records without an explicit decision.
+
+# Migrations
+
+- Change the Prisma schema and create a migration; do not hand-edit an already-applied migration.
+- Review generated SQL for destructive operations, locking risk, backfills, defaults, uniqueness, and indexes before applying it.
+- Never use `db push` as a substitute for a committed production migration.
+- Regenerate Prisma Client after schema changes and update affected API code/tests.
+
+# Seeds and data handling
+
+- Keep seeds repeatable and suitable for local/demo use.
+- Maintain at least two organizations and cross-tenant fixtures so isolation can be tested.
+- Use clearly fictional data only; never place real PII, production credentials, or real invite/OTP secrets in seeds.
+- Keep related multi-row seed operations ordered or transactional so reruns cannot leave misleading partial fixtures.

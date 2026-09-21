@@ -1,0 +1,11 @@
+{
+  "appName": "رباط",
+  "tagline": "منصة عمليات التعليم في المسجد",
+  "healthLive": "فحص حالة الخادم",
+  "healthReady": "فحص جاهزية الخادم",
+  "statusOk": "يعمل",
+  "statusError": "خطأ",
+  "switchToArabic": "العربية",
+  "switchToEnglish": "English",
+  "loading": "جاري التحقق…"
+}

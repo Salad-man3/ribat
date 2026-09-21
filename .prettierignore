@@ -1,0 +1,7 @@
+node_modules
+dist
+dev-dist
+coverage
+.turbo
+pnpm-lock.yaml
+packages/quran-data/src/data/*.json
