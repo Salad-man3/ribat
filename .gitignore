@@ -12,3 +12,5 @@ graphify-out
 .cursor/projects
 apps/api/.env
 .cursor
+docs/internal
+.vscode

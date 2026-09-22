@@ -6,3 +6,241 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum PlatformRole {
+  OWNER
+  NONE
+}
+enum IdentityStatus {
+  ACTIVE
+  DISABLED
+}
+enum MembershipRole {
+  SHEIKH
+  ORG_ADMIN
+  MEMBER
+  GUARDIAN
+}
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum MemberStatus {
+  ACTIVE
+  ARCHIVED
+}
+enum GuardianRelation {
+  FATHER
+  MOTHER
+  OTHER
+}
+enum MemberNoteVisibility {
+  SHEIKH_ONLY
+  STAFF
+}
+
+
+// ---------------------------------------------------------------------------
+// Platform and tenancy (4)
+// ---------------------------------------------------------------------------
+model Organization {
+  id             String             @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String             @unique
+  status         OrganizationStatus @default(ACTIVE)
+  timezone       String
+  latitude       Decimal            @db.Decimal(9, 6)
+  longitude      Decimal            @db.Decimal(9, 6)
+  prayerMethod   String
+  prayerOffsets  Json               @default("{}")
+  settings       Json               @default("{}")
+  createdAt      DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(6)
+  memberships   Membership[]
+  members       Member[]
+  households    Household[]
+  guardianLinks GuardianLink[]
+  memberNotes   MemberNote[]
+  auditLogs     AuditLog[]
+  @@index([status])
+}
+
+
+
+model Identity {
+  id           String         @id @default(uuid()) @db.Uuid
+  phone        String         @unique
+  passwordHash String?
+  platformRole PlatformRole   @default(NONE)
+  status       IdentityStatus @default(ACTIVE)
+  lastLoginAt  DateTime?      @db.Timestamptz(6)
+  createdAt    DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime       @updatedAt @db.Timestamptz(6)
+  memberships       Membership[]
+  authSessions      AuthSession[]
+  accountSetupCodes AccountSetupCode[]
+  auditLogs         AuditLog[]         @relation("AuditLogActorIdentity")
+  @@index([status])
+}
+
+
+
+model Membership {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  identityId     String           @db.Uuid
+  role           MembershipRole
+  memberId       String?          @db.Uuid
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(6)
+  organization          Organization         @relation(fields: [organizationId], references: [id])
+  identity              Identity             @relation(fields: [identityId], references: [id])
+  member                Member?              @relation(fields: [memberId], references: [id])
+  issuedSetupCodes      AccountSetupCode[]   @relation("SetupCodeIssuedBy")
+  auditLogs             AuditLog[]           @relation("AuditLogActorMembership")
+  @@unique([identityId, organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, role])
+  @@index([memberId])
+}
+
+
+
+model AuthSession {
+  id          String    @id @default(uuid()) @db.Uuid
+  identityId  String    @db.Uuid
+  tokenHash   String    @unique
+  deviceLabel String?
+  userAgent   String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  lastSeenAt  DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt   DateTime  @db.Timestamptz(6)
+  revokedAt   DateTime? @db.Timestamptz(6)
+  identity Identity @relation(fields: [identityId], references: [id])
+  @@index([identityId, revokedAt])
+  @@index([expiresAt])
+}
+
+
+
+model AccountSetupCode {
+  id                      String    @id @default(uuid()) @db.Uuid
+  identityId              String    @db.Uuid
+  codeHash                String
+  expiresAt               DateTime  @db.Timestamptz(6)
+  usedAt                  DateTime? @db.Timestamptz(6)
+  createdByMembershipId   String    @db.Uuid
+  createdAt               DateTime  @default(now()) @db.Timestamptz(6)
+  identity              Identity   @relation(fields: [identityId], references: [id])
+  createdByMembership   Membership @relation("SetupCodeIssuedBy", fields: [createdByMembershipId], references: [id])
+  @@index([identityId, usedAt])
+  @@index([expiresAt])
+}
+
+
+
+// ---------------------------------------------------------------------------
+// People (5)
+// ---------------------------------------------------------------------------
+model Household {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  name           String?
+  organization Organization @relation(fields: [organizationId], references: [id])
+  members      Member[]
+  @@index([organizationId])
+}
+model Member {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  householdId    String?      @db.Uuid
+  firstName      String
+  fatherName     String
+  familyName     String
+  motherName     String?
+  birthDate      DateTime     @db.Date
+  phone          String?
+  address        String?
+  schoolGrade    String?
+  schoolName     String?
+  joinedAt       DateTime     @db.Date
+  notes          String?
+  status         MemberStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+  archivedAt     DateTime?    @db.Timestamptz(6)
+  organization Organization @relation(fields: [organizationId], references: [id])
+  household    Household?   @relation(fields: [householdId], references: [id])
+  memberships  Membership[]
+  guardianLinksAsGuardian GuardianLink[] @relation("GuardianMember")
+  guardianLinksAsWard     GuardianLink[] @relation("WardMember")
+  memberNotesAbout        MemberNote[]   @relation("MemberNoteSubject")
+  memberNotesAuthored     MemberNote[]   @relation("MemberNoteAuthor")
+  @@index([organizationId, status])
+  @@index([organizationId, familyName, firstName])
+  @@index([householdId])
+}
+model GuardianLink {
+  id               String           @id @default(uuid()) @db.Uuid
+  organizationId   String           @db.Uuid
+  guardianMemberId String           @db.Uuid
+  wardMemberId     String           @db.Uuid
+  relation         GuardianRelation
+  isPrimary        Boolean          @default(false)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  guardianMember Member       @relation("GuardianMember", fields: [guardianMemberId], references: [id])
+  wardMember     Member       @relation("WardMember", fields: [wardMemberId], references: [id])
+  @@unique([guardianMemberId, wardMemberId])
+  @@index([organizationId])
+  @@index([wardMemberId])
+  @@index([guardianMemberId])
+}
+model MemberNote {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @db.Uuid
+  memberId       String               @db.Uuid
+  courseId       String?              @db.Uuid // FK to Course added in S2
+  authorMemberId String               @db.Uuid
+  body           String
+  visibility     MemberNoteVisibility @default(SHEIKH_ONLY)
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+  organization Organization @relation(fields: [organizationId], references: [id])
+  member       Member       @relation("MemberNoteSubject", fields: [memberId], references: [id])
+  authorMember Member       @relation("MemberNoteAuthor", fields: [authorMemberId], references: [id])
+  @@index([organizationId, memberId, createdAt(sort: Desc)])
+}
+// ---------------------------------------------------------------------------
+// System (§12 — audit only for S1)
+// ---------------------------------------------------------------------------
+model AuditLog {
+  id                 String   @id @default(uuid()) @db.Uuid
+  organizationId     String   @db.Uuid
+  actorIdentityId    String?  @db.Uuid
+  actorMembershipId  String?  @db.Uuid
+  action             String
+  entityType         String
+  entityId           String   @db.Uuid
+  before             Json?
+  after              Json?
+  requestId          String?
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  actorIdentity   Identity?    @relation("AuditLogActorIdentity", fields: [actorIdentityId], references: [id])
+  actorMembership Membership?  @relation("AuditLogActorMembership", fields: [actorMembershipId], references: [id])
+  @@index([organizationId, entityType, entityId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../../docs/internal/erd.svg"
+  theme    = "neutral"
+}
