@@ -1,14 +1,14 @@
 services:
   postgres:
     image: postgres:16-alpine
+    network_mode: host
+    command: postgres -p 5435
     environment:
       POSTGRES_USER: ribat
       POSTGRES_PASSWORD: ribat
       POSTGRES_DB: ribat
-    ports:
-      - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ribat -d ribat"]
+      test: ["CMD-SHELL", "pg_isready -U ribat -d ribat -p 5435"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -17,10 +17,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "16379:6379"
+    network_mode: host
+    command: redis-server --port 16379
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "16379", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
