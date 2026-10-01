@@ -9,8 +9,7 @@
     "start": "nest start",
     "start:prod": "node dist/main",
     "lint": "oxlint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "jest",
+"typecheck": "prisma generate --generator client && tsc --noEmit -p tsconfig.json",    "test": "jest",
     "fmt": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.prisma\"",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
