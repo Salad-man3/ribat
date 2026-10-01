@@ -13,7 +13,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e",
+    "test:e2e": "pnpm --filter @ribat/shared build && pnpm --filter api test:e2e",
     "fmt": "turbo run fmt",
     "db:migrate": "pnpm --filter api exec prisma migrate deploy",
     "db:seed": "pnpm --filter api exec prisma db seed",
