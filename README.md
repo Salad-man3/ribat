@@ -6,17 +6,20 @@ Installable PWA, Arabic (RTL) and English, built to keep working offline during 
 
 [![CI](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml/badge.svg)](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml)
 
+
 ## Status
 
-Phase 0 foundation is in place:
+Phase 0 is in place, and organization-scoped member CRUD is implemented:
 
 - NestJS 11 API with Prisma 6, PostgreSQL, Redis, and health endpoints
+- Member create, list, get, update, and archive, scoped by `X-Organization-Id`
 - React + Vite PWA shell with Arabic/English i18n
 - Shared Zod contracts (`packages/shared`) and Quran reference data (`packages/quran-data`)
 - Docker Compose for local Postgres and Redis
-- GitHub Actions: lint, typecheck, test, build
+- GitHub Actions: lint, typecheck, unit tests, e2e tests, build
 
-**Not yet implemented:** auth, domain models, database seed, offline sync, production deploy.
+**Not yet implemented:** authentication and authorization, households, guardians, full demo seed, offline sync, production deploy.
+
 
 ## Stack
 
@@ -76,6 +79,7 @@ docker compose -f deploy/compose.dev.yml start postgres
 | `pnpm test` | Unit tests (API health, quran-data helpers) |
 | `pnpm db:migrate` | Apply Prisma migrations |
 | `pnpm db:studio` | Open Prisma Studio |
+| `pnpm test:e2e` | API integration tests against Postgres and Redis |
 
 ## Documentation
 
