@@ -1,11 +1,13 @@
 import 'dotenv/config';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from 'nestjs-pino';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/api-exception.filter';
+import { drainCapturedLogs } from '../src/logging/logging.module';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +18,27 @@ const validMember = {
   birthDate: '2015-03-01',
   joinedAt: '2024-09-01',
 };
+
+const KNOWN_ID = '11111111-1111-4111-8111-111111111111';
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type CapturedLog = {
+  requestId?: string;
+  msg?: string;
+  req?: { id?: string; method?: string; path?: string };
+  res?: { statusCode?: number };
+};
+
+function isCapturedLog(value: unknown): value is CapturedLog {
+  return typeof value === 'object' && value !== null;
+}
+
+function findRequestLog(lines: unknown[], requestId: string): CapturedLog | undefined {
+  return lines.find(
+    (line): line is CapturedLog => isCapturedLog(line) && line.requestId === requestId,
+  );
+}
 
 describe('API (e2e)', () => {
   let app: INestApplication<App>;
@@ -68,7 +91,8 @@ describe('API (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ bufferLogs: true });
+    app.useLogger(app.get(Logger));
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
@@ -81,6 +105,82 @@ describe('API (e2e)', () => {
   describe('Health', () => {
     it('GET /api/v1/health/live', () => {
       return request(app.getHttpServer()).get('/api/v1/health/live').expect(200).expect({ status: 'ok' });
+    });
+  });
+
+  describe('Request logging', () => {
+    it('echoes a valid x-request-id on the response and the log line', async () => {
+      drainCapturedLogs();
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/health/live?phone=0500000000')
+        .set('x-request-id', KNOWN_ID)
+        .set('cookie', 'session=super-secret-cookie-value')
+        .set('authorization', 'Bearer super-secret-token-value')
+        .expect(200);
+
+      expect(response.headers['x-request-id']).toBe(KNOWN_ID);
+
+      const log = findRequestLog(drainCapturedLogs(), KNOWN_ID);
+      expect(log).toMatchObject({
+        requestId: KNOWN_ID,
+        msg: 'request completed',
+        req: { id: KNOWN_ID, method: 'GET', path: '/api/v1/health/live' },
+        res: { statusCode: 200 },
+      });
+
+      const serialized = JSON.stringify(log);
+      expect(serialized).not.toContain('0500000000');
+      expect(serialized).not.toContain('super-secret-cookie-value');
+      expect(serialized).not.toContain('super-secret-token-value');
+    });
+
+    it('generates an id when the header is missing', async () => {
+      drainCapturedLogs();
+
+      const response = await request(app.getHttpServer()).get('/api/v1/health/live').expect(200);
+      const requestId = response.headers['x-request-id'];
+
+      expect(requestId).toMatch(UUID);
+      expect(findRequestLog(drainCapturedLogs(), requestId)).toMatchObject({
+        requestId,
+        req: { id: requestId, path: '/api/v1/health/live' },
+      });
+    });
+
+    it('replaces an invalid x-request-id', async () => {
+      drainCapturedLogs();
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/health/live')
+        .set('x-request-id', 'not-a-uuid')
+        .expect(200);
+
+      const requestId = response.headers['x-request-id'];
+      expect(requestId).toMatch(UUID);
+      expect(requestId).not.toBe('not-a-uuid');
+
+      const lines = drainCapturedLogs();
+      expect(JSON.stringify(lines)).not.toContain('not-a-uuid');
+      expect(findRequestLog(lines, requestId)?.req?.id).toBe(requestId);
+    });
+
+    it('puts the same id on a 404 error body', async () => {
+      drainCapturedLogs();
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/does-not-exist')
+        .set('x-request-id', KNOWN_ID)
+        .expect(404);
+
+      expect(response.headers['x-request-id']).toBe(KNOWN_ID);
+      expect(response.body.requestId).toBe(KNOWN_ID);
+      expect(response.body.error.code).toBe('NOT_FOUND');
+      expect(findRequestLog(drainCapturedLogs(), KNOWN_ID)).toMatchObject({
+        requestId: KNOWN_ID,
+        req: { path: '/api/v1/does-not-exist' },
+        res: { statusCode: 404 },
+      });
     });
   });
 
