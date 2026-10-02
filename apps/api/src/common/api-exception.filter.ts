@@ -9,6 +9,8 @@ import {
 import type { ApiErrorBody, ApiErrorCode } from '@ribat/shared';
 import type { Request, Response } from 'express';
 
+type RequestWithId = Request & { id?: string; requestId?: string };
+
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ApiExceptionFilter.name);
@@ -16,8 +18,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request & { requestId?: string }>();
-    const requestId = request.requestId;
+    const request = ctx.getRequest<RequestWithId>();
+    const requestId = request.id ?? request.requestId;
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -43,13 +45,23 @@ export class ApiExceptionFilter implements ExceptionFilter {
   ): ApiErrorBody {
     const response = exception.getResponse();
 
-    if (typeof response === 'object' && response !== null && 'error' in response) {
+    const body = exception.getResponse();
+    const error =
+      typeof body === 'object' && body !== null && 'error' in body
+        ? (body as { error: unknown }).error
+        : undefined;
+
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof (error as { code: unknown }).code === 'string'
+    ) {
       return {
-        ...(response as ApiErrorBody),
+        ...(body as ApiErrorBody),
         requestId,
       };
     }
-
     return {
       error: {
         code: this.codeForStatus(status),
