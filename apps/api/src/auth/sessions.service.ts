@@ -173,4 +173,11 @@ export class SessionsService {
         }
         return target.id === currentSessionId;
     }
+
+    async revokeAllForIdentity(identityId: string): Promise<void> {
+        await this.prisma.platform.authSession.updateMany({
+            where: { identityId, revokedAt: null },
+            data: { revokedAt: new Date() },
+        });
+    }
 }

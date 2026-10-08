@@ -34,9 +34,32 @@ export async function removeTwoOrganizations(
     orgs: TwoOrganizations,
 ): Promise<void> {
     const ids = [orgs.demo.id, orgs.other.id];
+    const memberships = await prisma.membership.findMany({
+        where: { organizationId: { in: ids } },
+        select: { id: true, identityId: true },
+    });
+    const membershipIds = memberships.map((row) => row.id);
+    const identityIds = [...new Set(memberships.map((row) => row.identityId))];
+
     await prisma.auditLog.deleteMany({ where: { organizationId: { in: ids } } });
+    await prisma.accountSetupCode.deleteMany({
+        where: {
+            OR: [
+                { createdByMembershipId: { in: membershipIds } },
+                { identityId: { in: identityIds } },
+            ],
+        },
+    });
+    await prisma.authSession.deleteMany({ where: { identityId: { in: identityIds } } });
     await prisma.member.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.membership.deleteMany({ where: { organizationId: { in: ids } } });
+    await prisma.identity.deleteMany({
+        where: {
+            id: { in: identityIds },
+            platformRole: 'NONE',
+            memberships: { none: {} },
+        },
+    });
     await prisma.organization.deleteMany({
         where: { slug: { in: [DEMO_SLUG, OTHER_SLUG] } },
     });

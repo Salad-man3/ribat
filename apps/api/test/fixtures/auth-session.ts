@@ -76,6 +76,15 @@ export async function removeAuthFixtures(
     identityIds: string[],
 ): Promise<void> {
     if (identityIds.length === 0) return;
+    await prisma.auditLog.deleteMany({
+        where: {
+            OR: [
+                { actorIdentityId: { in: identityIds } },
+                { actorMembership: { identityId: { in: identityIds } } },
+            ],
+        },
+    });
+    await prisma.accountSetupCode.deleteMany({ where: { identityId: { in: identityIds } } });
     await prisma.authSession.deleteMany({ where: { identityId: { in: identityIds } } });
     await prisma.membership.deleteMany({ where: { identityId: { in: identityIds } } });
     await prisma.identity.deleteMany({ where: { id: { in: identityIds } } });

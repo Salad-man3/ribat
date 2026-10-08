@@ -503,6 +503,72 @@ describe('API (e2e)', () => {
     });
   });
 
+  describe('Memberships', () => {
+    const staffPassword = 'longenough';
+
+    it('org admin cannot grant ORG_ADMIN access', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH', staffPassword);
+      const admin = await loginAs(prisma, app, demoOrgId, 'ORG_ADMIN', staffPassword);
+      try {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, phone: '+963944000301' })
+          .expect(201);
+
+        await request(app.getHttpServer())
+          .post(`/api/v1/members/${created.body.id}/access`)
+          .set('cookie', admin.cookie)
+          .set(admin.csrfHeader, admin.csrf)
+          .send({ role: 'ORG_ADMIN', currentPassword: staffPassword })
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId, admin.identityId]);
+      }
+    });
+
+    it('sheikh can grant member access and list memberships', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH', staffPassword);
+      try {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, phone: '+963944000302' })
+          .expect(201);
+
+        const access = await request(app.getHttpServer())
+          .post(`/api/v1/members/${created.body.id}/access`)
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ role: 'MEMBER', currentPassword: staffPassword })
+          .expect(201);
+
+        expect(access.body.setupCode).toMatch(/^[A-Z0-9]{8}$/);
+        expect(access.body.membershipId).toMatch(UUID);
+
+        const listed = await request(app.getHttpServer())
+          .get('/api/v1/memberships')
+          .set('cookie', sheikh.cookie)
+          .expect(200);
+
+        const ids = listed.body.map((row: { memberId: string | null }) => row.memberId);
+        expect(ids).toContain(created.body.id);
+
+        const grantedIdentity = await prisma.identity.findUnique({
+          where: { phone: '+963944000302' },
+          select: { id: true },
+        });
+        if (grantedIdentity) {
+          await removeAuthFixtures(prisma, [grantedIdentity.id]);
+        }
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId]);
+      }
+    });
+  });
+
   describe('Organization setup', () => {
     it('GET /setup/status reports setup is not required when orgs exist', () => {
       return request(app.getHttpServer())
