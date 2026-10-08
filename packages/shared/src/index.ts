@@ -94,3 +94,4 @@ export {
   type SetupCodeResponse,
   type UpdateMembershipInput,
 } from './people.js';
+export { setupCode } from './fields.js';

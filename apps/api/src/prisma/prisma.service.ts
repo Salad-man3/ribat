@@ -18,6 +18,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$queryRaw.bind(this.client);
   }
 
+  /** Identity, AuthSession, AccountSetupCode, and the caller's own memberships. */
+  get platform(): PrismaClient {
+    return this.client;
+  }
+
   forOrganization(organizationId: string) {
     return this.client.$extends(organizationScopeExtension(organizationId));
   }
