@@ -22,6 +22,7 @@ export {
 } from './members.js';
 export {
   ActiveViewSchema,
+  type ActiveView,
   DeviceResponseSchema,
   IdentityStatusSchema,
   LoginResponseSchema,
@@ -31,6 +32,7 @@ export {
   RedeemSetupCodeSchema,
   RevokeDeviceQuerySchema,
   S1PermissionSchema,
+  type S1Permission,
   SwitchViewSchema,
   type DeviceResponse,
   type LoginInput,

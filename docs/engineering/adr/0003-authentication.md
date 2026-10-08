@@ -30,6 +30,9 @@ logged out**.
 - The platform owner account is seeded from environment variables and stored hashed; the
   secret never enters the repository (decision 3.4).
 - Rate limiting on login and setup-code redemption.
+- **`activeView`** (`ADMIN` | `MEMBER`) is stored on `AuthSession` (staff default `ADMIN`).
+  Organization context is derived from the identity's single ACTIVE membership until multi-org
+  switching (OQ-10); tenant routes use `@OrgRoute(...)` permission keys, not a client header.
 
 ## Consequences
 

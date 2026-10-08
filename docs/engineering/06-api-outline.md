@@ -27,7 +27,7 @@
 | POST | `/auth/setup` | phone + one-time code + new password (WF-02) |
 | POST | `/auth/logout` | Revokes the current session |
 | GET | `/auth/me` | Identity, memberships, active organization, `activeView`, permissions |
-| POST | `/auth/switch-view` | `ADMIN` ↔ `MEMBER` (PERM-05); audited |
+| POST | `/auth/switch-view` | `ADMIN` ↔ `MEMBER` (PERM-05); returns the same payload as `/auth/me`. Audit in T115 |
 | POST | `/auth/switch-org` | After beta (OQ-10) |
 | GET | `/auth/devices` | Active sessions |
 | DELETE | `/auth/devices/:id` | Revoke one, or `?all=true` for "sign out everywhere" |

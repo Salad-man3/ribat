@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { LoginResponse, RedeemSetupCodeInput } from '@ribat/shared';
+import type { ActiveView, LoginResponse, RedeemSetupCodeInput } from '@ribat/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateSetupCode, hashSecret, verifySecret } from './credentials';
+import { isStaff, permissionsFor } from './permissions';
 
 const SETUP_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -137,7 +138,7 @@ export class IdentitiesService {
             });
         });
 
-        return this.profile(identity.id);
+        return this.profile(identity.id, 'ADMIN');
     }
 
     async authenticate(phone: string, password: string): Promise<string> {
@@ -168,17 +169,23 @@ export class IdentitiesService {
         return verifySecret(hash, password);
     }
 
-    async profile(identityId: string): Promise<LoginResponse> {
+    async profile(identityId: string, sessionActiveView: ActiveView = 'ADMIN'): Promise<LoginResponse> {
         const identity = await this.prisma.platform.identity.findUniqueOrThrow({
             where: { id: identityId },
             select: { id: true, phone: true, platformRole: true, status: true },
         });
         const memberships = await this.prisma.platform.membership.findMany({
             where: { identityId },
-            include: { organization: { select: { name: true } } },
+            include: { organization: { select: { name: true, status: true } } },
             orderBy: { createdAt: 'asc' },
         });
-        const active = memberships.filter((membership) => membership.status === 'ACTIVE');
+        const active = memberships.filter(
+            (membership) =>
+                membership.status === 'ACTIVE' && membership.organization.status === 'ACTIVE',
+        );
+
+        const sole = active.length === 1 ? active[0] : null;
+        const staff = sole ? isStaff(sole.role) : false;
 
         return {
             identity,
@@ -190,9 +197,9 @@ export class IdentitiesService {
                 memberId: membership.memberId,
                 status: membership.status,
             })),
-            activeOrganizationId: active.length === 1 ? active[0].organizationId : null,
-            activeView: null,
-            permissions: [],
+            activeOrganizationId: sole?.organizationId ?? null,
+            activeView: staff ? sessionActiveView : null,
+            permissions: sole ? permissionsFor(sole.role, sessionActiveView) : [],
         };
     }
 

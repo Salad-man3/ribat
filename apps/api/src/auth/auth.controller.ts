@@ -3,6 +3,7 @@ import {
     Body,
     Controller,
     Delete,
+    ForbiddenException,
     Get,
     HttpCode,
     Param,
@@ -16,14 +17,18 @@ import {
     LoginSchema,
     RedeemSetupCodeSchema,
     RevokeDeviceQuerySchema,
+    SwitchViewSchema,
     type LoginInput,
     type RedeemSetupCodeInput,
     type RevokeDeviceQuery,
+    type SwitchViewInput,
 } from '@ribat/shared';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { IdentitiesService } from './identities.service';
+import { isStaff } from './permissions';
+import { CurrentOrg, OrgRoute, type OrgContext } from './org-context.guard';
 import { CurrentSession, SessionGuard } from './session.guard';
 import { SessionsService, type SessionContext } from './sessions.service';
 
@@ -61,13 +66,30 @@ export class AuthController {
             userAgent: req.header('user-agent') ?? undefined,
         });
         this.sessions.writeCookies(res, token);
-        return this.identities.profile(identityId);
+        return this.identities.profile(identityId, 'ADMIN');
     }
 
     @Get('me')
     @UseGuards(SessionGuard)
     me(@CurrentSession() session: SessionContext) {
-        return this.identities.profile(session.identityId);
+        return this.identities.profile(session.identityId, session.activeView);
+    }
+
+    @Post('switch-view')
+    @HttpCode(200)
+    @OrgRoute()
+    async switchView(
+        @Body(createZodValidationPipe(SwitchViewSchema)) body: SwitchViewInput,
+        @CurrentSession() session: SessionContext,
+        @CurrentOrg() org: OrgContext,
+    ) {
+        if (!isStaff(org.role)) {
+            throw new ForbiddenException({
+                error: { code: 'FORBIDDEN', message: 'Forbidden' },
+            });
+        }
+        await this.sessions.setView(session.sessionId, body.activeView);
+        return this.identities.profile(session.identityId, body.activeView);
     }
 
     @Post('logout')

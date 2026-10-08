@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { DeviceResponse } from '@ribat/shared';
+import type { ActiveView, DeviceResponse } from '@ribat/shared';
 import { timingSafeEqual } from 'node:crypto';
 import type { Response } from 'express';
 import { ENV } from '../config/config.module';
@@ -20,6 +20,7 @@ const RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
 export type SessionContext = {
     sessionId: string;
     identityId: string;
+    activeView: ActiveView;
 };
 
 export type IssuedDevice = {
@@ -80,6 +81,7 @@ export class SessionsService {
             select: {
                 id: true,
                 identityId: true,
+                activeView: true,
                 revokedAt: true,
                 expiresAt: true,
                 lastSeenAt: true,
@@ -100,7 +102,21 @@ export class SessionsService {
                 },
             });
         }
-        return { ctx: { sessionId: row.id, identityId: row.identityId }, renew };
+        return {
+            ctx: {
+                sessionId: row.id,
+                identityId: row.identityId,
+                activeView: row.activeView,
+            },
+            renew,
+        };
+    }
+
+    async setView(sessionId: string, activeView: ActiveView): Promise<void> {
+        await this.prisma.platform.authSession.update({
+            where: { id: sessionId },
+            data: { activeView },
+        });
     }
 
     async list(identityId: string, currentSessionId: string): Promise<DeviceResponse[]> {

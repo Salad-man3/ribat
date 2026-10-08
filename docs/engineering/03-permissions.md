@@ -135,3 +135,9 @@ A teacher removed from a course cannot land logs from before the removal.
 **PERM-13** — These actions always write an `AuditLog` row: attendance and progress edits or
 voids, role and membership changes, login and setup-code issuance, permission-denied attempts
 on staff endpoints, and later exports, points and warnings (decision 19.4).
+
+**S1 permission keys** — Until OQ-10, the API derives one organization from the identity's
+sole ACTIVE membership. `OrgContextGuard` maps `SHEIKH` / `ORG_ADMIN` in `activeView = ADMIN`
+to the keys in `S1PermissionSchema` (`memberships.manage_org_admin` is sheikh-only). MEMBER
+view and non-staff roles receive no keys; endpoints declare required keys with `@OrgRoute(...)`.
+Teacher and course scope stays contextual (PERM-11) and is not expressed as global keys in S1.

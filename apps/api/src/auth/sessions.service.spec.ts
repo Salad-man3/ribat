@@ -27,6 +27,7 @@ describe('SessionsService', () => {
         authSession.findUnique.mockResolvedValue({
             id: sessionId,
             identityId,
+            activeView: 'ADMIN',
             revokedAt: new Date(),
             expiresAt: new Date(Date.now() + 60_000),
             lastSeenAt: new Date(),
@@ -47,6 +48,7 @@ describe('SessionsService', () => {
         authSession.findUnique.mockResolvedValue({
             id: sessionId,
             identityId,
+            activeView: 'ADMIN',
             revokedAt: null,
             expiresAt: new Date(Date.now() + 60_000),
             lastSeenAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
@@ -55,7 +57,7 @@ describe('SessionsService', () => {
 
         const resolved = await sessions.resolve('raw-token');
 
-        expect(resolved?.ctx).toEqual({ sessionId, identityId });
+        expect(resolved?.ctx).toEqual({ sessionId, identityId, activeView: 'ADMIN' });
         expect(resolved?.renew).toBe(true);
         expect(authSession.update).toHaveBeenCalled();
     });

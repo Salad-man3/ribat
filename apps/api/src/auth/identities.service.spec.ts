@@ -115,7 +115,7 @@ describe('IdentitiesService', () => {
             {
                 id: membershipId,
                 organizationId,
-                organization: { name: 'Test Mosque' },
+                organization: { name: 'Test Mosque', status: 'ACTIVE' },
                 role: 'MEMBER',
                 memberId: null,
                 status: 'ACTIVE',

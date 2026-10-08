@@ -10,6 +10,11 @@ import { ApiExceptionFilter } from '../src/common/api-exception.filter';
 import { drainCapturedLogs } from '../src/logging/logging.module';
 import { hashSecret } from '../src/auth/credentials';
 import { CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE } from '../src/auth/session-cookie';
+import {
+  loginAs,
+  removeAuthFixtures,
+  type AuthenticatedSession,
+} from './fixtures/auth-session';
 import { removeTwoOrganizations, twoOrganizations } from './fixtures/organizations';
 
 const E2E_CSRF_PHONE = '+963944000107';
@@ -254,11 +259,47 @@ describe('API (e2e)', () => {
     });
   });
 
-  describe('Members', () => {
+  describe('Members and org context', () => {
+    let sheikh: AuthenticatedSession;
+
+    beforeEach(async () => {
+      sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+    });
+
+    afterEach(async () => {
+      await removeAuthFixtures(prisma, [sheikh.identityId]);
+    });
+
+    function authed(session: AuthenticatedSession) {
+      return {
+        cookie: session.cookie,
+        csrf: session.csrf,
+        header: session.csrfHeader,
+      };
+    }
+
+    it('GET /members without session returns 401', () => {
+      return request(app.getHttpServer()).get('/api/v1/members').expect(401);
+    });
+
+    it('GET /members as MEMBER returns 403', async () => {
+      const member = await loginAs(prisma, app, demoOrgId, 'MEMBER');
+      try {
+        await request(app.getHttpServer())
+          .get('/api/v1/members')
+          .set('cookie', member.cookie)
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [member.identityId]);
+      }
+    });
+
     it('POST /members rejects invalid payload with 400', () => {
+      const { cookie, csrf, header } = authed(sheikh);
       return request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send({ firstName: 'Ahmad' })
         .expect(400)
         .expect((response) => {
@@ -268,20 +309,12 @@ describe('API (e2e)', () => {
         });
     });
 
-    it('POST /members rejects missing organization header with 400', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/members')
-        .send(validMember)
-        .expect(400)
-        .expect((response) => {
-          expect(response.body.error.code).toBe('VALIDATION_ERROR');
-        });
-    });
-
     it('POST /members creates a member', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const response = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember)
         .expect(201);
 
@@ -291,14 +324,16 @@ describe('API (e2e)', () => {
     });
 
     it('GET /members lists active members', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -307,16 +342,18 @@ describe('API (e2e)', () => {
     });
 
     it('GET /members/:id returns one member', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const created = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember);
 
       const memberId = created.body.id;
 
       const response = await request(app.getHttpServer())
         .get(`/api/v1/members/${memberId}`)
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
         .expect(200);
 
       expect(response.body.id).toBe(memberId);
@@ -324,45 +361,62 @@ describe('API (e2e)', () => {
     });
 
     it('GET /members/:id returns 404 for cross-tenant access', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const created = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember);
 
-      await request(app.getHttpServer())
-        .get(`/api/v1/members/${created.body.id}`)
-        .set('X-Organization-Id', otherOrgId)
-        .expect(404)
-        .expect((response) => {
-          expect(response.body.error.code).toBe('NOT_FOUND');
-        });
+      const otherStaff = await loginAs(prisma, app, otherOrgId, 'SHEIKH');
+      try {
+        await request(app.getHttpServer())
+          .get(`/api/v1/members/${created.body.id}`)
+          .set('cookie', otherStaff.cookie)
+          .expect(404)
+          .expect((response) => {
+            expect(response.body.error.code).toBe('NOT_FOUND');
+          });
+      } finally {
+        await removeAuthFixtures(prisma, [otherStaff.identityId]);
+      }
     });
 
     it('GET /members omits the other organization', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const created = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember)
         .expect(201);
 
-      const listed = await request(app.getHttpServer())
-        .get('/api/v1/members')
-        .set('X-Organization-Id', otherOrgId)
-        .expect(200);
+      const otherStaff = await loginAs(prisma, app, otherOrgId, 'SHEIKH');
+      try {
+        const listed = await request(app.getHttpServer())
+          .get('/api/v1/members')
+          .set('cookie', otherStaff.cookie)
+          .expect(200);
 
-      const ids = listed.body.map((member: { id: string }) => member.id);
-      expect(ids).not.toContain(created.body.id);
+        const ids = listed.body.map((member: { id: string }) => member.id);
+        expect(ids).not.toContain(created.body.id);
+      } finally {
+        await removeAuthFixtures(prisma, [otherStaff.identityId]);
+      }
     });
 
     it('PATCH /members/:id updates a member', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const created = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember);
 
       const response = await request(app.getHttpServer())
         .patch(`/api/v1/members/${created.body.id}`)
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send({ firstName: 'Omar' })
         .expect(200);
 
@@ -370,18 +424,82 @@ describe('API (e2e)', () => {
     });
 
     it('POST /members/:id/archive soft-deletes a member', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
       const created = await request(app.getHttpServer())
         .post('/api/v1/members')
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .send(validMember);
 
       const response = await request(app.getHttpServer())
         .post(`/api/v1/members/${created.body.id}/archive`)
-        .set('X-Organization-Id', demoOrgId)
+        .set('cookie', cookie)
+        .set(header, csrf)
         .expect(201);
 
       expect(response.body.status).toBe('ARCHIVED');
       expect(response.body.archivedAt).not.toBeNull();
+    });
+
+    it('staff in MEMBER view cannot manage members until switched back', async () => {
+      const { cookie, csrf, header } = authed(sheikh);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/switch-view')
+        .set('cookie', cookie)
+        .set(header, csrf)
+        .send({ activeView: 'MEMBER' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/members')
+        .set('cookie', cookie)
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/switch-view')
+        .set('cookie', cookie)
+        .set(header, csrf)
+        .send({ activeView: 'ADMIN' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/members')
+        .set('cookie', cookie)
+        .expect(200);
+    });
+
+    it('GET /auth/me lists sheikh-only permission for sheikh not org admin', async () => {
+      const admin = await loginAs(prisma, app, demoOrgId, 'ORG_ADMIN');
+      try {
+        const sheikhMe = await request(app.getHttpServer())
+          .get('/api/v1/auth/me')
+          .set('cookie', sheikh.cookie)
+          .expect(200);
+        expect(sheikhMe.body.permissions).toContain('memberships.manage_org_admin');
+
+        const adminMe = await request(app.getHttpServer())
+          .get('/api/v1/auth/me')
+          .set('cookie', admin.cookie)
+          .expect(200);
+        expect(adminMe.body.permissions).not.toContain('memberships.manage_org_admin');
+      } finally {
+        await removeAuthFixtures(prisma, [admin.identityId]);
+      }
+    });
+
+    it('MEMBER cannot switch view', async () => {
+      const member = await loginAs(prisma, app, demoOrgId, 'MEMBER');
+      try {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/switch-view')
+          .set('cookie', member.cookie)
+          .set(member.csrfHeader, member.csrf)
+          .send({ activeView: 'ADMIN' })
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [member.identityId]);
+      }
     });
   });
 });

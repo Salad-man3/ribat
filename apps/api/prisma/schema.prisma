@@ -45,6 +45,10 @@ enum MemberNoteVisibility {
   SHEIKH_ONLY
   STAFF
 }
+enum ActiveView {
+  ADMIN
+  MEMBER
+}
 
 
 // ---------------------------------------------------------------------------
@@ -115,15 +119,16 @@ model Membership {
 
 
 model AuthSession {
-  id          String    @id @default(uuid()) @db.Uuid
-  identityId  String    @db.Uuid
-  tokenHash   String    @unique
+  id          String     @id @default(uuid()) @db.Uuid
+  identityId  String     @db.Uuid
+  tokenHash   String     @unique
   deviceLabel String?
   userAgent   String?
-  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
-  lastSeenAt  DateTime  @default(now()) @db.Timestamptz(6)
-  expiresAt   DateTime  @db.Timestamptz(6)
-  revokedAt   DateTime? @db.Timestamptz(6)
+  activeView  ActiveView @default(ADMIN)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  lastSeenAt  DateTime   @default(now()) @db.Timestamptz(6)
+  expiresAt   DateTime   @db.Timestamptz(6)
+  revokedAt   DateTime?  @db.Timestamptz(6)
   identity Identity @relation(fields: [identityId], references: [id])
   @@index([identityId, revokedAt])
   @@index([expiresAt])

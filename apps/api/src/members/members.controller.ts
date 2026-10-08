@@ -16,52 +16,53 @@ import {
   type ListMembersQuery,
   type UpdateMemberInput,
 } from '@ribat/shared';
-import { OrganizationId } from '../common/decorators/organization-id.decorator';
+import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { MembersService } from './members.service';
 
 @Controller('members')
+@OrgRoute('members.manage')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
   @Get()
   list(
-    @OrganizationId() organizationId: string,
+    @CurrentOrg() org: OrgContext,
     @Query(createZodValidationPipe(ListMembersQuerySchema)) query: ListMembersQuery,
   ) {
-    return this.membersService.list(organizationId, query);
+    return this.membersService.list(org.organizationId, query);
   }
 
   @Post()
   create(
-    @OrganizationId() organizationId: string,
+    @CurrentOrg() org: OrgContext,
     @Body(createZodValidationPipe(CreateMemberSchema)) body: CreateMemberInput,
   ) {
-    return this.membersService.create(organizationId, body);
+    return this.membersService.create(org.organizationId, body);
   }
 
   @Get(':id')
   getById(
-    @OrganizationId() organizationId: string,
+    @CurrentOrg() org: OrgContext,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membersService.getById(organizationId, id);
+    return this.membersService.getById(org.organizationId, id);
   }
 
   @Patch(':id')
   update(
-    @OrganizationId() organizationId: string,
+    @CurrentOrg() org: OrgContext,
     @Param('id', ParseUUIDPipe) id: string,
     @Body(createZodValidationPipe(UpdateMemberSchema)) body: UpdateMemberInput,
   ) {
-    return this.membersService.update(organizationId, id, body);
+    return this.membersService.update(org.organizationId, id, body);
   }
 
   @Post(':id/archive')
   archive(
-    @OrganizationId() organizationId: string,
+    @CurrentOrg() org: OrgContext,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membersService.archive(organizationId, id);
+    return this.membersService.archive(org.organizationId, id);
   }
 }

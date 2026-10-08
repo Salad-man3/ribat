@@ -75,11 +75,10 @@ After the beta: `points` · `warnings` · `reports` · `announcements` · `activ
 | 1 | `RequestIdMiddleware` | Assigns or accepts `x-request-id`, binds it to the Pino logger |
 | 2 | `SessionGuard` | Resolves the cookie to an `AuthSession`, rejects revoked or expired ones |
 | 3 | `CsrfGuard` | Global `APP_GUARD`: on unsafe methods with a session cookie, `x-csrf-token` must match the session-bound `ribat_csrf` cookie (HMAC of the session token). Runs before route-level `SessionGuard`, so a forged stale cookie gets 403 `CSRF_INVALID` rather than 401 |
-| 4 | `OrgContextGuard` | Loads the membership, sets `{ organizationId, membershipId, role, activeView }` |
-| 5 | `RoleGuard` | `@Roles(...)` plus the `activeView = ADMIN` requirement for staff endpoints (PERM-06) |
-| 6 | Service | Loads resources scoped by `organizationId`, applies contextual checks (PERM-11) |
-| 7 | `AuditInterceptor` | Writes an `AuditLog` row for audited actions (PERM-13) |
-| 8 | `HttpExceptionFilter` | One error envelope, no database internals |
+| 4 | `OrgContextGuard` | Resolves the caller's single ACTIVE membership (and ACTIVE organization), sets `req.org` with S1 permission keys from role + session `activeView`, and enforces `@OrgRoute(...)` metadata (PERM-06 via empty permissions in MEMBER view) |
+| 5 | Service | Loads resources scoped by `organizationId`, applies contextual checks (PERM-11) |
+| 6 | `AuditInterceptor` | Writes an `AuditLog` row for audited actions (PERM-13) |
+| 7 | `HttpExceptionFilter` | One error envelope, no database internals |
 
 ### Tenant scoping in practice
 

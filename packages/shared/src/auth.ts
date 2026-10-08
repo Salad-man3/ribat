@@ -18,6 +18,7 @@ export const IdentityStatusSchema = z.enum(['ACTIVE', 'DISABLED']);
 
 /** PERM-05. Absent when the caller is not staff. */
 export const ActiveViewSchema = z.enum(['ADMIN', 'MEMBER']);
+export type ActiveView = z.infer<typeof ActiveViewSchema>;
 
 /**
  * S1 keys only. T108 decides who receives which key.
@@ -32,6 +33,7 @@ export const S1PermissionSchema = z.enum([
     'notes.read_all',
     'audit.read',
 ]);
+export type S1Permission = z.infer<typeof S1PermissionSchema>;
 
 export const LoginSchema = z.object({
     phone: e164Phone,
