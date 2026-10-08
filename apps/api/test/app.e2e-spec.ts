@@ -184,6 +184,21 @@ describe('API (e2e)', () => {
     });
   });
 
+  describe('Auth rate limits', () => {
+    it('POST /auth/login returns 429 after five attempts from one IP', async () => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/login')
+          .send({ phone: '+963944000888', password: 'wrong' })
+          .expect(401);
+      }
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ phone: '+963944000888', password: 'wrong' })
+        .expect(429);
+    });
+  });
+
   describe('Auth CSRF', () => {
     let csrfIdentityId: string;
 

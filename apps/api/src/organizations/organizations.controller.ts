@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
 import {
   SetupOrganizationSchema,
@@ -19,6 +20,7 @@ export class OrganizationsController {
   }
 
   @Post('setup/organization')
+  @Throttle({ setup: { limit: 5, ttl: 900_000 } })
   setupOrganization(
     @Body(createZodValidationPipe(SetupOrganizationSchema)) body: SetupOrganizationInput,
   ) {

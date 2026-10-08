@@ -29,7 +29,9 @@ logged out**.
   have no session yet.
 - The platform owner account is seeded from environment variables and stored hashed; the
   secret never enters the repository (decision 3.4).
-- Rate limiting on login and setup-code redemption.
+- Rate limiting via `@nestjs/throttler` (in-memory storage for single-instance deploys):
+  **5 requests per minute per IP** on `POST /auth/login`, and **5 requests per 15 minutes
+  per IP** on `POST /auth/setup` and `POST /setup/organization`. Over limit → `429`.
 - **`activeView`** (`ADMIN` | `MEMBER`) is stored on `AuthSession` (staff default `ADMIN`).
   Organization context is derived from the identity's single ACTIVE membership until multi-org
   switching (OQ-10); tenant routes use `@OrgRoute(...)` permission keys, not a client header.

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { LoggingModule } from './logging/logging.module';
@@ -13,6 +15,14 @@ import { MembershipsModule } from './memberships/memberships.module';
 
 @Module({
   imports: [
+    // ponytail: in-memory throttler storage; switch to Redis if API scales out.
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { name: 'default', ttl: 60_000, limit: 10_000 },
+        { name: 'login', ttl: 60_000, limit: 5 },
+        { name: 'setup', ttl: 900_000, limit: 5 },
+      ],
+    }),
     ConfigModule,
     LoggingModule,
     PrismaModule,
@@ -25,5 +35,6 @@ import { MembershipsModule } from './memberships/memberships.module';
     MembersModule,
     AuthModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule { }
