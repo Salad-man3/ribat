@@ -56,6 +56,7 @@ export const MemberResponseSchema = z.object({
   createdAt: isoDateTime,
   updatedAt: isoDateTime,
   archivedAt: isoDateTime.nullable(),
+  siblingMemberIds: z.array(uuid).optional(),
 });
 
 export type MemberResponse = z.infer<typeof MemberResponseSchema>;

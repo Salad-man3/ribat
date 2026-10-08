@@ -13,15 +13,18 @@ import type { Request } from 'express';
 import {
   CreateMemberSchema,
   GrantMemberAccessSchema,
+  LinkSiblingSchema,
   ListMembersQuerySchema,
   ResetSetupCodeSchema,
   UpdateMemberSchema,
   type CreateMemberInput,
   type GrantMemberAccessInput,
+  type LinkSiblingInput,
   type ListMembersQuery,
   type ResetSetupCodeInput,
   type UpdateMemberInput,
 } from '@ribat/shared';
+import { HouseholdsService } from '../households/households.service';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
 import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
 import { CurrentSession, type SessionContext } from '../auth/session.guard';
@@ -34,6 +37,7 @@ export class MembersController {
   constructor(
     private readonly membersService: MembersService,
     private readonly membershipsService: MembershipsService,
+    private readonly householdsService: HouseholdsService,
   ) {}
 
   private auditCtx(org: OrgContext, session: SessionContext, req: Request) {
@@ -95,6 +99,23 @@ export class MembersController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.membersService.archive(org.organizationId, id, this.auditCtx(org, session, req));
+  }
+
+  @Post(':id/household')
+  @OrgRoute('members.manage')
+  linkSibling(
+    @CurrentOrg() org: OrgContext,
+    @CurrentSession() session: SessionContext,
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(createZodValidationPipe(LinkSiblingSchema)) body: LinkSiblingInput,
+  ) {
+    return this.householdsService.linkSibling(
+      org.organizationId,
+      id,
+      body,
+      this.auditCtx(org, session, req),
+    );
   }
 
   @Post(':id/access')

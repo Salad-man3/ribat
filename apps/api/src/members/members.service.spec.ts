@@ -4,6 +4,7 @@ import { MembersService } from './members.service';
 import { MembersRepository } from './members.repository';
 
 const audit = { record: jest.fn() } as unknown as AuditService;
+const households = { siblingIds: jest.fn().mockResolvedValue([]) } as unknown as import('../households/households.service').HouseholdsService;
 const auditCtx = {
     organizationId: '11111111-1111-1111-1111-111111111111',
     actorIdentityId: '33333333-3333-3333-3333-333333333333',
@@ -40,7 +41,7 @@ describe('MembersService', () => {
             findById: jest.fn().mockResolvedValue(null),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository, audit);
+        const service = new MembersService(repository, audit, households);
 
         await expect(service.getById(organizationId, memberId)).rejects.toBeInstanceOf(NotFoundException);
     });
@@ -55,7 +56,7 @@ describe('MembersService', () => {
             }),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository, audit);
+        const service = new MembersService(repository, audit, households);
         const result = await service.archive(organizationId, memberId, auditCtx);
 
         expect(result.status).toBe('ARCHIVED');

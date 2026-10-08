@@ -3,6 +3,7 @@ import type { CreateMemberInput, ListMembersQuery, MemberResponse, UpdateMemberI
 import type { AuditContext } from '../audit/audit-context';
 import { memberAuditDelta, memberAuditSnapshot } from '../audit/audit-snapshots';
 import { AuditService } from '../audit/audit.service';
+import { HouseholdsService } from '../households/households.service';
 import { toMemberResponse } from './member.mapper';
 import { MembersRepository } from './members.repository';
 
@@ -11,6 +12,7 @@ export class MembersService {
     constructor(
         private readonly membersRepository: MembersRepository,
         private readonly audit: AuditService,
+        private readonly households: HouseholdsService,
     ) { }
 
     async create(
@@ -40,7 +42,12 @@ export class MembersService {
                 error: { code: 'NOT_FOUND', message: 'Member not found' },
             });
         }
-        return toMemberResponse(member);
+        const siblingMemberIds = await this.households.siblingIds(
+            organizationId,
+            member.id,
+            member.householdId,
+        );
+        return { ...toMemberResponse(member), siblingMemberIds };
     }
 
     async update(

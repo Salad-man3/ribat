@@ -569,6 +569,43 @@ describe('API (e2e)', () => {
     });
   });
 
+  describe('Households', () => {
+    it('links siblings into one household', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+      try {
+        const a = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, firstName: 'SiblingA' })
+          .expect(201);
+        const b = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, firstName: 'SiblingB', familyName: 'B' })
+          .expect(201);
+
+        const linked = await request(app.getHttpServer())
+          .post(`/api/v1/members/${a.body.id}/household`)
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ siblingMemberId: b.body.id })
+          .expect(201);
+
+        expect(linked.body.memberIds).toEqual(expect.arrayContaining([a.body.id, b.body.id]));
+
+        const detail = await request(app.getHttpServer())
+          .get(`/api/v1/members/${a.body.id}`)
+          .set('cookie', sheikh.cookie)
+          .expect(200);
+        expect(detail.body.siblingMemberIds).toContain(b.body.id);
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId]);
+      }
+    });
+  });
+
   describe('Organization setup', () => {
     it('GET /setup/status reports setup is not required when orgs exist', () => {
       return request(app.getHttpServer())

@@ -51,7 +51,10 @@ export async function removeTwoOrganizations(
         },
     });
     await prisma.authSession.deleteMany({ where: { identityId: { in: identityIds } } });
+    await prisma.guardianLink.deleteMany({ where: { organizationId: { in: ids } } });
+    await prisma.memberNote.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.member.deleteMany({ where: { organizationId: { in: ids } } });
+    await prisma.household.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.membership.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.identity.deleteMany({
         where: {
