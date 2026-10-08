@@ -502,4 +502,86 @@ describe('API (e2e)', () => {
       }
     });
   });
+
+  describe('Audit', () => {
+    let sheikh: AuthenticatedSession;
+
+    beforeEach(async () => {
+      sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+    });
+
+    afterEach(async () => {
+      await prisma.auditLog.deleteMany({ where: { organizationId: demoOrgId } });
+      await removeAuthFixtures(prisma, [sheikh.identityId]);
+    });
+
+    it('GET /audit without audit.read returns 403 for org admin in member view', async () => {
+      const admin = await loginAs(prisma, app, demoOrgId, 'ORG_ADMIN');
+      try {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/switch-view')
+          .set('cookie', admin.cookie)
+          .set(admin.csrfHeader, admin.csrf)
+          .send({ activeView: 'MEMBER' })
+          .expect(200);
+
+        await request(app.getHttpServer())
+          .get('/api/v1/audit')
+          .set('cookie', admin.cookie)
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [admin.identityId]);
+      }
+    });
+
+    it('POST /members writes a member.created audit row without PII', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/members')
+        .set('cookie', sheikh.cookie)
+        .set(sheikh.csrfHeader, sheikh.csrf)
+        .send(validMember)
+        .expect(201);
+
+      const listed = await request(app.getHttpServer())
+        .get('/api/v1/audit')
+        .set('cookie', sheikh.cookie)
+        .expect(200);
+
+      const row = listed.body.find(
+        (entry: { action: string; entityId: string }) =>
+          entry.action === 'member.created' && entry.entityId === created.body.id,
+      );
+      expect(row).toBeDefined();
+      expect(row.after).toEqual({
+        id: created.body.id,
+        status: 'ACTIVE',
+        householdId: null,
+      });
+      expect(JSON.stringify(row)).not.toMatch(/Ahmad|Ali|Hassan/);
+    });
+
+    it('staff in MEMBER view records permission.denied when listing audit', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/switch-view')
+        .set('cookie', sheikh.cookie)
+        .set(sheikh.csrfHeader, sheikh.csrf)
+        .send({ activeView: 'MEMBER' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/audit')
+        .set('cookie', sheikh.cookie)
+        .expect(403);
+
+      const denied = await prisma.auditLog.findFirst({
+        where: { organizationId: demoOrgId, action: 'permission.denied' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(denied).not.toBeNull();
+      expect(denied!.after).toMatchObject({
+        required: ['audit.read'],
+        method: 'GET',
+      });
+    });
+  });
 });

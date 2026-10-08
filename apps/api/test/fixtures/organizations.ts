@@ -34,7 +34,9 @@ export async function removeTwoOrganizations(
     orgs: TwoOrganizations,
 ): Promise<void> {
     const ids = [orgs.demo.id, orgs.other.id];
+    await prisma.auditLog.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.member.deleteMany({ where: { organizationId: { in: ids } } });
+    await prisma.membership.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.organization.deleteMany({
         where: { slug: { in: [DEMO_SLUG, OTHER_SLUG] } },
     });

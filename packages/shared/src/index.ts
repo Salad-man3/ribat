@@ -9,6 +9,12 @@ export {
 } from './validation.js';
 export { CursorPaginationQuerySchema, type CursorPaginationQuery } from './pagination.js';
 export {
+  AuditLogResponseSchema,
+  ListAuditQuerySchema,
+  type AuditLogResponse,
+  type ListAuditQuery,
+} from './audit.js';
+export {
   CreateMemberSchema,
   ListMembersQuerySchema,
   MemberResponseSchema,

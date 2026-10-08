@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { CsrfGuard } from './csrf.guard';
@@ -8,6 +9,7 @@ import { SessionGuard } from './session.guard';
 import { SessionsService } from './sessions.service';
 
 @Module({
+    imports: [forwardRef(() => AuditModule)],
     controllers: [AuthController],
     providers: [
         IdentitiesService,

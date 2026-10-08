@@ -11,6 +11,8 @@ import {
 import type { MembershipRole } from '@prisma/client';
 import type { ActiveView, S1Permission } from '@ribat/shared';
 import type { Request } from 'express';
+import { AuditService } from '../audit/audit.service';
+import { requestIdFrom } from '../audit/audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { isStaff, permissionsFor } from './permissions';
 import { SessionGuard } from './session.guard';
@@ -35,7 +37,10 @@ function forbidden(message = 'Forbidden'): ForbiddenException {
 
 @Injectable()
 export class OrgContextGuard implements CanActivate {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly audit: AuditService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const req = context.switchToHttp().getRequest<
@@ -86,6 +91,24 @@ export class OrgContextGuard implements CanActivate {
                 (key) => !permissions.includes(key),
             );
             if (missing) {
+                await this.audit.record(
+                    {
+                        organizationId: membership.organizationId,
+                        actorIdentityId: session.identityId,
+                        actorMembershipId: membership.id,
+                        requestId: requestIdFrom(req),
+                    },
+                    {
+                        action: 'permission.denied',
+                        entityType: 'route',
+                        entityId: membership.id,
+                        after: {
+                            required,
+                            method: req.method,
+                            path: req.path,
+                        },
+                    },
+                );
                 throw forbidden();
             }
         }

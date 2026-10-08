@@ -1,6 +1,14 @@
 import { NotFoundException } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { MembersService } from './members.service';
 import { MembersRepository } from './members.repository';
+
+const audit = { record: jest.fn() } as unknown as AuditService;
+const auditCtx = {
+    organizationId: '11111111-1111-1111-1111-111111111111',
+    actorIdentityId: '33333333-3333-3333-3333-333333333333',
+    actorMembershipId: '44444444-4444-4444-4444-444444444444',
+};
 
 describe('MembersService', () => {
     const organizationId = '11111111-1111-1111-1111-111111111111';
@@ -32,13 +40,14 @@ describe('MembersService', () => {
             findById: jest.fn().mockResolvedValue(null),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository);
+        const service = new MembersService(repository, audit);
 
         await expect(service.getById(organizationId, memberId)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('archive returns archived member', async () => {
         const repository = {
+            findById: jest.fn().mockResolvedValue(member),
             archive: jest.fn().mockResolvedValue({
                 ...member,
                 status: 'ARCHIVED',
@@ -46,8 +55,8 @@ describe('MembersService', () => {
             }),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository);
-        const result = await service.archive(organizationId, memberId);
+        const service = new MembersService(repository, audit);
+        const result = await service.archive(organizationId, memberId, auditCtx);
 
         expect(result.status).toBe('ARCHIVED');
         expect(result.archivedAt).not.toBeNull();

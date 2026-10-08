@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ActiveView, LoginResponse, RedeemSetupCodeInput } from '@ribat/shared';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateSetupCode, hashSecret, verifySecret } from './credentials';
 import { isStaff, permissionsFor } from './permissions';
@@ -41,7 +42,10 @@ function disabledAccount(): ConflictException {
 export class IdentitiesService {
     private dummyHash?: string;
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly audit: AuditService,
+    ) { }
 
     async ensureIdentity(phone: string): Promise<EnsuredIdentity> {
         const existing = await this.prisma.platform.identity.findUnique({ where: { phone } });
@@ -73,6 +77,25 @@ export class IdentitiesService {
                 data: { identityId, codeHash, expiresAt, createdByMembershipId },
             });
         });
+
+        const issuer = await this.prisma.platform.membership.findUnique({
+            where: { id: createdByMembershipId },
+            select: { organizationId: true, identityId: true },
+        });
+        if (issuer) {
+            await this.audit.record(
+                {
+                    organizationId: issuer.organizationId,
+                    actorIdentityId: issuer.identityId,
+                    actorMembershipId: createdByMembershipId,
+                },
+                {
+                    action: 'auth.setup_code_issued',
+                    entityType: 'identity',
+                    entityId: identityId,
+                },
+            );
+        }
 
         return { identityId, setupCode, expiresAt: expiresAt.toISOString() };
     }

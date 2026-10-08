@@ -1,6 +1,9 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { IdentitiesService } from './identities.service';
+
+const audit = { record: jest.fn(), recordForIdentity: jest.fn() } as unknown as AuditService;
 
 jest.mock('./credentials', () => ({
     generateSetupCode: jest.fn(() => 'AB23DEF4'),
@@ -40,6 +43,7 @@ function platform() {
             },
             membership: {
                 findMany: jest.fn(),
+                findUnique: jest.fn(),
             },
             $transaction: jest.fn(async (fn: (trx: typeof tx) => Promise<void>) => fn(tx)),
         },
@@ -55,7 +59,10 @@ describe('IdentitiesService', () => {
             status: 'ACTIVE',
             passwordHash: null,
         });
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         const result = await service.ensureIdentity(phone);
 
@@ -71,14 +78,24 @@ describe('IdentitiesService', () => {
             status: 'DISABLED',
             passwordHash: null,
         });
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         await expect(service.ensureIdentity(phone)).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('stores a hash and returns the plaintext code once', async () => {
         const db = platform();
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        db.client.membership.findUnique.mockResolvedValue({
+            organizationId,
+            identityId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+        });
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         const issued = await service.issueSetupCode(identityId, membershipId);
 
@@ -121,7 +138,10 @@ describe('IdentitiesService', () => {
                 status: 'ACTIVE',
             },
         ]);
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         const result = await service.redeemSetupCode({
             phone,
@@ -147,7 +167,10 @@ describe('IdentitiesService', () => {
     it('returns the same 401 when the phone is unknown', async () => {
         const db = platform();
         db.client.identity.findUnique.mockResolvedValue(null);
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         await expect(
             service.redeemSetupCode({ phone, code: 'AB23DEF4', password: 'longenough' }),
@@ -166,7 +189,10 @@ describe('IdentitiesService', () => {
         db.client.accountSetupCode.findMany.mockResolvedValue([
             { id: 'code-1', codeHash: 'hashed:ZZZZZZZZ' },
         ]);
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         await expect(
             service.redeemSetupCode({ phone, code: 'AB23DEF4', password: 'longenough' }),
@@ -181,7 +207,10 @@ describe('IdentitiesService', () => {
             status: 'ACTIVE',
             passwordHash: 'hashed:longenough',
         });
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         await expect(service.authenticate(phone, 'longenough')).resolves.toBe(identityId);
         expect(db.client.identity.update).toHaveBeenCalledWith(
@@ -191,7 +220,10 @@ describe('IdentitiesService', () => {
 
     it('returns the same 401 for an unknown phone and a disabled account', async () => {
         const db = platform();
-        const service = new IdentitiesService({ platform: db.client } as unknown as PrismaService);
+        const service = new IdentitiesService(
+            { platform: db.client } as unknown as PrismaService,
+            audit,
+        );
 
         db.client.identity.findUnique.mockResolvedValue(null);
         await expect(service.authenticate(phone, 'longenough')).rejects.toBeInstanceOf(UnauthorizedException);

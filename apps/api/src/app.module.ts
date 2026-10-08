@@ -6,6 +6,7 @@ import { MembersModule } from './members/members.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
     LoggingModule,
     PrismaModule,
     RedisModule,
+    AuditModule,
     HealthModule,
     MembersModule,
     AuthModule,

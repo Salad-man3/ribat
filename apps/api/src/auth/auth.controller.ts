@@ -26,6 +26,8 @@ import {
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
+import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
+import { AuditService } from '../audit/audit.service';
 import { IdentitiesService } from './identities.service';
 import { isStaff } from './permissions';
 import { CurrentOrg, OrgRoute, type OrgContext } from './org-context.guard';
@@ -37,6 +39,7 @@ export class AuthController {
     constructor(
         private readonly identities: IdentitiesService,
         private readonly sessions: SessionsService,
+        private readonly audit: AuditService,
     ) {}
 
     @Post('setup')
@@ -46,6 +49,15 @@ export class AuthController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const profile = await this.identities.redeemSetupCode(body);
+        await this.audit.recordForIdentity(
+            profile.identity.id,
+            {
+                action: 'auth.setup_redeemed',
+                entityType: 'identity',
+                entityId: profile.identity.id,
+            },
+            requestIdFrom(req),
+        );
         const token = await this.sessions.issue(profile.identity.id, {
             deviceLabel: body.deviceLabel,
             userAgent: req.header('user-agent') ?? undefined,
@@ -61,6 +73,11 @@ export class AuthController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const identityId = await this.identities.authenticate(body.phone, body.password);
+        await this.audit.recordForIdentity(
+            identityId,
+            { action: 'auth.login', entityType: 'identity', entityId: identityId },
+            requestIdFrom(req),
+        );
         const token = await this.sessions.issue(identityId, {
             deviceLabel: body.deviceLabel,
             userAgent: req.header('user-agent') ?? undefined,
@@ -82,6 +99,7 @@ export class AuthController {
         @Body(createZodValidationPipe(SwitchViewSchema)) body: SwitchViewInput,
         @CurrentSession() session: SessionContext,
         @CurrentOrg() org: OrgContext,
+        @Req() req: Request,
     ) {
         if (!isStaff(org.role)) {
             throw new ForbiddenException({
@@ -89,6 +107,15 @@ export class AuthController {
             });
         }
         await this.sessions.setView(session.sessionId, body.activeView);
+        await this.audit.record(
+            auditContextFromOrg(org, session.identityId, requestIdFrom(req)),
+            {
+                action: 'auth.view_switched',
+                entityType: 'membership',
+                entityId: org.membershipId,
+                after: { activeView: body.activeView },
+            },
+        );
         return this.identities.profile(session.identityId, body.activeView);
     }
 
