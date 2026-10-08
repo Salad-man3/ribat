@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -11,20 +12,26 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import {
+  CreateGuardianLinkSchema,
+  CreateMemberNoteSchema,
   CreateMemberSchema,
   GrantMemberAccessSchema,
   LinkSiblingSchema,
   ListMembersQuerySchema,
   ResetSetupCodeSchema,
   UpdateMemberSchema,
+  type CreateGuardianLinkInput,
   type CreateMemberInput,
+  type CreateMemberNoteInput,
   type GrantMemberAccessInput,
   type LinkSiblingInput,
   type ListMembersQuery,
   type ResetSetupCodeInput,
   type UpdateMemberInput,
 } from '@ribat/shared';
+import { GuardiansService } from '../guardians/guardians.service';
 import { HouseholdsService } from '../households/households.service';
+import { MemberNotesService } from '../notes/member-notes.service';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
 import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
 import { CurrentSession, type SessionContext } from '../auth/session.guard';
@@ -38,6 +45,8 @@ export class MembersController {
     private readonly membersService: MembersService,
     private readonly membershipsService: MembershipsService,
     private readonly householdsService: HouseholdsService,
+    private readonly guardiansService: GuardiansService,
+    private readonly memberNotesService: MemberNotesService,
   ) {}
 
   private auditCtx(org: OrgContext, session: SessionContext, req: Request) {
@@ -99,6 +108,65 @@ export class MembersController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.membersService.archive(org.organizationId, id, this.auditCtx(org, session, req));
+  }
+
+  @Get(':id/guardians')
+  @OrgRoute('members.manage')
+  listGuardians(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.guardiansService.list(org.organizationId, id);
+  }
+
+  @Post(':id/guardians')
+  @OrgRoute('members.manage')
+  createGuardian(
+    @CurrentOrg() org: OrgContext,
+    @CurrentSession() session: SessionContext,
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(createZodValidationPipe(CreateGuardianLinkSchema)) body: CreateGuardianLinkInput,
+  ) {
+    return this.guardiansService.create(
+      org.organizationId,
+      id,
+      body,
+      this.auditCtx(org, session, req),
+    );
+  }
+
+  @Delete(':id/guardians/:linkId')
+  @OrgRoute('members.manage')
+  async removeGuardian(
+    @CurrentOrg() org: OrgContext,
+    @CurrentSession() session: SessionContext,
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('linkId', ParseUUIDPipe) linkId: string,
+  ) {
+    await this.guardiansService.remove(org.organizationId, id, linkId, this.auditCtx(org, session, req));
+  }
+
+  @Get(':id/notes')
+  @OrgRoute()
+  listNotes(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.memberNotesService.list(org.organizationId, id, org);
+  }
+
+  @Post(':id/notes')
+  @OrgRoute('notes.write')
+  createNote(
+    @CurrentOrg() org: OrgContext,
+    @CurrentSession() session: SessionContext,
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(createZodValidationPipe(CreateMemberNoteSchema)) body: CreateMemberNoteInput,
+  ) {
+    return this.memberNotesService.create(
+      org.organizationId,
+      id,
+      org,
+      body,
+      this.auditCtx(org, session, req),
+    );
   }
 
   @Post(':id/household')

@@ -8,6 +8,7 @@ import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { GuardiansModule } from './guardians/guardians.module';
 import { MembershipsModule } from './memberships/memberships.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { MembershipsModule } from './memberships/memberships.module';
     HealthModule,
     OrganizationsModule,
     MembershipsModule,
+    GuardiansModule,
     MembersModule,
     AuthModule,
   ],

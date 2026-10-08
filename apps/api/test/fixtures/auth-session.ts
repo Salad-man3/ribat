@@ -43,11 +43,23 @@ export async function loginAs(
     const phone = `+963944${String(900000 + phoneSeq).padStart(6, '0')}`;
     const passwordHash = await hashSecret(password);
     const identity = await prisma.identity.create({ data: { phone, passwordHash } });
+    const member = await prisma.member.create({
+        data: {
+            organizationId,
+            firstName: 'E2E',
+            fatherName: 'Test',
+            familyName: role,
+            birthDate: new Date('1990-01-01'),
+            joinedAt: new Date(),
+            phone: role === 'MEMBER' || role === 'GUARDIAN' ? phone : null,
+        },
+    });
     await prisma.membership.create({
         data: {
             organizationId,
             identityId: identity.id,
             role,
+            memberId: member.id,
             status: 'ACTIVE',
         },
     });

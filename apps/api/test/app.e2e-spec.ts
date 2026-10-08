@@ -569,6 +569,74 @@ describe('API (e2e)', () => {
     });
   });
 
+  describe('Guardians and notes', () => {
+    it('guardian sees linked wards only', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+      try {
+        const ward = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, firstName: 'WardChild' })
+          .expect(201);
+
+        const guardian = await loginAs(prisma, app, demoOrgId, 'GUARDIAN');
+        const guardianMember = await prisma.membership.findFirst({
+          where: { identityId: guardian.identityId },
+          select: { memberId: true },
+        });
+
+        await request(app.getHttpServer())
+          .post(`/api/v1/members/${ward.body.id}/guardians`)
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({
+            mode: 'existing',
+            guardianMemberId: guardianMember!.memberId,
+            relation: 'FATHER',
+            isPrimary: true,
+          })
+          .expect(201);
+
+        const wards = await request(app.getHttpServer())
+          .get('/api/v1/wards')
+          .set('cookie', guardian.cookie)
+          .expect(200);
+
+        expect(wards.body.map((row: { id: string }) => row.id)).toContain(ward.body.id);
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId]);
+      }
+    });
+
+    it('staff can write notes guardians cannot read', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+      const guardian = await loginAs(prisma, app, demoOrgId, 'GUARDIAN');
+      try {
+        const ward = await request(app.getHttpServer())
+          .post('/api/v1/members')
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ ...validMember, firstName: 'NoteSubject' })
+          .expect(201);
+
+        await request(app.getHttpServer())
+          .post(`/api/v1/members/${ward.body.id}/notes`)
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ body: 'Private staff note' })
+          .expect(201);
+
+        await request(app.getHttpServer())
+          .get(`/api/v1/members/${ward.body.id}/notes`)
+          .set('cookie', guardian.cookie)
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId, guardian.identityId]);
+      }
+    });
+  });
+
   describe('Households', () => {
     it('links siblings into one household', async () => {
       const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
