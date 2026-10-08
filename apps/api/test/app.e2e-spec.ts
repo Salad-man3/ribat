@@ -8,6 +8,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/api-exception.filter';
 import { drainCapturedLogs } from '../src/logging/logging.module';
+import { removeTwoOrganizations, twoOrganizations } from './fixtures/organizations';
 
 const prisma = new PrismaClient();
 
@@ -44,45 +45,16 @@ describe('API (e2e)', () => {
   let app: INestApplication<App>;
   let demoOrgId: string;
   let otherOrgId: string;
+  let orgs: Awaited<ReturnType<typeof twoOrganizations>>;
 
   beforeAll(async () => {
-    const demoOrg = await prisma.organization.upsert({
-      where: { slug: 'e2e-demo-mosque' },
-      update: {},
-      create: {
-        name: 'E2E Demo Mosque',
-        slug: 'e2e-demo-mosque',
-        timezone: 'Asia/Damascus',
-        latitude: 33.5138,
-        longitude: 36.2765,
-        prayerMethod: 'UmmAlQura',
-      },
-    });
-
-    const otherOrg = await prisma.organization.upsert({
-      where: { slug: 'e2e-other-mosque' },
-      update: {},
-      create: {
-        name: 'E2E Other Mosque',
-        slug: 'e2e-other-mosque',
-        timezone: 'Asia/Damascus',
-        latitude: 33.5138,
-        longitude: 36.2765,
-        prayerMethod: 'UmmAlQura',
-      },
-    });
-
-    demoOrgId = demoOrg.id;
-    otherOrgId = otherOrg.id;
+    orgs = await twoOrganizations(prisma);
+    demoOrgId = orgs.demo.id;
+    otherOrgId = orgs.other.id;
   });
 
   afterAll(async () => {
-    await prisma.member.deleteMany({
-      where: { organizationId: { in: [demoOrgId, otherOrgId] } },
-    });
-    await prisma.organization.deleteMany({
-      where: { slug: { in: ['e2e-demo-mosque', 'e2e-other-mosque'] } },
-    });
+    await removeTwoOrganizations(prisma, orgs);
     await prisma.$disconnect();
   });
 
@@ -266,6 +238,22 @@ describe('API (e2e)', () => {
         .expect((response) => {
           expect(response.body.error.code).toBe('NOT_FOUND');
         });
+    });
+
+    it('GET /members omits the other organization', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/members')
+        .set('X-Organization-Id', demoOrgId)
+        .send(validMember)
+        .expect(201);
+
+      const listed = await request(app.getHttpServer())
+        .get('/api/v1/members')
+        .set('X-Organization-Id', otherOrgId)
+        .expect(200);
+
+      const ids = listed.body.map((member: { id: string }) => member.id);
+      expect(ids).not.toContain(created.body.id);
     });
 
     it('PATCH /members/:id updates a member', async () => {
