@@ -12,7 +12,7 @@ Installable PWA, Arabic (RTL) and English, built to keep working offline during 
 Phase 0 is in place, and organization-scoped member CRUD is implemented:
 
 - NestJS 11 API with Prisma 6, PostgreSQL, Redis, and health endpoints
-- Member create, list, get, update, and archive, scoped by `X-Organization-Id`
+- Member create, list, get, update, and archive, scoped by the signed-in membership
 - React + Vite PWA shell with Arabic/English i18n
 - Shared Zod contracts (`packages/shared`) and Quran reference data (`packages/quran-data`)
 - Docker Compose for local Postgres and Redis
