@@ -34,7 +34,8 @@ import { HouseholdsService } from '../households/households.service';
 import { MemberNotesService } from '../notes/member-notes.service';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
 import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
-import { CurrentSession, type SessionContext } from '../auth/session.guard';
+import { CurrentSession } from '../auth/session.guard';
+import type { SessionContext } from '../auth/sessions.service';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { MembershipsService } from '../memberships/memberships.service';
 import { MembersService } from './members.service';
@@ -59,7 +60,7 @@ export class MembersController {
     @CurrentOrg() org: OrgContext,
     @Query(createZodValidationPipe(ListMembersQuerySchema)) query: ListMembersQuery,
   ) {
-    return this.membersService.list(org.organizationId, query);
+    return this.membersService.list(org.organizationId, query, org);
   }
 
   @Post()
@@ -79,7 +80,7 @@ export class MembersController {
     @CurrentOrg() org: OrgContext,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membersService.getById(org.organizationId, id);
+    return this.membersService.getById(org.organizationId, id, org);
   }
 
   @Patch(':id')

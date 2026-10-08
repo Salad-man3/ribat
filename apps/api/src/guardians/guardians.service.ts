@@ -6,7 +6,8 @@ import type {
 } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
-import { toMemberResponse } from '../members/member.mapper';
+import { shapeMember } from '../members/member-shaping';
+import type { OrgContext } from '../auth/org-context.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 function notFound(): NotFoundException {
@@ -109,7 +110,9 @@ export class GuardiansService {
     });
   }
 
-  async listWards(organizationId: string, guardianMemberId: string | null): Promise<MemberResponse[]> {
+  async listWards(org: OrgContext): Promise<MemberResponse[]> {
+    const organizationId = org.organizationId;
+    const guardianMemberId = org.memberId;
     if (!guardianMemberId) return [];
     const links = await this.prisma.forOrganization(organizationId).guardianLink.findMany({
       where: { guardianMemberId },
@@ -121,7 +124,7 @@ export class GuardiansService {
     const members = await this.prisma.forOrganization(organizationId).member.findMany({
       where: { id: { in: wardIds }, status: 'ACTIVE' },
     });
-    return members.map(toMemberResponse);
+    return members.map((member) => shapeMember(member, org));
   }
 
   async isWardOf(

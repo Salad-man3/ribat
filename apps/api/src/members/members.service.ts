@@ -4,7 +4,9 @@ import type { AuditContext } from '../audit/audit-context';
 import { memberAuditDelta, memberAuditSnapshot } from '../audit/audit-snapshots';
 import { AuditService } from '../audit/audit.service';
 import { HouseholdsService } from '../households/households.service';
+import { shapeMember } from './member-shaping';
 import { toMemberResponse } from './member.mapper';
+import type { OrgContext } from '../auth/org-context.guard';
 import { MembersRepository } from './members.repository';
 
 @Injectable()
@@ -30,12 +32,16 @@ export class MembersService {
         return toMemberResponse(member);
     }
 
-    async list(organizationId: string, query: ListMembersQuery): Promise<MemberResponse[]> {
+    async list(
+        organizationId: string,
+        query: ListMembersQuery,
+        org: OrgContext,
+    ): Promise<MemberResponse[]> {
         const members = await this.membersRepository.list(organizationId, query);
-        return members.map(toMemberResponse);
+        return members.map((member) => shapeMember(member, org));
     }
 
-    async getById(organizationId: string, id: string): Promise<MemberResponse> {
+    async getById(organizationId: string, id: string, org: OrgContext): Promise<MemberResponse> {
         const member = await this.membersRepository.findById(organizationId, id);
         if (!member) {
             throw new NotFoundException({
@@ -47,7 +53,7 @@ export class MembersService {
             member.id,
             member.householdId,
         );
-        return { ...toMemberResponse(member), siblingMemberIds };
+        return { ...shapeMember(member, org), siblingMemberIds };
     }
 
     async update(

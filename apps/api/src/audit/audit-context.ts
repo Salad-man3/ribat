@@ -13,8 +13,13 @@ export type AuditEventInput = {
   after?: unknown;
 };
 
-export function requestIdFrom(req: { id?: string; requestId?: string; header?: (name: string) => string | undefined }): string | undefined {
-  return req.id ?? req.requestId ?? req.header?.('x-request-id') ?? undefined;
+export function requestIdFrom(req: {
+  id?: unknown;
+  requestId?: string;
+  header?: (name: string) => string | undefined;
+}): string | undefined {
+  const id = req.id;
+  return (typeof id === 'string' ? id : undefined) ?? req.requestId ?? req.header?.('x-request-id') ?? undefined;
 }
 
 export function auditContextFromOrg(

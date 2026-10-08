@@ -43,7 +43,15 @@ describe('MembersService', () => {
 
         const service = new MembersService(repository, audit, households);
 
-        await expect(service.getById(organizationId, memberId)).rejects.toBeInstanceOf(NotFoundException);
+        const org = {
+            organizationId,
+            membershipId: auditCtx.actorMembershipId!,
+            memberId: null,
+            role: 'SHEIKH' as const,
+            activeView: 'ADMIN' as const,
+            permissions: [],
+        };
+        await expect(service.getById(organizationId, memberId, org)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('archive returns archived member', async () => {
