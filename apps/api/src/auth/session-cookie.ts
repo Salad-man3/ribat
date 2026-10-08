@@ -2,6 +2,8 @@ import { createHmac, randomBytes } from 'node:crypto';
 import type { Response } from 'express';
 
 export const SESSION_COOKIE = 'ribat_session';
+export const CSRF_COOKIE = 'ribat_csrf';
+export const CSRF_HEADER = 'x-csrf-token';
 export const SESSION_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 const USER_AGENT_MAX = 256;
@@ -13,6 +15,11 @@ export function newSessionToken(): string {
 /** Deterministic, so SessionsService can findUnique the row. */
 export function hashSessionToken(token: string, secret: string): string {
     return createHmac('sha256', secret).update(token).digest('base64url');
+}
+
+/** Session-bound CSRF token; prefix keeps it distinct from tokenHash. */
+export function csrfTokenFor(sessionToken: string, secret: string): string {
+    return createHmac('sha256', secret).update(`csrf:${sessionToken}`).digest('base64url');
 }
 
 export function clipUserAgent(value: string | undefined): string | null {
@@ -45,10 +52,23 @@ function cookieBase(secure: boolean) {
     };
 }
 
-export function writeSessionCookie(res: Response, token: string, secure: boolean) {
-    res.cookie(SESSION_COOKIE, token, { ...cookieBase(secure), maxAge: SESSION_YEAR_MS });
+export function writeSessionCookie(
+    res: Response,
+    token: string,
+    secure: boolean,
+    secret: string,
+) {
+    const maxAge = SESSION_YEAR_MS;
+    res.cookie(SESSION_COOKIE, token, { ...cookieBase(secure), maxAge });
+    res.cookie(CSRF_COOKIE, csrfTokenFor(token, secret), {
+        ...cookieBase(secure),
+        httpOnly: false,
+        maxAge,
+    });
 }
 
 export function clearSessionCookie(res: Response, secure: boolean) {
-    res.clearCookie(SESSION_COOKIE, cookieBase(secure));
+    const base = cookieBase(secure);
+    res.clearCookie(SESSION_COOKIE, base);
+    res.clearCookie(CSRF_COOKIE, { ...base, httpOnly: false });
 }

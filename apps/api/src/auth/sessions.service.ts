@@ -1,13 +1,18 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { DeviceResponse } from '@ribat/shared';
+import { timingSafeEqual } from 'node:crypto';
+import type { Response } from 'express';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import { PrismaService } from '../prisma/prisma.service';
 import {
     SESSION_YEAR_MS,
     clipUserAgent,
+    clearSessionCookie,
+    csrfTokenFor,
     hashSessionToken,
     newSessionToken,
+    writeSessionCookie,
 } from './session-cookie';
 
 const RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -31,6 +36,21 @@ export class SessionsService {
 
     get secure(): boolean {
         return this.env.NODE_ENV === 'production';
+    }
+
+    writeCookies(res: Response, sessionToken: string): void {
+        writeSessionCookie(res, sessionToken, this.secure, this.env.SESSION_SECRET);
+    }
+
+    clearCookies(res: Response): void {
+        clearSessionCookie(res, this.secure);
+    }
+
+    csrfMatches(sessionToken: string, header: string | undefined): boolean {
+        if (!header) return false;
+        const expected = csrfTokenFor(sessionToken, this.env.SESSION_SECRET);
+        if (header.length !== expected.length) return false;
+        return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
     }
 
     async issue(identityId: string, device: IssuedDevice): Promise<string> {

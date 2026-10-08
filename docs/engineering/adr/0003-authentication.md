@@ -23,7 +23,10 @@ logged out**.
 - Safeguards that make a long session acceptable: a visible device list, "sign out
   everywhere", instant server-side revocation, and a password re-prompt for account and role
   changes.
-- **CSRF** double-submit token on every mutation, since authentication is cookie-based.
+- **CSRF** session-bound double submit: readable `ribat_csrf` cookie equals `x-csrf-token`
+  header, derived as HMAC(`SESSION_SECRET`, `csrf:` + session token). Enforced on
+  `POST`/`PUT`/`PATCH`/`DELETE` only when a session cookie is present; login and setup
+  have no session yet.
 - The platform owner account is seeded from environment variables and stored hashed; the
   secret never enters the repository (decision 3.4).
 - Rate limiting on login and setup-code redemption.

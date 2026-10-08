@@ -8,7 +8,30 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/api-exception.filter';
 import { drainCapturedLogs } from '../src/logging/logging.module';
+import { hashSecret } from '../src/auth/credentials';
+import { CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE } from '../src/auth/session-cookie';
 import { removeTwoOrganizations, twoOrganizations } from './fixtures/organizations';
+
+const E2E_CSRF_PHONE = '+963944000107';
+const E2E_CSRF_PASSWORD = 'longenough';
+
+function parseSetCookies(setCookie: string[] | string | undefined): Record<string, string> {
+  const lines = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+  const out: Record<string, string> = {};
+  for (const line of lines) {
+    const [pair] = line.split(';');
+    const eq = pair.indexOf('=');
+    if (eq === -1) continue;
+    out[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+  return out;
+}
+
+function browserCookieHeader(setCookie: string[] | string | undefined): string {
+  return Object.entries(parseSetCookies(setCookie))
+    .map(([name, value]) => `${name}=${value}`)
+    .join('; ');
+}
 
 const prisma = new PrismaClient();
 
@@ -153,6 +176,81 @@ describe('API (e2e)', () => {
         req: { path: '/api/v1/does-not-exist' },
         res: { statusCode: 404 },
       });
+    });
+  });
+
+  describe('Auth CSRF', () => {
+    let csrfIdentityId: string;
+
+    beforeAll(async () => {
+      const passwordHash = await hashSecret(E2E_CSRF_PASSWORD);
+      const identity = await prisma.identity.create({
+        data: { phone: E2E_CSRF_PHONE, passwordHash },
+      });
+      csrfIdentityId = identity.id;
+    });
+
+    afterAll(async () => {
+      await prisma.authSession.deleteMany({ where: { identityId: csrfIdentityId } });
+      await prisma.identity.deleteMany({ where: { id: csrfIdentityId } });
+    });
+
+    it('login sets ribat_csrf without HttpOnly', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ phone: E2E_CSRF_PHONE, password: E2E_CSRF_PASSWORD })
+        .expect(201);
+
+      const setCookie = login.headers['set-cookie'];
+      const lines = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
+      const csrfLine = lines.find((line) => line.startsWith(`${CSRF_COOKIE}=`));
+      expect(csrfLine).toBeDefined();
+      expect(csrfLine!.toLowerCase()).not.toContain('httponly');
+      expect(parseSetCookies(setCookie)[SESSION_COOKIE]).toBeDefined();
+    });
+
+    it('POST /auth/logout without CSRF header returns 403 and keeps the session', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ phone: E2E_CSRF_PHONE, password: E2E_CSRF_PASSWORD })
+        .expect(201);
+
+      const cookie = browserCookieHeader(login.headers['set-cookie']);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('cookie', cookie)
+        .expect(403)
+        .expect((response) => {
+          expect(response.body.error.code).toBe('CSRF_INVALID');
+        });
+
+      await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('cookie', cookie)
+        .expect(200);
+    });
+
+    it('POST /auth/logout with CSRF header revokes the session', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ phone: E2E_CSRF_PHONE, password: E2E_CSRF_PASSWORD })
+        .expect(201);
+
+      const setCookie = login.headers['set-cookie'];
+      const cookie = browserCookieHeader(setCookie);
+      const csrf = parseSetCookies(setCookie)[CSRF_COOKIE];
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('cookie', cookie)
+        .set(CSRF_HEADER, csrf)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('cookie', cookie)
+        .expect(401);
     });
   });
 

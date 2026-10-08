@@ -74,7 +74,7 @@ After the beta: `points` · `warnings` · `reports` · `announcements` · `activ
 | --- | --- | --- |
 | 1 | `RequestIdMiddleware` | Assigns or accepts `x-request-id`, binds it to the Pino logger |
 | 2 | `SessionGuard` | Resolves the cookie to an `AuthSession`, rejects revoked or expired ones |
-| 3 | `CsrfGuard` | Double-submit token on every mutating request |
+| 3 | `CsrfGuard` | Global `APP_GUARD`: on unsafe methods with a session cookie, `x-csrf-token` must match the session-bound `ribat_csrf` cookie (HMAC of the session token). Runs before route-level `SessionGuard`, so a forged stale cookie gets 403 `CSRF_INVALID` rather than 401 |
 | 4 | `OrgContextGuard` | Loads the membership, sets `{ organizationId, membershipId, role, activeView }` |
 | 5 | `RoleGuard` | `@Roles(...)` plus the `activeView = ADMIN` requirement for staff endpoints (PERM-06) |
 | 6 | Service | Loads resources scoped by `organizationId`, applies contextual checks (PERM-11) |
@@ -162,7 +162,7 @@ Deployment shape: one Docker image (API + built PWA), Postgres, Redis, Caddy for
 | --- | --- |
 | Passwords | argon2id; set through a one-time code, never chosen by an admin |
 | Sessions | httpOnly, `Secure`, `SameSite=Lax`; hashed server-side; one-year rolling expiry with a device list and "sign out everywhere" (OQ-6) |
-| CSRF | Double-submit cookie on every mutation |
+| CSRF | Session-bound double submit (`ribat_csrf` + `x-csrf-token`); unsafe requests without a session cookie are exempt (login, setup, pre-auth endpoints) |
 | Rate limits | `@nestjs/throttler` on login, setup-code redemption and `/sync` |
 | Input | Zod at the boundary, shared with the PWA so offline payloads follow the same rules |
 | Minors' data | No photos, no national ID; consent text states the data is private and never shared (decision 19.2) |

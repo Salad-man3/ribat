@@ -6,7 +6,7 @@ import {
     createParamDecorator,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { clearSessionCookie, readSessionCookie, writeSessionCookie } from './session-cookie';
+import { readSessionCookie } from './session-cookie';
 import { SessionsService, type SessionContext } from './sessions.service';
 
 function signInRequired(): UnauthorizedException {
@@ -26,11 +26,11 @@ export class SessionGuard implements CanActivate {
         const token = readSessionCookie(req.headers.cookie);
         const resolved = await this.sessions.resolve(token);
         if (!resolved || !token) {
-            clearSessionCookie(res, this.sessions.secure);
+            this.sessions.clearCookies(res);
             throw signInRequired();
         }
         req.auth = resolved.ctx;
-        if (resolved.renew) writeSessionCookie(res, token, this.sessions.secure);
+        if (resolved.renew) this.sessions.writeCookies(res, token);
         return true;
     }
 }

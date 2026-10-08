@@ -25,7 +25,6 @@ import { z } from 'zod';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { IdentitiesService } from './identities.service';
 import { CurrentSession, SessionGuard } from './session.guard';
-import { clearSessionCookie, writeSessionCookie } from './session-cookie';
 import { SessionsService, type SessionContext } from './sessions.service';
 
 @Controller('auth')
@@ -46,7 +45,7 @@ export class AuthController {
             deviceLabel: body.deviceLabel,
             userAgent: req.header('user-agent') ?? undefined,
         });
-        writeSessionCookie(res, token, this.sessions.secure);
+        this.sessions.writeCookies(res, token);
         return profile;
     }
 
@@ -61,7 +60,7 @@ export class AuthController {
             deviceLabel: body.deviceLabel,
             userAgent: req.header('user-agent') ?? undefined,
         });
-        writeSessionCookie(res, token, this.sessions.secure);
+        this.sessions.writeCookies(res, token);
         return this.identities.profile(identityId);
     }
 
@@ -79,7 +78,7 @@ export class AuthController {
         @Res({ passthrough: true }) res: Response,
     ) {
         await this.sessions.revoke(session.identityId, session.sessionId, { id: session.sessionId });
-        clearSessionCookie(res, this.sessions.secure);
+        this.sessions.clearCookies(res);
     }
 
     @Get('devices')
@@ -107,6 +106,6 @@ export class AuthController {
             session.sessionId,
             query.all === 'true' ? { all: true } : { id },
         );
-        if (clearCurrent) clearSessionCookie(res, this.sessions.secure);
+        if (clearCurrent) this.sessions.clearCookies(res);
     }
 }
