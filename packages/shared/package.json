@@ -15,7 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --import tsx --test src/members.test.ts",
+    "test": "node --import tsx --test src/members.test.ts src/auth.test.ts src/organization.test.ts src/people.test.ts",
     "fmt": "prettier --check ."
   },
   "dependencies": {
