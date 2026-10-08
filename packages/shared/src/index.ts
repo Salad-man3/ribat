@@ -56,12 +56,14 @@ export {
   PrayerOffsetsSchema,
   SetupOrganizationResponseSchema,
   SetupOrganizationSchema,
+  SetupStatusSchema,
   UpdateOrganizationSchema,
   type OrganizationResponse,
   type PrayerMethod,
   type PrayerOffsets,
   type SetupOrganizationInput,
   type SetupOrganizationResponse,
+  type SetupStatus,
   type UpdateOrganizationInput,
 } from './organization.js';
 export {

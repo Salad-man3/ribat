@@ -503,6 +503,66 @@ describe('API (e2e)', () => {
     });
   });
 
+  describe('Organization setup', () => {
+    it('GET /setup/status reports setup is not required when orgs exist', () => {
+      return request(app.getHttpServer())
+        .get('/api/v1/setup/status')
+        .expect(200)
+        .expect((response) => {
+          expect(response.body.setupRequired).toBe(false);
+        });
+    });
+
+    it('POST /setup/organization returns 409 when setup is already complete', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/setup/organization')
+        .send({
+          name: 'Another Mosque',
+          timezone: 'Asia/Damascus',
+          latitude: 33.5138,
+          longitude: 36.2765,
+          prayerMethod: 'UmmAlQura',
+          locale: 'ar',
+          sheikh: {
+            firstName: 'Omar',
+            fatherName: 'Ali',
+            familyName: 'Hassan',
+            phone: '+963944000199',
+          },
+        })
+        .expect(409)
+        .expect((response) => {
+          expect(response.body.error.code).toBe('CONFLICT');
+        });
+    });
+
+    it('GET /organization requires organization.manage', async () => {
+      const member = await loginAs(prisma, app, demoOrgId, 'MEMBER');
+      try {
+        await request(app.getHttpServer())
+          .get('/api/v1/organization')
+          .set('cookie', member.cookie)
+          .expect(403);
+      } finally {
+        await removeAuthFixtures(prisma, [member.identityId]);
+      }
+    });
+
+    it('GET /organization returns org settings for sheikh', async () => {
+      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH');
+      try {
+        const response = await request(app.getHttpServer())
+          .get('/api/v1/organization')
+          .set('cookie', sheikh.cookie)
+          .expect(200);
+        expect(response.body.id).toBe(demoOrgId);
+        expect(response.body.slug).toBe('e2e-demo-mosque');
+      } finally {
+        await removeAuthFixtures(prisma, [sheikh.identityId]);
+      }
+    });
+  });
+
   describe('Audit', () => {
     let sheikh: AuthenticatedSession;
 

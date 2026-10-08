@@ -75,6 +75,11 @@ export const SetupOrganizationSchema = z.object({
 });
 export type SetupOrganizationInput = z.infer<typeof SetupOrganizationSchema>;
 
+export const SetupStatusSchema = z.object({
+  setupRequired: z.boolean(),
+});
+export type SetupStatus = z.infer<typeof SetupStatusSchema>;
+
 /** The only organization response that contains a secret. Do not log it. */
 export const SetupOrganizationResponseSchema = z.object({
   organizationId: uuid,
