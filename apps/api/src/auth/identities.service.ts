@@ -24,6 +24,12 @@ function invalidSetup(): UnauthorizedException {
     });
 }
 
+function invalidLogin(): UnauthorizedException {
+    return new UnauthorizedException({
+        error: { code: 'UNAUTHORIZED', message: 'Invalid phone or password' },
+    });
+}
+
 function disabledAccount(): ConflictException {
     return new ConflictException({
         error: { code: 'CONFLICT', message: 'Account is disabled' },
@@ -102,13 +108,14 @@ export class IdentitiesService {
         }
 
         if (!matchedId) throw invalidSetup();
+        const claimedId = matchedId;
 
         const passwordHash = await hashSecret(input.password);
         const now = new Date();
 
         await this.prisma.platform.$transaction(async (tx) => {
             const claimed = await tx.accountSetupCode.updateMany({
-                where: { id: matchedId, usedAt: null, expiresAt: { gt: now } },
+                where: { id: claimedId, usedAt: null, expiresAt: { gt: now } },
                 data: { usedAt: now },
             });
             if (claimed.count !== 1) throw invalidSetup();
@@ -120,14 +127,32 @@ export class IdentitiesService {
 
             const passwordSet = await tx.identity.updateMany({
                 where: { id: identity.id, status: 'ACTIVE' },
-                data: { passwordHash },
+                data: { passwordHash, lastLoginAt: now },
             });
             if (passwordSet.count !== 1) throw invalidSetup();
 
-            // T106: revoke AuthSession rows for this identity here.
+            await tx.authSession.updateMany({
+                where: { identityId: identity.id, revokedAt: null },
+                data: { revokedAt: now },
+            });
         });
 
-        return this.sessionResponse(identity.id);
+        return this.profile(identity.id);
+    }
+
+    async authenticate(phone: string, password: string): Promise<string> {
+        const identity = await this.prisma.platform.identity.findUnique({
+            where: { phone },
+            select: { id: true },
+        });
+        const ok = await this.passwordMatches(identity?.id ?? '00000000-0000-0000-0000-000000000000', password);
+        if (!identity || !ok) throw invalidLogin();
+
+        await this.prisma.platform.identity.update({
+            where: { id: identity.id },
+            data: { lastLoginAt: new Date() },
+        });
+        return identity.id;
     }
 
     async passwordMatches(identityId: string, password: string): Promise<boolean> {
@@ -143,26 +168,7 @@ export class IdentitiesService {
         return verifySecret(hash, password);
     }
 
-    private toEnsured(identity: {
-        id: string;
-        phone: string;
-        status: 'ACTIVE' | 'DISABLED';
-        passwordHash: string | null;
-    }): EnsuredIdentity {
-        if (identity.status === 'DISABLED') throw disabledAccount();
-        return {
-            id: identity.id,
-            phone: identity.phone,
-            hasPassword: identity.passwordHash !== null,
-        };
-    }
-
-    private async pad(): Promise<string> {
-        this.dummyHash ??= await hashSecret('timing-pad');
-        return this.dummyHash;
-    }
-
-    private async sessionResponse(identityId: string): Promise<LoginResponse> {
+    async profile(identityId: string): Promise<LoginResponse> {
         const identity = await this.prisma.platform.identity.findUniqueOrThrow({
             where: { id: identityId },
             select: { id: true, phone: true, platformRole: true, status: true },
@@ -188,5 +194,24 @@ export class IdentitiesService {
             activeView: null,
             permissions: [],
         };
+    }
+
+    private toEnsured(identity: {
+        id: string;
+        phone: string;
+        status: 'ACTIVE' | 'DISABLED';
+        passwordHash: string | null;
+    }): EnsuredIdentity {
+        if (identity.status === 'DISABLED') throw disabledAccount();
+        return {
+            id: identity.id,
+            phone: identity.phone,
+            hasPassword: identity.passwordHash !== null,
+        };
+    }
+
+    private async pad(): Promise<string> {
+        this.dummyHash ??= await hashSecret('timing-pad');
+        return this.dummyHash;
     }
 }
