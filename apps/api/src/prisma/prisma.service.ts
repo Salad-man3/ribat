@@ -1,13 +1,24 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { organizationScopeExtension } from './organization-scope';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
+  private readonly client = new PrismaClient();
+
   async onModuleInit() {
-    await this.$connect();
+    await this.client.$connect();
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    await this.client.$disconnect();
+  }
+
+  get $queryRaw() {
+    return this.client.$queryRaw.bind(this.client);
+  }
+
+  forOrganization(organizationId: string) {
+    return this.client.$extends(organizationScopeExtension(organizationId));
   }
 }

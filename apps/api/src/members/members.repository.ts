@@ -8,7 +8,7 @@ export class MembersRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     create(organizationId: string, input: CreateMemberInput): Promise<Member> {
-        return this.prisma.member.create({
+        return this.prisma.forOrganization(organizationId).member.create({
             data: {
                 organizationId,
                 firstName: input.firstName,
@@ -28,14 +28,13 @@ export class MembersRepository {
     }
 
     findById(organizationId: string, id: string): Promise<Member | null> {
-        return this.prisma.member.findFirst({
-            where: { id, organizationId },
+        return this.prisma.forOrganization(organizationId).member.findFirst({
+            where: { id },
         });
     }
 
     list(organizationId: string, query: ListMembersQuery): Promise<Member[]> {
         const where: Prisma.MemberWhereInput = {
-            organizationId,
             status: query.status,
         };
 
@@ -47,7 +46,7 @@ export class MembersRepository {
             ];
         }
 
-        return this.prisma.member.findMany({
+        return this.prisma.forOrganization(organizationId).member.findMany({
             where,
             orderBy: [{ familyName: 'asc' }, { firstName: 'asc' }],
             take: query.limit,
@@ -61,8 +60,8 @@ export class MembersRepository {
     }
 
     update(organizationId: string, id: string, input: UpdateMemberInput): Promise<Member | null> {
-        return this.prisma.member.updateMany({
-            where: { id, organizationId, status: 'ACTIVE' },
+        return this.prisma.forOrganization(organizationId).member.updateMany({
+            where: { id, status: 'ACTIVE' },
             data: {
                 firstName: input.firstName,
                 fatherName: input.fatherName,
@@ -86,8 +85,8 @@ export class MembersRepository {
     }
 
     archive(organizationId: string, id: string): Promise<Member | null> {
-        return this.prisma.member.updateMany({
-            where: { id, organizationId, status: 'ACTIVE' },
+        return this.prisma.forOrganization(organizationId).member.updateMany({
+            where: { id, status: 'ACTIVE' },
             data: {
                 status: 'ARCHIVED',
                 archivedAt: new Date(),
