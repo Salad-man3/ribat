@@ -1,11 +1,58 @@
 {
   "appName": "Ribat",
   "tagline": "Mosque education operations platform",
-  "healthLive": "API live check",
-  "healthReady": "API ready check",
-  "statusOk": "OK",
-  "statusError": "Error",
   "switchToArabic": "العربية",
   "switchToEnglish": "English",
-  "loading": "Checking…"
+  "nav": {
+    "staff": "Staff console",
+    "members": "Members",
+    "devices": "Devices",
+    "member": "My portal",
+    "guardian": "Family portal"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "setupTitle": "Choose your password",
+    "phone": "Phone number",
+    "password": "Password",
+    "setupCode": "Setup code",
+    "signIn": "Sign in",
+    "createPassword": "Save password",
+    "loginFailed": "Invalid phone or password",
+    "setupFailed": "Invalid phone or setup code",
+    "haveSetupCode": "I have a setup code",
+    "backToLogin": "Back to sign in"
+  },
+  "setup": {
+    "title": "First-run mosque setup",
+    "mosqueName": "Mosque name",
+    "sheikhPhone": "Sheikh phone (+963…)",
+    "submit": "Create mosque",
+    "codeTitle": "Save this setup code",
+    "codeHint": "Show it once to the sheikh, then continue with password setup."
+  },
+  "staff": {
+    "homeTitle": "Staff console",
+    "activeView": "Active view",
+    "switchToMember": "Switch to member view",
+    "switchToAdmin": "Switch to admin view"
+  },
+  "member": { "homeTitle": "Member portal" },
+  "guardian": { "homeTitle": "Your children" },
+  "members": {
+    "title": "Members",
+    "createTitle": "Add member",
+    "create": "Create member",
+    "firstName": "First name",
+    "fatherName": "Father name",
+    "familyName": "Family name",
+    "status": "Status",
+    "phone": "Phone",
+    "notes": "Notes"
+  },
+  "devices": {
+    "title": "Signed-in devices",
+    "current": "this device",
+    "signOutEverywhere": "Sign out everywhere"
+  }
 }

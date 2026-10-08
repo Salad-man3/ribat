@@ -1,11 +1,58 @@
 {
   "appName": "رباط",
   "tagline": "منصة عمليات التعليم في المسجد",
-  "healthLive": "فحص حالة الخادم",
-  "healthReady": "فحص جاهزية الخادم",
-  "statusOk": "يعمل",
-  "statusError": "خطأ",
   "switchToArabic": "العربية",
   "switchToEnglish": "English",
-  "loading": "جاري التحقق…"
+  "nav": {
+    "staff": "لوحة الإدارة",
+    "members": "الأعضاء",
+    "devices": "الأجهزة",
+    "member": "بوابتي",
+    "guardian": "بوابة العائلة"
+  },
+  "auth": {
+    "loginTitle": "تسجيل الدخول",
+    "setupTitle": "اختر كلمة المرور",
+    "phone": "رقم الهاتف",
+    "password": "كلمة المرور",
+    "setupCode": "رمز التفعيل",
+    "signIn": "دخول",
+    "createPassword": "حفظ كلمة المرور",
+    "loginFailed": "رقم أو كلمة مرور غير صحيحة",
+    "setupFailed": "رقم أو رمز غير صحيح",
+    "haveSetupCode": "لدي رمز تفعيل",
+    "backToLogin": "العودة لتسجيل الدخول"
+  },
+  "setup": {
+    "title": "إعداد المسجد لأول مرة",
+    "mosqueName": "اسم المسجد",
+    "sheikhPhone": "هاتف الشيخ (+963…)",
+    "submit": "إنشاء المسجد",
+    "codeTitle": "احفظ رمز التفعيل",
+    "codeHint": "يعرض مرة واحدة للشيخ ثم يكمل إعداد كلمة المرور."
+  },
+  "staff": {
+    "homeTitle": "لوحة الإدارة",
+    "activeView": "العرض الحالي",
+    "switchToMember": "التبديل لعرض العضو",
+    "switchToAdmin": "التبديل لعرض الإدارة"
+  },
+  "member": { "homeTitle": "بوابة العضو" },
+  "guardian": { "homeTitle": "أبناؤك" },
+  "members": {
+    "title": "الأعضاء",
+    "createTitle": "إضافة عضو",
+    "create": "إنشاء العضو",
+    "firstName": "الاسم",
+    "fatherName": "اسم الأب",
+    "familyName": "العائلة",
+    "status": "الحالة",
+    "phone": "الهاتف",
+    "notes": "ملاحظات"
+  },
+  "devices": {
+    "title": "الأجهزة المسجلة",
+    "current": "هذا الجهاز",
+    "signOutEverywhere": "تسجيل الخروج من كل الأجهزة"
+  }
 }
