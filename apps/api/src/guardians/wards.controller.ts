@@ -14,6 +14,6 @@ export class WardsController {
         error: { code: 'FORBIDDEN', message: 'Forbidden' },
       });
     }
-    return this.guardians.listWards(org.organizationId, org.memberId);
+    return this.guardians.listWards(org);
   }
 }

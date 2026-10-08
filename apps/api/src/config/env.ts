@@ -9,6 +9,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  SERVE_WEB: z.coerce.boolean().default(false),
+  WEB_DIST_PATH: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
