@@ -14,3 +14,5 @@ apps/api/.env
 .cursor
 docs/internal
 .vscode
+.claude
+.playwright-mcp
