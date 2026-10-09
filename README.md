@@ -94,7 +94,7 @@ flowchart TD
 
 ## Quick start
 
-**Prerequisites:** Node 20+, pnpm 12, Docker.
+**Prerequisites:** Node 22+, pnpm 12, Docker.
 
 ```bash
 pnpm install
