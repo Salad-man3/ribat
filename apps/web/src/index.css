@@ -1,6 +1,34 @@
 @import 'tailwindcss';
 
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  /* Islamic green: deep emerald chrome (sidebar, sign-in), light green-tinted
+     paper for the work itself, gold only for the emblem and active marks. */
+  --color-paper: #f1f6f2;
+  --color-surface: #ffffff;
+  --color-ink: #0f2a1e;
+  --color-muted: #51665b;
+  --color-line: #d3e2d8;
+  --color-accent: #0b6e3d;
+  --color-accent-strong: #08532e;
+  --color-accent-soft: #dff0e6;
+  --color-chrome: #0a4a2b;
+  --color-chrome-deep: #063820;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #b9d6c4;
+  --color-gold: #d4a94a;
+  --color-danger: #a1392a;
+  --color-danger-soft: #f7e6e2;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
