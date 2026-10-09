@@ -1,3 +1,4 @@
+process.env.JOBS_WORKER = 'off';
 import 'dotenv/config';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';

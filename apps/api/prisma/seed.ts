@@ -26,11 +26,14 @@ async function seedOrg(params: {
       name: params.name,
       slug: params.slug,
       timezone: 'Asia/Damascus',
-      latitude: 33.5138,
-      longitude: 36.2765,
-      prayerMethod: 'UmmAlQura',
+      latitude: 33.5131,
+      longitude: 36.3096,
+      prayerMethod: 'MuslimWorldLeague',
       settings: { locale: 'ar', pointsEnabled: false },
     },
+  });
+  const quran = await prisma.material.create({
+    data: { organizationId: org.id, kind: 'QURAN', title: 'القرآن الكريم', totalPages: 604 },
   });
 
   const passwordHash = await hashSecret(DEMO_PASSWORD);
@@ -103,6 +106,46 @@ async function seedOrg(params: {
     });
   }
 
+  // S2 demo: the member Tariq leads a Quran circle that the ward Layla attends,
+  // Sunday / Tuesday / Thursday from Asr to Maghrib. The worker generates sessions on boot.
+  const teacherId = memberByPhone.get('+963999001030');
+  if (teacherId && wardId) {
+    const course = await prisma.course.create({
+      data: {
+        organizationId: org.id,
+        name: 'حلقة تحفيظ العصر',
+        description: 'Fictional demo course.',
+        type: 'MEMORIZATION',
+        status: 'ACTIVE',
+        startDate: new Date('2026-09-01'),
+        location: 'Main hall',
+        minAge: 7,
+        maxAge: 16,
+      },
+    });
+    await prisma.courseMaterial.create({
+      data: { organizationId: org.id, courseId: course.id, materialId: quran.id, track: 'MEMORIZATION' },
+    });
+    await prisma.teachingAssignment.create({
+      data: { organizationId: org.id, courseId: course.id, teacherMemberId: teacherId, role: 'LEAD' },
+    });
+    await prisma.enrollment.create({
+      data: { organizationId: org.id, courseId: course.id, memberId: wardId, startedAt: new Date('2026-09-01') },
+    });
+    await prisma.courseSchedule.createMany({
+      data: [0, 2, 4].map((weekday) => ({
+        organizationId: org.id,
+        courseId: course.id,
+        weekday,
+        startAnchor: 'PRAYER' as const,
+        startPrayer: 'ASR' as const,
+        endAnchor: 'PRAYER' as const,
+        endPrayer: 'MAGHRIB' as const,
+        effectiveFrom: new Date('2026-09-01'),
+      })),
+    });
+  }
+
   return { org, accounts: params.accounts };
 }
 
@@ -112,6 +155,15 @@ async function main() {
   }
 
   await prisma.auditLog.deleteMany({});
+  await prisma.groupMember.deleteMany({});
+  await prisma.courseGroup.deleteMany({});
+  await prisma.courseSession.deleteMany({});
+  await prisma.courseSchedule.deleteMany({});
+  await prisma.coursePause.deleteMany({});
+  await prisma.enrollment.deleteMany({});
+  await prisma.teachingAssignment.deleteMany({});
+  await prisma.courseRequirement.deleteMany({});
+  await prisma.courseMaterial.deleteMany({});
   await prisma.guardianLink.deleteMany({});
   await prisma.memberNote.deleteMany({});
   await prisma.accountSetupCode.deleteMany({});
@@ -119,6 +171,8 @@ async function main() {
   await prisma.membership.deleteMany({});
   await prisma.member.deleteMany({});
   await prisma.household.deleteMany({});
+  await prisma.course.deleteMany({});
+  await prisma.material.deleteMany({});
   await prisma.organization.deleteMany({
     where: { slug: { in: ['demo-mosque', 'isolation-test-mosque'] } },
   });

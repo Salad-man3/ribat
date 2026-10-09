@@ -8,12 +8,15 @@ import type {
 } from '@ribat/shared';
 import { AuditService } from '../audit/audit.service';
 import { IdentitiesService } from '../auth/identities.service';
+import { SessionsQueue } from '../jobs/sessions-queue';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   mergeUpdateData,
   settingsFromSetup,
   toOrganizationResponse,
 } from './organization.mapper';
+
+export const QURAN_TITLE = 'القرآن الكريم';
 
 function slugifyName(name: string): string {
   const base = name
@@ -31,6 +34,7 @@ export class OrganizationsService {
     private readonly prisma: PrismaService,
     private readonly identities: IdentitiesService,
     private readonly audit: AuditService,
+    private readonly sessions: SessionsQueue,
   ) {}
 
   async setupStatus(): Promise<SetupStatus> {
@@ -59,8 +63,13 @@ export class OrganizationsService {
           latitude: input.latitude,
           longitude: input.longitude,
           prayerMethod: input.prayerMethod,
+          prayerOffsets: input.prayerOffsets ?? {},
           settings,
         },
+      });
+
+      await tx.material.create({
+        data: { organizationId: organization.id, kind: 'QURAN', title: QURAN_TITLE, totalPages: 604 },
       });
 
       const identity = await this.identities.ensureIdentity(input.sheikh.phone);
@@ -109,6 +118,8 @@ export class OrganizationsService {
       },
     );
 
+    await this.sessions.scheduleNightly(created.organization);
+
     return {
       organizationId: created.organization.id,
       sheikhMemberId: created.member.id,
@@ -135,6 +146,14 @@ export class OrganizationsService {
       where: { id: organizationId },
       data: mergeUpdateData(input, current),
     });
+    // Prayer-anchored sessions move when any of these change; regenerate the next four weeks.
+    const timesChanged = (['timezone', 'latitude', 'longitude', 'prayerMethod', 'prayerOffsets'] as const).some(
+      (key) => input[key] !== undefined,
+    );
+    if (timesChanged) await this.sessions.generateOrganization(organizationId);
+    if (input.timezone !== undefined && input.timezone !== current.timezone) {
+      await this.sessions.scheduleNightly(org);
+    }
     return toOrganizationResponse(org);
   }
 

@@ -32,6 +32,8 @@ export const S1PermissionSchema = z.enum([
     'notes.write',
     'notes.read_all',
     'audit.read',
+    'courses.manage',
+    'materials.manage',
 ]);
 export type S1Permission = z.infer<typeof S1PermissionSchema>;
 

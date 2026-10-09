@@ -221,15 +221,15 @@ build.
 
 | # | Question | Blocks | My recommendation |
 | --- | --- | --- | --- |
-| **OQ-1** | **Course lifecycle** (4.5 was unanswered): what happens when a course finishes? | S2 | Draft → active → paused → finished → archived. Finished means read-only, history stays on the member card. No certificates. |
+| **OQ-1** | **Course lifecycle** (4.5 was unanswered): what happens when a course finishes? | S2 | **Decided 2026-10-08:** Draft → active → paused → finished → archived. Finished means read-only, history stays on the member card. No certificates. |
 | **OQ-2** | **Activity attendance conflict:** 8.7 says activities have attendance, 13.4 says they don't. | S6 only | Follow 13.4: no attendance, points or capacity for activities. Revisit when activities are built. |
-| **OQ-3** | **Material CRUD conflict:** 0.2 includes teachers, 7.5 says sheikh and admin only. | S2 | Sheikh and admin create and edit materials. A course's lead teacher may add a material to their own course; other teachers cannot. |
+| **OQ-3** | **Material CRUD conflict:** 0.2 includes teachers, 7.5 says sheikh and admin only. | S2 | **Decided 2026-10-08:** the sheikh, org admins, and any teacher of the course may create and edit materials (teachers only through their own courses). |
 | **OQ-4** | **Who writes what** (20.7 skipped). This one matters for G1: you must be able to explain the core in interviews. | Now | You hand-write auth, permissions, tenant scoping, the sync endpoint and the memorization model. I do scaffolding, frontend, tests and review. |
 | **OQ-5** | **Hosting:** which provider can you actually pay for, what is the monthly budget, and do you own a domain? | **S1 deploy** | Decide before the end of S1. If a card works, AWS Lightsail or a small EC2 + RDS gives the CV keyword; otherwise a VPS with Docker Compose. |
 | **OQ-6** | **"Never log out" (3.6)** — how to keep that safe on a lost or borrowed phone. | S1 | A one-year rolling session, revocable server-side, with a device list and "sign out everywhere"; require the password again for account and role changes. |
 | **OQ-7** | **Leaderboard period** (11.5, "periods per course"): does each course choose weekly / monthly / all-time, with no reset? | S5 | Yes — a per-course setting, all-time by default, never reset. |
 | **OQ-8** | **Report card contents** (15.3): which numbers appear on the manually generated page? | S5 | Attendance %, memorization in the period, test results, homework completion, teacher comment. |
-| **OQ-9** | **Prayer-time source** for prayer-anchored class times: computed from coordinates, or entered per mosque? | S2 | Computed with the `adhan` library from the mosque's coordinates and method, with a manual per-prayer offset — the same approach as your `masjid-prayer-widget`. |
+| **OQ-9** | **Prayer-time source** for prayer-anchored class times: computed from coordinates, or entered per mosque? | S2 | **Decided 2026-10-08:** the org creator types the city; it is geocoded (OpenStreetMap Nominatim) and today's times are shown from the Aladhan API as a reference. The creator accepts or edits each time; edits are stored as per-prayer offsets. Session generation computes times locally with the `adhan` library, so no external call happens at run time. There is no official Syrian Awqaf API. |
 | **OQ-10** | **Multi-mosque identity** (2.10): one login that switches mosque, or a separate account per mosque? | S6 | One identity, one membership per mosque, an explicit switcher. The schema already supports it; the UI comes later. |
 
 **OQ-4 and OQ-5 need answers this week.** The rest can wait for their slice.

@@ -4,55 +4,401 @@
   "switchToArabic": "العربية",
   "switchToEnglish": "English",
   "nav": {
-    "staff": "Staff console",
+    "staff": "Overview",
     "members": "Members",
+    "roles": "Roles & access",
+    "audit": "Audit log",
+    "organization": "Mosque settings",
     "devices": "Devices",
     "member": "My portal",
-    "guardian": "Family portal"
+    "guardian": "Family portal",
+    "courses": "Courses",
+    "materials": "Materials"
+  },
+  "shell": {
+    "switchToMember": "Switch to member view",
+    "switchToAdmin": "Switch to admin view",
+    "memberViewShort": "Member view",
+    "adminViewShort": "Admin view",
+    "signOut": "Sign out"
   },
   "auth": {
     "loginTitle": "Sign in",
     "setupTitle": "Choose your password",
+    "setupHint": "Enter the phone number and the 8-character code your mosque gave you.",
     "phone": "Phone number",
     "password": "Password",
+    "newPassword": "New password (8+ characters)",
     "setupCode": "Setup code",
     "signIn": "Sign in",
     "createPassword": "Save password",
-    "loginFailed": "Invalid phone or password",
-    "setupFailed": "Invalid phone or setup code",
     "haveSetupCode": "I have a setup code",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "demoTitle": "Demo logins",
+    "demoHint": "Fictional accounts. Each one sees a different slice of the same mosque.",
+    "demoOtherOrg": "Sheikh, other mosque"
   },
   "setup": {
     "title": "First-run mosque setup",
     "mosqueName": "Mosque name",
+    "sheikh": "Sheikh",
     "sheikhPhone": "Sheikh phone (+963…)",
     "submit": "Create mosque",
     "codeTitle": "Save this setup code",
-    "codeHint": "Show it once to the sheikh, then continue with password setup."
+    "codeHint": "Give it to the sheikh once. They use it to choose a password.",
+    "continue": "Continue to password setup"
   },
   "staff": {
-    "homeTitle": "Staff console",
-    "activeView": "Active view",
-    "switchToMember": "Switch to member view",
-    "switchToAdmin": "Switch to admin view"
+    "homeTitle": "Overview",
+    "activeMembers": "Active members",
+    "membersHint": "Add students, record guardians, siblings and notes.",
+    "rolesHint": "Who can sign in, and with which role.",
+    "auditHint": "Every change, who made it and when.",
+    "organizationHint": "Name, language and prayer-time settings.",
+    "coursesHint": "Courses, teachers, students, groups and the weekly schedule.",
+    "materialsHint": "The texts and books your courses teach."
   },
-  "member": { "homeTitle": "Member portal" },
-  "guardian": { "homeTitle": "Your children" },
+  "member": {
+    "homeTitle": "My portal",
+    "account": "My account",
+    "comingSoon": "Courses, attendance and progress arrive in the next release.",
+    "teaching": "Courses I teach"
+  },
+  "guardian": {
+    "homeTitle": "Your children",
+    "empty": "No children are linked to your account yet. Ask the mosque office."
+  },
   "members": {
     "title": "Members",
+    "subtitle": "Students and families of this mosque",
     "createTitle": "Add member",
     "create": "Create member",
+    "editTitle": "Edit member",
+    "search": "Search by name or phone",
+    "empty": "No members match.",
+    "noPhone": "no phone",
+    "archive": "Archive",
+    "confirmArchive": "Yes, archive",
     "firstName": "First name",
     "fatherName": "Father name",
     "familyName": "Family name",
-    "status": "Status",
+    "motherName": "Mother name",
+    "birthDate": "Birth date",
+    "joinedAt": "Joined",
     "phone": "Phone",
-    "notes": "Notes"
+    "address": "Address",
+    "schoolGrade": "School grade",
+    "schoolName": "School",
+    "notes": "Notes",
+    "statusValue": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived"
+    }
+  },
+  "guardians": {
+    "title": "Guardians",
+    "empty": "No guardians recorded.",
+    "add": "Add guardian",
+    "primary": "Primary",
+    "relation": {
+      "FATHER": "Father",
+      "MOTHER": "Mother",
+      "OTHER": "Other"
+    },
+    "mode": {
+      "existing": "Existing member",
+      "new": "New person"
+    }
+  },
+  "household": {
+    "title": "Siblings",
+    "empty": "No siblings linked.",
+    "link": "Link sibling"
+  },
+  "notes": {
+    "title": "Private notes",
+    "empty": "No notes yet.",
+    "placeholder": "Write a note…",
+    "add": "Add note",
+    "visibility": {
+      "SHEIKH_ONLY": "Sheikh only",
+      "STAFF": "All staff"
+    }
+  },
+  "access": {
+    "title": "App access",
+    "hasAccess": "Can sign in as",
+    "noAccess": "This member cannot sign in yet.",
+    "needsPhone": "Add a phone number first to give this member access.",
+    "codeHint": "Give this code to the member once. It is not shown again.",
+    "expires": "Expires",
+    "yourPassword": "Your password (to confirm)",
+    "resetCode": "Issue a new setup code",
+    "grant": "Grant access"
+  },
+  "roles": {
+    "title": "Roles & access",
+    "subtitle": "Everyone who can sign in to this mosque",
+    "label": "Role",
+    "status": "Status",
+    "passwordHint": "Role changes need your password. Enter it once, then change rows below.",
+    "grantHint": "To give someone access, open their member page.",
+    "SHEIKH": "Sheikh",
+    "ORG_ADMIN": "Admin",
+    "MEMBER": "Member",
+    "GUARDIAN": "Guardian",
+    "statusValue": {
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended"
+    }
+  },
+  "organization": {
+    "title": "Mosque settings",
+    "general": "General",
+    "name": "Mosque name",
+    "locale": "Default language",
+    "pointsEnabled": "Enable points",
+    "prayer": "Prayer times",
+    "timezone": "Time zone",
+    "prayerMethod": "Calculation method",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "offsets": "Offsets (minutes)",
+    "offsetsHint": "Shift a calculated time to match the mosque's own schedule.",
+    "prayers": {
+      "fajr": "Fajr",
+      "sunrise": "Sunrise",
+      "dhuhr": "Dhuhr",
+      "asr": "Asr",
+      "maghrib": "Maghrib",
+      "isha": "Isha"
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Newest first. Open a row to see what changed.",
+    "empty": "Nothing recorded yet.",
+    "loadMore": "Load more"
   },
   "devices": {
     "title": "Signed-in devices",
+    "subtitle": "Sign out a phone you no longer use.",
     "current": "this device",
+    "lastSeen": "Last seen",
+    "revoke": "Sign out",
     "signOutEverywhere": "Sign out everywhere"
+  },
+  "notFound": {
+    "title": "Not found",
+    "body": "This page does not exist, or it belongs to another mosque.",
+    "home": "Back to home"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Saved",
+    "edit": "Edit",
+    "remove": "Remove",
+    "choose": "Choose…"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Some fields are not valid.",
+    "UNAUTHORIZED": "Wrong phone, password or code.",
+    "FORBIDDEN": "You are not allowed to do this.",
+    "CSRF_INVALID": "Your session expired. Reload the page.",
+    "NOT_FOUND": "Not found.",
+    "CONFLICT": "This conflicts with existing data.",
+    "RATE_LIMITED": "Too many attempts. Wait a minute and try again.",
+    "INTERNAL_ERROR": "Something went wrong. Try again.",
+    "UNAVAILABLE": "An outside service did not answer. Try again in a minute."
+  },
+  "prayer": {
+    "city": "City",
+    "cityPlaceholder": "Damascus",
+    "country": "Country",
+    "countryPlaceholder": "Syria",
+    "lookup": "Look up prayer times",
+    "sourceNote": "today's times from Aladhan",
+    "editHint": "These are today's times. Correct any that differ from your mosque's adhan; Ribat keeps the difference for every day.",
+    "calculated": "calculated",
+    "orgHint": "Classes can start at a prayer. Look up your city, then fix any time that differs from your mosque.",
+    "setupHint": "Type your city to fetch today's prayer times. You can correct them.",
+    "advanced": "Advanced: coordinates and method",
+    "methods": {
+      "MuslimWorldLeague": "Muslim World League",
+      "Egyptian": "Egyptian General Authority",
+      "Karachi": "University of Islamic Sciences, Karachi",
+      "UmmAlQura": "Umm al-Qura, Makkah",
+      "Dubai": "Dubai",
+      "MoonsightingCommittee": "Moonsighting Committee",
+      "NorthAmerica": "ISNA (North America)",
+      "Kuwait": "Kuwait",
+      "Qatar": "Qatar",
+      "Singapore": "Singapore",
+      "Tehran": "University of Tehran",
+      "Turkey": "Diyanet (Turkey)"
+    }
+  },
+  "courses": {
+    "title": "Courses",
+    "subtitle": "Halaqas and classes of this mosque",
+    "current": "Current",
+    "empty": "No courses here yet.",
+    "create": "New course",
+    "createHint": "New courses start as drafts. Add teachers, students and a schedule, then make it active.",
+    "name": "Name",
+    "typeLabel": "Type",
+    "location": "Location",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "minAge": "Min age",
+    "maxAge": "Max age",
+    "capacity": "Capacity",
+    "testPassMark": "Test pass mark",
+    "description": "Description",
+    "readOnly": "This course is finished. It stays as history and can no longer be changed.",
+    "overview": "Overview",
+    "lifecycle": "Move to",
+    "confirmMove": "Yes, make it {{status}}",
+    "hierarchical": "Several teachers",
+    "hierarchicalHint": "Off: one lead teaches everyone.",
+    "groupsToggle": "Groups",
+    "groupsHint": "Split students between teachers, optionally per material.",
+    "editDetails": "Edit details",
+    "status": {
+      "DRAFT": "Draft",
+      "ACTIVE": "Active",
+      "PAUSED": "Paused",
+      "FINISHED": "Finished",
+      "ARCHIVED": "Archived"
+    },
+    "type": {
+      "MEMORIZATION": "Memorization",
+      "EXPLANATION": "Explanation",
+      "BOTH": "Memorization and explanation"
+    }
+  },
+  "materials": {
+    "title": "Materials",
+    "subtitle": "The mosque's catalogue of texts and books",
+    "create": "New material",
+    "courseTitle": "Materials",
+    "courseEmpty": "No materials on this course.",
+    "pages": "{{count}} pages",
+    "mode": {
+      "existing": "From the catalogue",
+      "new": "New material"
+    },
+    "titleLabel": "Title",
+    "author": "Author",
+    "totalPages": "Pages",
+    "url": "Link",
+    "kind": {
+      "QURAN": "Quran",
+      "TEXT": "Text (matn)",
+      "BOOK": "Book"
+    },
+    "track": {
+      "MEMORIZATION": "Memorization",
+      "EXPLANATION": "Explanation"
+    },
+    "add": "Add material",
+    "archive": "Archive"
+  },
+  "teachers": {
+    "title": "Teachers",
+    "empty": "No teacher yet.",
+    "role": {
+      "LEAD": "Lead",
+      "TEACHER": "Teacher"
+    },
+    "makeLead": "Make lead",
+    "past": "Former teachers",
+    "oneOnly": "Turn on \"several teachers\" to add another.",
+    "add": "Add teacher"
+  },
+  "students": {
+    "title": "Students",
+    "empty": "No students enrolled.",
+    "withdraw": "Withdraw",
+    "status": {
+      "ACTIVE": "active",
+      "WITHDRAWN": "withdrawn",
+      "COMPLETED": "completed"
+    },
+    "enrolledWithWarnings": "{{name}} is enrolled. Please check:",
+    "warning": {
+      "MIN_AGE": "Too young",
+      "MAX_AGE": "Too old",
+      "COMPLETED_COURSE": "Missing course",
+      "MANUAL": "Check by hand",
+      "CAPACITY": "Course full"
+    },
+    "enroll": "Enroll"
+  },
+  "requirements": {
+    "title": "Requirements (warnings only)",
+    "none": "None",
+    "MIN_AGE": "At least {{years}} years old",
+    "MAX_AGE": "At most {{years}} years old",
+    "COMPLETED_COURSE": "Completed {{name}}",
+    "type": {
+      "MIN_AGE": "Minimum age",
+      "MAX_AGE": "Maximum age",
+      "COMPLETED_COURSE": "Completed course",
+      "MANUAL": "Other condition"
+    },
+    "manualPlaceholder": "e.g. interview with the sheikh",
+    "years": "Years",
+    "add": "Add"
+  },
+  "groups": {
+    "title": "Groups",
+    "empty": "No groups yet.",
+    "allMaterials": "All materials",
+    "noStudents": "No students yet",
+    "addStudent": "Add student",
+    "name": "Group name",
+    "teacher": "Teacher",
+    "create": "Create group"
+  },
+  "sessions": {
+    "title": "Next four weeks",
+    "refresh": "Refresh",
+    "onlyActive": "Sessions are generated while the course is active.",
+    "empty": "No sessions yet."
+  },
+  "schedule": {
+    "title": "Weekly schedule",
+    "hint": "Each row is a weekday. Start and end at a fixed time or at a prayer, with minutes after it.",
+    "empty": "No class days yet.",
+    "anchor": "Starts at",
+    "fixed": "Fixed time",
+    "time": "Time",
+    "offset": "Minutes after the adhan",
+    "todayAt": "today at",
+    "weekday": "Day",
+    "weekdays": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "from": "From",
+    "to": "To",
+    "addDay": "Add day",
+    "save": "Save schedule"
+  },
+  "pauses": {
+    "title": "Holidays and pauses",
+    "hint": "No sessions and no absences inside a pause.",
+    "empty": "No pauses.",
+    "from": "From",
+    "to": "To",
+    "reason": "Reason (optional)",
+    "add": "Add pause"
   }
 }

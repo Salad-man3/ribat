@@ -25,12 +25,15 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      args:
+        VITE_DEMO: ${VITE_DEMO:-false}
     environment:
       DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
       REDIS_URL: redis://redis:6379
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
       SERVE_WEB: 'true'
       PORT: '3000'
+      JOBS_WORKER: 'off'
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,6 +41,22 @@ services:
         condition: service_healthy
     ports:
       - '3000:3000'
+
+  # Same image, no HTTP: consumes the BullMQ `sessions` queue (ADR-0006).
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
+      JOBS_WORKER: 'only'
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
   caddy:
     image: caddy:2-alpine

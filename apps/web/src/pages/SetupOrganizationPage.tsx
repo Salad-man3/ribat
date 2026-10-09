@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Navigate } from 'react-router';
-import type { SetupOrganizationInput } from '@ribat/shared';
+import { Link, Navigate } from 'react-router';
+import type {
+  SetupOrganizationInput,
+  SetupOrganizationResponse,
+} from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
+import { PrayerTimesEditor } from '../components/PrayerTimesEditor';
 import { Button } from '../components/ui/button';
+import { ErrorText, Field, inputClass } from '../components/ui/form';
+import { AuthLayout } from '../layouts/AuthLayout';
 
 export function SetupOrganizationPage() {
   const { t } = useTranslation();
@@ -16,56 +22,120 @@ export function SetupOrganizationPage() {
   const [form, setForm] = useState<SetupOrganizationInput>({
     name: '',
     timezone: 'Asia/Damascus',
-    latitude: 33.5138,
-    longitude: 36.2765,
-    prayerMethod: 'UmmAlQura',
+    latitude: 33.5131,
+    longitude: 36.3096,
+    prayerMethod: 'MuslimWorldLeague',
     locale: 'ar',
     sheikh: { firstName: '', fatherName: '', familyName: '', phone: '' },
   });
+  const setSheikh = (
+    key: keyof SetupOrganizationInput['sheikh'],
+    value: string,
+  ) => setForm({ ...form, sheikh: { ...form.sheikh, [key]: value } });
 
   const submit = useMutation({
     mutationFn: () =>
-      apiFetch<{ setupCode: string }>('/api/v1/setup/organization', {
+      apiFetch<SetupOrganizationResponse>('/api/v1/setup/organization', {
         method: 'POST',
         body: JSON.stringify(form),
       }),
     onSuccess: (data) => setIssuedCode(data.setupCode),
   });
 
-  if (setup.data && !setup.data.setupRequired) {
-    return <Navigate to="/login" replace />;
-  }
-
   if (issuedCode) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-10">
-        <h1 className="text-2xl font-semibold">{t('setup.codeTitle')}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t('setup.codeHint')}</p>
-        <p className="mt-4 rounded-lg bg-slate-900 p-4 font-mono text-lg text-white">{issuedCode}</p>
-      </div>
+      <AuthLayout title={t('setup.codeTitle')}>
+        <p className="text-sm text-muted">{t('setup.codeHint')}</p>
+        <p
+          dir="ltr"
+          className="my-5 rounded-xl bg-accent p-4 text-center font-mono text-2xl tracking-[0.3em] text-white"
+        >
+          {issuedCode}
+        </p>
+        <Link
+          className="block text-center text-sm text-accent underline underline-offset-4"
+          to="/setup/password"
+        >
+          {t('setup.continue')}
+        </Link>
+      </AuthLayout>
     );
   }
+  if (setup.data && !setup.data.setupRequired)
+    return <Navigate to="/login" replace />;
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
-      <h1 className="text-2xl font-semibold">{t('setup.title')}</h1>
-      <div className="mt-4 grid gap-3">
-        <input
-          className="min-h-11 rounded-lg border px-3"
-          placeholder={t('setup.mosqueName')}
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <input
-          className="min-h-11 rounded-lg border px-3"
-          placeholder={t('setup.sheikhPhone')}
-          value={form.sheikh.phone}
-          onChange={(e) => setForm({ ...form, sheikh: { ...form.sheikh, phone: e.target.value } })}
-        />
-      </div>
-      <Button className="mt-4" type="button" onClick={() => submit.mutate()} disabled={submit.isPending}>
-        {t('setup.submit')}
-      </Button>
-    </div>
+    <AuthLayout title={t('setup.title')}>
+      <form
+        className="grid gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit.mutate();
+        }}
+      >
+        <Field label={t('setup.mosqueName')}>
+          <input
+            className={inputClass}
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+        </Field>
+        <div className="grid gap-2 border-t border-line pt-4">
+          <p className="text-sm font-semibold">{t('organization.prayer')}</p>
+          <p className="text-xs text-muted">{t('prayer.setupHint')}</p>
+          <PrayerTimesEditor
+            lookupPath="/api/v1/setup/prayer-times/lookup"
+            onChange={(patch) =>
+              setForm((current) => ({ ...current, ...patch }))
+            }
+          />
+        </div>
+        <p className="border-t border-line pt-4 text-sm font-semibold">
+          {t('setup.sheikh')}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label={t('members.firstName')}>
+            <input
+              className={inputClass}
+              value={form.sheikh.firstName}
+              onChange={(e) => setSheikh('firstName', e.target.value)}
+              required
+            />
+          </Field>
+          <Field label={t('members.fatherName')}>
+            <input
+              className={inputClass}
+              value={form.sheikh.fatherName}
+              onChange={(e) => setSheikh('fatherName', e.target.value)}
+              required
+            />
+          </Field>
+          <Field label={t('members.familyName')}>
+            <input
+              className={inputClass}
+              value={form.sheikh.familyName}
+              onChange={(e) => setSheikh('familyName', e.target.value)}
+              required
+            />
+          </Field>
+        </div>
+        <Field label={t('setup.sheikhPhone')}>
+          <input
+            className={inputClass}
+            dir="ltr"
+            inputMode="tel"
+            placeholder="+963…"
+            value={form.sheikh.phone}
+            onChange={(e) => setSheikh('phone', e.target.value)}
+            required
+          />
+        </Field>
+        {submit.isError ? <ErrorText error={submit.error} /> : null}
+        <Button type="submit" disabled={submit.isPending}>
+          {t('setup.submit')}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

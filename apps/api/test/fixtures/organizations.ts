@@ -1,7 +1,5 @@
 import { Organization, PrismaClient } from '@prisma/client';
 
-const DEMO_SLUG = 'e2e-demo-mosque';
-const OTHER_SLUG = 'e2e-other-mosque';
 
 const mosque = {
     timezone: 'Asia/Damascus',
@@ -15,16 +13,17 @@ export type TwoOrganizations = {
     other: Organization;
 };
 
-export async function twoOrganizations(prisma: PrismaClient): Promise<TwoOrganizations> {
+/** `prefix` keeps suites that run one after another from sharing organizations. */
+export async function twoOrganizations(prisma: PrismaClient, prefix = 'e2e'): Promise<TwoOrganizations> {
     const demo = await prisma.organization.upsert({
-        where: { slug: DEMO_SLUG },
+        where: { slug: `${prefix}-demo-mosque` },
         update: {},
-        create: { name: 'E2E Demo Mosque', slug: DEMO_SLUG, ...mosque },
+        create: { name: 'E2E Demo Mosque', slug: `${prefix}-demo-mosque`, ...mosque },
     });
     const other = await prisma.organization.upsert({
-        where: { slug: OTHER_SLUG },
+        where: { slug: `${prefix}-other-mosque` },
         update: {},
-        create: { name: 'E2E Other Mosque', slug: OTHER_SLUG, ...mosque },
+        create: { name: 'E2E Other Mosque', slug: `${prefix}-other-mosque`, ...mosque },
     });
     return { demo, other };
 }
@@ -51,8 +50,20 @@ export async function removeTwoOrganizations(
         },
     });
     await prisma.authSession.deleteMany({ where: { identityId: { in: identityIds } } });
+    const scoped = { where: { organizationId: { in: ids } } };
+    await prisma.groupMember.deleteMany(scoped);
+    await prisma.courseGroup.deleteMany(scoped);
+    await prisma.courseSession.deleteMany(scoped);
+    await prisma.courseSchedule.deleteMany(scoped);
+    await prisma.coursePause.deleteMany(scoped);
+    await prisma.enrollment.deleteMany(scoped);
+    await prisma.teachingAssignment.deleteMany(scoped);
+    await prisma.courseRequirement.deleteMany(scoped);
+    await prisma.courseMaterial.deleteMany(scoped);
+    await prisma.memberNote.deleteMany(scoped);
+    await prisma.course.deleteMany(scoped);
+    await prisma.material.deleteMany(scoped);
     await prisma.guardianLink.deleteMany({ where: { organizationId: { in: ids } } });
-    await prisma.memberNote.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.member.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.household.deleteMany({ where: { organizationId: { in: ids } } });
     await prisma.membership.deleteMany({ where: { organizationId: { in: ids } } });
@@ -63,7 +74,5 @@ export async function removeTwoOrganizations(
             memberships: { none: {} },
         },
     });
-    await prisma.organization.deleteMany({
-        where: { slug: { in: [DEMO_SLUG, OTHER_SLUG] } },
-    });
+    await prisma.organization.deleteMany({ where: { id: { in: ids } } });
 }

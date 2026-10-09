@@ -11,6 +11,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   SERVE_WEB: z.coerce.boolean().default(false),
   WEB_DIST_PATH: z.string().optional(),
+  /**
+   * BullMQ worker (ADR-0006): `inline` runs it inside the API process (dev, single-container
+   * demo), `only` boots a worker-only process, `off` runs no worker (the API with a separate
+   * worker service, and e2e tests).
+   */
+  JOBS_WORKER: z.enum(['inline', 'only', 'off']).default('inline'),
 });
 
 export type Env = z.infer<typeof envSchema>;

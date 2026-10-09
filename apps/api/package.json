@@ -23,7 +23,9 @@
     "@nestjs/throttler": "^6.7.1",
     "@prisma/client": "^6.8.2",
     "@ribat/shared": "workspace:*",
+    "adhan": "^4.4.6",
     "argon2": "^0.45.1",
+    "bullmq": "^6.3.11",
     "dotenv": "^16.5.0",
     "ioredis": "^5.6.1",
     "nestjs-pino": "^5.2.1",
@@ -58,7 +60,10 @@
       "ts"
     ],
     "rootDir": ".",
-    "roots": ["<rootDir>/src", "<rootDir>/scripts"],
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/scripts"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"

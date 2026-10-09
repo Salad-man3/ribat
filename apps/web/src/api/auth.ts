@@ -1,4 +1,9 @@
-import type { LoginInput, LoginResponse, MeResponse, RedeemSetupCodeInput } from '@ribat/shared';
+import type {
+  LoginInput,
+  LoginResponse,
+  MeResponse,
+  RedeemSetupCodeInput,
+} from '@ribat/shared';
 import { apiFetch } from './api-fetch';
 
 export function fetchMe() {

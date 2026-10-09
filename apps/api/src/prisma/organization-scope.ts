@@ -7,6 +7,17 @@ const TENANT_MODELS = new Set([
     'GuardianLink',
     'MemberNote',
     'AuditLog',
+    'Material',
+    'Course',
+    'CourseMaterial',
+    'CourseRequirement',
+    'Enrollment',
+    'TeachingAssignment',
+    'CourseGroup',
+    'GroupMember',
+    'CourseSchedule',
+    'CoursePause',
+    'CourseSession',
 ]);
 
 const UNIQUE_WHERE_OPERATIONS = new Set([

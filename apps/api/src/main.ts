@@ -11,6 +11,13 @@ import { loadEnv } from './config/env';
 
 async function bootstrap() {
   const env = loadEnv();
+  if (env.JOBS_WORKER === 'only') {
+    // Same image, no HTTP: the SessionsWorker provider consumes the queue (ADR-0006).
+    const worker = await NestFactory.createApplicationContext(AppModule, { bufferLogs: true });
+    worker.useLogger(worker.get(Logger));
+    worker.enableShutdownHooks();
+    return;
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix('api/v1');

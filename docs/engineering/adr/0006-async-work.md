@@ -1,6 +1,6 @@
 # ADR-0006 — Redis and background jobs
 
-**Status:** Accepted · **Date:** 2026-09-18
+**Status:** Accepted, amended 2026-10-08 · **Date:** 2026-09-18
 
 ## Context
 
@@ -40,3 +40,21 @@ job postings this project is also meant to answer.
   no fan-out queue, and it runs inside the API process.
 - **pg-boss (queues in Postgres)** — a real option that avoids Redis, at the cost of putting
   queue churn in the same database as the domain data, and of a less common skill.
+
+## Amendment — 2026-10-08: BullMQ arrives in S2
+
+Session generation (T210/T211) is the first real job, so BullMQ moves from S4 to S2.
+
+- One queue, `sessions`, with two jobs: `generate-course` (on schedule, pause, date or status
+  changes) and `generate-org` (nightly at 02:00 in the organization's timezone via
+  `upsertJobScheduler`, after prayer-setting changes, and once per organization when a worker
+  boots).
+- Both jobs **reconcile** rather than append: they compute the next 28 days, insert missing
+  sessions (`skipDuplicates` on `(courseId, date, startsAt)`) and delete future `SCHEDULED`
+  generated sessions that no longer match. Duplicates and retries are therefore harmless, and
+  no job id is needed for dedupe.
+- `JOBS_WORKER` selects where the worker runs: `inline` inside the API (development and a
+  one-container demo), `only` for a worker-only process from the same image, `off` for the API
+  when a separate worker runs (`deploy/compose.prod.yml`) and for e2e tests.
+- Enqueueing never fails a request: if Redis is down the change is saved and the nightly or
+  boot-time run catches up.

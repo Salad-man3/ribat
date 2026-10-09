@@ -8,6 +8,8 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/quran-data/package.json packages/quran-data/
 RUN pnpm install --frozen-lockfile
 COPY . .
+# Demo builds list the fictional seed logins on the sign-in page.
+ARG VITE_DEMO=false
 RUN pnpm --filter @ribat/shared build \
   && pnpm --filter web build \
   && pnpm --filter api exec prisma generate \

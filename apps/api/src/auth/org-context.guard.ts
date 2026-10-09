@@ -12,7 +12,7 @@ import type { MembershipRole } from '@prisma/client';
 import type { ActiveView, S1Permission } from '@ribat/shared';
 import type { Request } from 'express';
 import { AuditService } from '../audit/audit.service';
-import { requestIdFrom } from '../audit/audit-context';
+import { auditContextFromOrg, requestIdFrom, type AuditContext } from '../audit/audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { isStaff, permissionsFor } from './permissions';
 import { SessionGuard } from './session.guard';
@@ -133,3 +133,12 @@ export const CurrentOrg = createParamDecorator(
         return request.org;
     },
 );
+
+/** The audit context for an @OrgRoute handler: the org, the signed-in identity and the request id. */
+export const CurrentAudit = createParamDecorator((_data: unknown, ctx: ExecutionContext): AuditContext => {
+    const request = ctx
+        .switchToHttp()
+        .getRequest<Request & { org?: OrgContext; auth?: SessionContext }>();
+    if (!request.org || !request.auth) throw forbidden('No active organization context');
+    return auditContextFromOrg(request.org, request.auth.identityId, requestIdFrom(request));
+});

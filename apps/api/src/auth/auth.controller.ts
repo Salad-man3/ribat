@@ -44,7 +44,7 @@ export class AuthController {
     ) {}
 
     @Post('setup')
-    @Throttle({ setup: { limit: 5, ttl: 900_000 } })
+    @Throttle({ default: { limit: 5, ttl: 900_000 } })
     async setup(
         @Body(createZodValidationPipe(RedeemSetupCodeSchema)) body: RedeemSetupCodeInput,
         @Req() req: Request,
@@ -69,7 +69,7 @@ export class AuthController {
     }
 
     @Post('login')
-    @Throttle({ login: { limit: 5, ttl: 60_000 } })
+    @Throttle({ default: { limit: 5, ttl: 60_000 } })
     async login(
         @Body(createZodValidationPipe(LoginSchema)) body: LoginInput,
         @Req() req: Request,

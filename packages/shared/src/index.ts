@@ -104,4 +104,4 @@ export {
   type SetupCodeResponse,
   type UpdateMembershipInput,
 } from './people.js';
-export { setupCode } from './fields.js';
+export { setupCode } from './fields.js';export * from './courses.js';

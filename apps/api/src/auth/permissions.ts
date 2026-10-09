@@ -10,6 +10,8 @@ const STAFF_ADMIN_PERMISSIONS: S1Permission[] = [
     'notes.write',
     'notes.read_all',
     'audit.read',
+    'courses.manage',
+    'materials.manage',
 ];
 
 export function isStaff(role: MembershipRole): boolean {

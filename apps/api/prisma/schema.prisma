@@ -14,109 +14,187 @@ enum OrganizationStatus {
   ACTIVE
   SUSPENDED
 }
+
 enum PlatformRole {
   OWNER
   NONE
 }
+
 enum IdentityStatus {
   ACTIVE
   DISABLED
 }
+
 enum MembershipRole {
   SHEIKH
   ORG_ADMIN
   MEMBER
   GUARDIAN
 }
+
 enum MembershipStatus {
   ACTIVE
   SUSPENDED
 }
+
 enum MemberStatus {
   ACTIVE
   ARCHIVED
 }
+
 enum GuardianRelation {
   FATHER
   MOTHER
   OTHER
 }
+
 enum MemberNoteVisibility {
   SHEIKH_ONLY
   STAFF
 }
+
 enum ActiveView {
   ADMIN
   MEMBER
 }
 
+enum MaterialKind {
+  QURAN
+  TEXT
+  BOOK
+}
+
+enum MaterialTrack {
+  MEMORIZATION
+  EXPLANATION
+}
+
+enum CourseType {
+  MEMORIZATION
+  EXPLANATION
+  BOTH
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FINISHED
+  ARCHIVED
+}
+
+enum RequirementType {
+  MIN_AGE
+  MAX_AGE
+  COMPLETED_COURSE
+  MANUAL
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  WITHDRAWN
+  COMPLETED
+}
+
+enum TeachingRole {
+  LEAD
+  TEACHER
+}
+
+enum TimeAnchor {
+  FIXED
+  PRAYER
+}
+
+enum Prayer {
+  FAJR
+  SUNRISE
+  DHUHR
+  ASR
+  MAGHRIB
+  ISHA
+}
+
+enum SessionStatus {
+  SCHEDULED
+  HELD
+  CANCELLED
+}
 
 // ---------------------------------------------------------------------------
 // Platform and tenancy (4)
 // ---------------------------------------------------------------------------
 model Organization {
-  id             String             @id @default(uuid()) @db.Uuid
-  name           String
-  slug           String             @unique
-  status         OrganizationStatus @default(ACTIVE)
-  timezone       String
-  latitude       Decimal            @db.Decimal(9, 6)
-  longitude      Decimal            @db.Decimal(9, 6)
-  prayerMethod   String
-  prayerOffsets  Json               @default("{}")
-  settings       Json               @default("{}")
-  createdAt      DateTime           @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime           @updatedAt @db.Timestamptz(6)
-  memberships   Membership[]
-  members       Member[]
-  households    Household[]
-  guardianLinks GuardianLink[]
-  memberNotes   MemberNote[]
-  auditLogs     AuditLog[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String               @unique
+  status              OrganizationStatus   @default(ACTIVE)
+  timezone            String
+  latitude            Decimal              @db.Decimal(9, 6)
+  longitude           Decimal              @db.Decimal(9, 6)
+  prayerMethod        String
+  prayerOffsets       Json                 @default("{}")
+  settings            Json                 @default("{}")
+  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
+  memberships         Membership[]
+  members             Member[]
+  households          Household[]
+  guardianLinks       GuardianLink[]
+  memberNotes         MemberNote[]
+  auditLogs           AuditLog[]
+  materials           Material[]
+  courses             Course[]
+  courseMaterials     CourseMaterial[]
+  courseRequirements  CourseRequirement[]
+  enrollments         Enrollment[]
+  teachingAssignments TeachingAssignment[]
+  courseGroups        CourseGroup[]
+  groupMembers        GroupMember[]
+  courseSchedules     CourseSchedule[]
+  coursePauses        CoursePause[]
+  courseSessions      CourseSession[]
+
   @@index([status])
 }
 
-
-
 model Identity {
-  id           String         @id @default(uuid()) @db.Uuid
-  phone        String         @unique
-  passwordHash String?
-  platformRole PlatformRole   @default(NONE)
-  status       IdentityStatus @default(ACTIVE)
-  lastLoginAt  DateTime?      @db.Timestamptz(6)
-  createdAt    DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime       @updatedAt @db.Timestamptz(6)
+  id                String             @id @default(uuid()) @db.Uuid
+  phone             String             @unique
+  passwordHash      String?
+  platformRole      PlatformRole       @default(NONE)
+  status            IdentityStatus     @default(ACTIVE)
+  lastLoginAt       DateTime?          @db.Timestamptz(6)
+  createdAt         DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(6)
   memberships       Membership[]
   authSessions      AuthSession[]
   accountSetupCodes AccountSetupCode[]
   auditLogs         AuditLog[]         @relation("AuditLogActorIdentity")
+
   @@index([status])
 }
 
-
-
 model Membership {
-  id             String           @id @default(uuid()) @db.Uuid
-  organizationId String           @db.Uuid
-  identityId     String           @db.Uuid
-  role           MembershipRole
-  memberId       String?          @db.Uuid
-  status         MembershipStatus @default(ACTIVE)
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime         @updatedAt @db.Timestamptz(6)
-  organization          Organization         @relation(fields: [organizationId], references: [id])
-  identity              Identity             @relation(fields: [identityId], references: [id])
-  member                Member?              @relation(fields: [memberId], references: [id])
-  issuedSetupCodes      AccountSetupCode[]   @relation("SetupCodeIssuedBy")
-  auditLogs             AuditLog[]           @relation("AuditLogActorMembership")
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @db.Uuid
+  identityId       String             @db.Uuid
+  role             MembershipRole
+  memberId         String?            @db.Uuid
+  status           MembershipStatus   @default(ACTIVE)
+  createdAt        DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @db.Timestamptz(6)
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  identity         Identity           @relation(fields: [identityId], references: [id])
+  member           Member?            @relation(fields: [memberId], references: [id])
+  issuedSetupCodes AccountSetupCode[] @relation("SetupCodeIssuedBy")
+  auditLogs        AuditLog[]         @relation("AuditLogActorMembership")
+
   @@unique([identityId, organizationId])
   @@index([organizationId, status])
   @@index([organizationId, role])
   @@index([memberId])
 }
-
-
 
 model AuthSession {
   id          String     @id @default(uuid()) @db.Uuid
@@ -129,70 +207,75 @@ model AuthSession {
   lastSeenAt  DateTime   @default(now()) @db.Timestamptz(6)
   expiresAt   DateTime   @db.Timestamptz(6)
   revokedAt   DateTime?  @db.Timestamptz(6)
-  identity Identity @relation(fields: [identityId], references: [id])
+  identity    Identity   @relation(fields: [identityId], references: [id])
+
   @@index([identityId, revokedAt])
   @@index([expiresAt])
 }
 
-
-
 model AccountSetupCode {
-  id                      String    @id @default(uuid()) @db.Uuid
-  identityId              String    @db.Uuid
-  codeHash                String
-  expiresAt               DateTime  @db.Timestamptz(6)
-  usedAt                  DateTime? @db.Timestamptz(6)
-  createdByMembershipId   String    @db.Uuid
-  createdAt               DateTime  @default(now()) @db.Timestamptz(6)
+  id                    String     @id @default(uuid()) @db.Uuid
+  identityId            String     @db.Uuid
+  codeHash              String
+  expiresAt             DateTime   @db.Timestamptz(6)
+  usedAt                DateTime?  @db.Timestamptz(6)
+  createdByMembershipId String     @db.Uuid
+  createdAt             DateTime   @default(now()) @db.Timestamptz(6)
   identity              Identity   @relation(fields: [identityId], references: [id])
   createdByMembership   Membership @relation("SetupCodeIssuedBy", fields: [createdByMembershipId], references: [id])
+
   @@index([identityId, usedAt])
   @@index([expiresAt])
 }
-
-
 
 // ---------------------------------------------------------------------------
 // People (5)
 // ---------------------------------------------------------------------------
 model Household {
-  id             String @id @default(uuid()) @db.Uuid
-  organizationId String @db.Uuid
-  name           String?
-  organization Organization @relation(fields: [organizationId], references: [id])
-  members      Member[]
-  @@index([organizationId])
-}
-model Member {
   id             String       @id @default(uuid()) @db.Uuid
   organizationId String       @db.Uuid
-  householdId    String?      @db.Uuid
-  firstName      String
-  fatherName     String
-  familyName     String
-  motherName     String?
-  birthDate      DateTime     @db.Date
-  phone          String?
-  address        String?
-  schoolGrade    String?
-  schoolName     String?
-  joinedAt       DateTime     @db.Date
-  notes          String?
-  status         MemberStatus @default(ACTIVE)
-  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
-  archivedAt     DateTime?    @db.Timestamptz(6)
-  organization Organization @relation(fields: [organizationId], references: [id])
-  household    Household?   @relation(fields: [householdId], references: [id])
-  memberships  Membership[]
-  guardianLinksAsGuardian GuardianLink[] @relation("GuardianMember")
-  guardianLinksAsWard     GuardianLink[] @relation("WardMember")
-  memberNotesAbout        MemberNote[]   @relation("MemberNoteSubject")
-  memberNotesAuthored     MemberNote[]   @relation("MemberNoteAuthor")
+  name           String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        Member[]
+
+  @@index([organizationId])
+}
+
+model Member {
+  id                      String               @id @default(uuid()) @db.Uuid
+  organizationId          String               @db.Uuid
+  householdId             String?              @db.Uuid
+  firstName               String
+  fatherName              String
+  familyName              String
+  motherName              String?
+  birthDate               DateTime             @db.Date
+  phone                   String?
+  address                 String?
+  schoolGrade             String?
+  schoolName              String?
+  joinedAt                DateTime             @db.Date
+  notes                   String?
+  status                  MemberStatus         @default(ACTIVE)
+  createdAt               DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime             @updatedAt @db.Timestamptz(6)
+  archivedAt              DateTime?            @db.Timestamptz(6)
+  organization            Organization         @relation(fields: [organizationId], references: [id])
+  household               Household?           @relation(fields: [householdId], references: [id])
+  memberships             Membership[]
+  guardianLinksAsGuardian GuardianLink[]       @relation("GuardianMember")
+  guardianLinksAsWard     GuardianLink[]       @relation("WardMember")
+  memberNotesAbout        MemberNote[]         @relation("MemberNoteSubject")
+  memberNotesAuthored     MemberNote[]         @relation("MemberNoteAuthor")
+  enrollments             Enrollment[]
+  teachingAssignments     TeachingAssignment[]
+  taughtGroups            CourseGroup[]
+
   @@index([organizationId, status])
   @@index([organizationId, familyName, firstName])
   @@index([householdId])
 }
+
 model GuardianLink {
   id               String           @id @default(uuid()) @db.Uuid
   organizationId   String           @db.Uuid
@@ -200,46 +283,259 @@ model GuardianLink {
   wardMemberId     String           @db.Uuid
   relation         GuardianRelation
   isPrimary        Boolean          @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  guardianMember Member       @relation("GuardianMember", fields: [guardianMemberId], references: [id])
-  wardMember     Member       @relation("WardMember", fields: [wardMemberId], references: [id])
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  guardianMember   Member           @relation("GuardianMember", fields: [guardianMemberId], references: [id])
+  wardMember       Member           @relation("WardMember", fields: [wardMemberId], references: [id])
+
   @@unique([guardianMemberId, wardMemberId])
   @@index([organizationId])
   @@index([wardMemberId])
   @@index([guardianMemberId])
 }
+
 model MemberNote {
   id             String               @id @default(uuid()) @db.Uuid
   organizationId String               @db.Uuid
   memberId       String               @db.Uuid
-  courseId       String?              @db.Uuid // FK to Course added in S2
+  courseId       String?              @db.Uuid
   authorMemberId String               @db.Uuid
   body           String
   visibility     MemberNoteVisibility @default(SHEIKH_ONLY)
   createdAt      DateTime             @default(now()) @db.Timestamptz(6)
-  organization Organization @relation(fields: [organizationId], references: [id])
-  member       Member       @relation("MemberNoteSubject", fields: [memberId], references: [id])
-  authorMember Member       @relation("MemberNoteAuthor", fields: [authorMemberId], references: [id])
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  member         Member               @relation("MemberNoteSubject", fields: [memberId], references: [id])
+  authorMember   Member               @relation("MemberNoteAuthor", fields: [authorMemberId], references: [id])
+  course         Course?              @relation(fields: [courseId], references: [id])
+
   @@index([organizationId, memberId, createdAt(sort: Desc)])
 }
+
+// ---------------------------------------------------------------------------
+// Courses and teaching (§6)
+// ---------------------------------------------------------------------------
+/// One QURAN row per organization (partial unique index in the S2 migration).
+model Material {
+  id              String           @id @default(uuid()) @db.Uuid
+  organizationId  String           @db.Uuid
+  kind            MaterialKind
+  title           String
+  author          String?
+  totalPages      Int?
+  url             String?
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  archivedAt      DateTime?        @db.Timestamptz(6)
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  courseMaterials CourseMaterial[]
+  groups          CourseGroup[]
+
+  @@index([organizationId, archivedAt])
+}
+
+model Course {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @db.Uuid
+  name           String
+  description    String?
+  type           CourseType
+  status         CourseStatus         @default(DRAFT)
+  startDate      DateTime?            @db.Date
+  endDate        DateTime?            @db.Date
+  location       String?
+  minAge         Int?
+  maxAge         Int?
+  capacity       Int?
+  isHierarchical Boolean              @default(false)
+  hasGroups      Boolean              @default(false)
+  testPassMark   Int                  @default(60)
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @db.Timestamptz(6)
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  materials      CourseMaterial[]
+  requirements   CourseRequirement[]
+  enrollments    Enrollment[]
+  teachers       TeachingAssignment[]
+  groups         CourseGroup[]
+  schedules      CourseSchedule[]
+  pauses         CoursePause[]
+  sessions       CourseSession[]
+  memberNotes    MemberNote[]
+
+  @@index([organizationId, status])
+}
+
+model CourseMaterial {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  courseId       String        @db.Uuid
+  materialId     String        @db.Uuid
+  track          MaterialTrack
+  order          Int           @default(0)
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  course         Course        @relation(fields: [courseId], references: [id])
+  material       Material      @relation(fields: [materialId], references: [id])
+
+  @@unique([courseId, materialId])
+  @@index([organizationId])
+}
+
+model CourseRequirement {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  courseId       String          @db.Uuid
+  type           RequirementType
+  value          Json            @default("{}")
+  description    String?
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  course         Course          @relation(fields: [courseId], references: [id])
+
+  @@index([organizationId, courseId])
+}
+
+model Enrollment {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  courseId       String           @db.Uuid
+  memberId       String           @db.Uuid
+  status         EnrollmentStatus @default(ACTIVE)
+  startedAt      DateTime         @db.Date
+  endedAt        DateTime?        @db.Date
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  course         Course           @relation(fields: [courseId], references: [id])
+  member         Member           @relation(fields: [memberId], references: [id])
+  groupMembers   GroupMember[]
+
+  @@unique([courseId, memberId])
+  @@index([organizationId, memberId])
+}
+
+model TeachingAssignment {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @db.Uuid
+  courseId        String       @db.Uuid
+  teacherMemberId String       @db.Uuid
+  role            TeachingRole
+  createdAt       DateTime     @default(now()) @db.Timestamptz(6)
+  endedAt         DateTime?    @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  course          Course       @relation(fields: [courseId], references: [id])
+  teacher         Member       @relation(fields: [teacherMemberId], references: [id])
+
+  @@unique([courseId, teacherMemberId])
+  @@index([organizationId, teacherMemberId])
+}
+
+/// DM-06: materialKey is materialId::text or 'ALL' (CHECK in the S2 migration).
+/// GroupMember references (id, materialKey), so a student's group rows carry the
+/// group's material and (enrollmentId, materialKey) is unique: one teacher per material.
+model CourseGroup {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @db.Uuid
+  courseId        String        @db.Uuid
+  name            String
+  teacherMemberId String        @db.Uuid
+  materialId      String?       @db.Uuid
+  materialKey     String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  course          Course        @relation(fields: [courseId], references: [id])
+  teacher         Member        @relation(fields: [teacherMemberId], references: [id])
+  material        Material?     @relation(fields: [materialId], references: [id])
+  members         GroupMember[]
+
+  @@unique([id, materialKey])
+  @@index([organizationId, courseId])
+}
+
+model GroupMember {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  groupId        String       @db.Uuid
+  materialKey    String
+  enrollmentId   String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  group          CourseGroup  @relation(fields: [groupId, materialKey], references: [id, materialKey], onDelete: Cascade)
+  enrollment     Enrollment   @relation(fields: [enrollmentId], references: [id])
+
+  @@unique([enrollmentId, materialKey])
+  @@index([groupId])
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling (§7)
+// ---------------------------------------------------------------------------
+model CourseSchedule {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  courseId       String          @db.Uuid
+  weekday        Int
+  startAnchor    TimeAnchor
+  startTime      String?
+  startPrayer    Prayer?
+  startOffsetMin Int             @default(0)
+  endAnchor      TimeAnchor
+  endTime        String?
+  endPrayer      Prayer?
+  endOffsetMin   Int             @default(0)
+  effectiveFrom  DateTime        @db.Date
+  effectiveTo    DateTime?       @db.Date
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  course         Course          @relation(fields: [courseId], references: [id])
+  sessions       CourseSession[]
+
+  @@index([organizationId, courseId])
+}
+
+model CoursePause {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  courseId       String       @db.Uuid
+  fromDate       DateTime     @db.Date
+  toDate         DateTime     @db.Date
+  reason         String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  course         Course       @relation(fields: [courseId], references: [id])
+
+  @@index([organizationId, courseId])
+}
+
+model CourseSession {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  courseId       String          @db.Uuid
+  date           DateTime        @db.Date
+  startsAt       DateTime        @db.Timestamptz(6)
+  endsAt         DateTime        @db.Timestamptz(6)
+  status         SessionStatus   @default(SCHEDULED)
+  topic          String?
+  scheduleId     String?         @db.Uuid
+  isException    Boolean         @default(false)
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  course         Course          @relation(fields: [courseId], references: [id])
+  schedule       CourseSchedule? @relation(fields: [scheduleId], references: [id])
+
+  @@unique([courseId, date, startsAt])
+  @@index([organizationId, date])
+  @@index([courseId, date])
+}
+
 // ---------------------------------------------------------------------------
 // System (§12 — audit only for S1)
 // ---------------------------------------------------------------------------
 model AuditLog {
-  id                 String   @id @default(uuid()) @db.Uuid
-  organizationId     String   @db.Uuid
-  actorIdentityId    String?  @db.Uuid
-  actorMembershipId  String?  @db.Uuid
-  action             String
-  entityType         String
-  entityId           String   @db.Uuid
-  before             Json?
-  after              Json?
-  requestId          String?
-  createdAt          DateTime @default(now()) @db.Timestamptz(6)
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  actorIdentity   Identity?    @relation("AuditLogActorIdentity", fields: [actorIdentityId], references: [id])
-  actorMembership Membership?  @relation("AuditLogActorMembership", fields: [actorMembershipId], references: [id])
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @db.Uuid
+  actorIdentityId   String?      @db.Uuid
+  actorMembershipId String?      @db.Uuid
+  action            String
+  entityType        String
+  entityId          String       @db.Uuid
+  before            Json?
+  after             Json?
+  requestId         String?
+  createdAt         DateTime     @default(now()) @db.Timestamptz(6)
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  actorIdentity     Identity?    @relation("AuditLogActorIdentity", fields: [actorIdentityId], references: [id])
+  actorMembership   Membership?  @relation("AuditLogActorMembership", fields: [actorMembershipId], references: [id])
+
   @@index([organizationId, entityType, entityId, createdAt(sort: Desc)])
   @@index([organizationId, createdAt(sort: Desc)])
 }

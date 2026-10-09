@@ -1,12 +1,16 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { useMe } from '../hooks/use-me';
+import { useActiveMembership, useMe } from '../hooks/use-me';
 
 export function ProtectedRoute() {
   const location = useLocation();
   const me = useMe();
 
   if (me.isLoading) {
-    return <p className="text-sm text-slate-600">…</p>;
+    return (
+      <div className="grid min-h-dvh place-items-center text-sm text-muted">
+        …
+      </div>
+    );
   }
   if (me.isError || !me.data) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
@@ -15,12 +19,11 @@ export function ProtectedRoute() {
 }
 
 export function RoleHomeRedirect() {
-  const me = useMe();
-  const membership = me.data?.memberships.find(
-    (row) => row.organizationId === me.data?.activeOrganizationId,
-  );
+  const { membership, activeView } = useActiveMembership();
   if (!membership) return <Navigate to="/login" replace />;
-  if (membership.role === 'GUARDIAN') return <Navigate to="/guardian" replace />;
-  if (membership.role === 'MEMBER') return <Navigate to="/member" replace />;
+  if (membership.role === 'GUARDIAN')
+    return <Navigate to="/guardian" replace />;
+  if (membership.role === 'MEMBER' || activeView === 'MEMBER')
+    return <Navigate to="/member" replace />;
   return <Navigate to="/staff" replace />;
 }

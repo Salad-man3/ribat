@@ -12,16 +12,18 @@ import { AuditModule } from './audit/audit.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { GuardiansModule } from './guardians/guardians.module';
 import { MembershipsModule } from './memberships/memberships.module';
+import { PrayerTimesModule } from './prayer-times/prayer-times.module';
+import { MaterialsModule } from './materials/materials.module';
+import { CoursesModule } from './courses/courses.module';
+import { JobsQueueModule } from './jobs/jobs-queue.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
     // ponytail: in-memory throttler storage; switch to Redis if API scales out.
+    // Only `default` is registered globally. Named login/setup limits belong on those routes via @Throttle.
     ThrottlerModule.forRoot({
-      throttlers: [
-        { name: 'default', ttl: 60_000, limit: 10_000 },
-        { name: 'login', ttl: 60_000, limit: 5 },
-        { name: 'setup', ttl: 900_000, limit: 5 },
-      ],
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 10_000 }],
     }),
     ConfigModule,
     LoggingModule,
@@ -33,6 +35,11 @@ import { MembershipsModule } from './memberships/memberships.module';
     MembershipsModule,
     GuardiansModule,
     MembersModule,
+    PrayerTimesModule,
+    JobsQueueModule,
+    MaterialsModule,
+    CoursesModule,
+    JobsModule,
     AuthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

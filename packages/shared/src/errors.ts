@@ -8,6 +8,7 @@ export const ApiErrorCodeSchema = z.enum([
   'NOT_FOUND',
   'CONFLICT',
   'RATE_LIMITED',
+  'UNAVAILABLE',
   'INTERNAL_ERROR',
 ]);
 

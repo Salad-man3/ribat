@@ -22,6 +22,8 @@ describe('permissionsFor', () => {
                           'notes.write',
                           'notes.read_all',
                           'audit.read',
+                          'courses.manage',
+                          'materials.manage',
                       ]
                     : []
                 : [];

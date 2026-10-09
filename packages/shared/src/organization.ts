@@ -71,6 +71,7 @@ export const SetupOrganizationSchema = z.object({
   prayerMethod: PrayerMethodSchema,
   locale: LocaleSchema,
   sheikh: sheikhSchema,
+  prayerOffsets: PrayerOffsetsSchema.optional(),
   memberLimit: z.number().int().positive().optional(),
 });
 export type SetupOrganizationInput = z.infer<typeof SetupOrganizationSchema>;
