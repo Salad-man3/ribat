@@ -6,6 +6,7 @@ import { logout, switchView } from '../api/auth';
 import { Button } from '../components/ui/button';
 import { Emblem } from '../components/Emblem';
 import { useActiveMembership } from '../hooks/use-me';
+import { useBackgroundSync } from '../offline/outbox';
 import { cn } from '../lib/utils';
 
 type NavItem = { to: string; label: string };
@@ -22,9 +23,13 @@ function navFor(
 ): NavItem[] {
   if (role === 'GUARDIAN') return [{ to: '/guardian', label: 'nav.guardian' }];
   if (role === 'MEMBER' || activeView === 'MEMBER')
-    return [{ to: '/member', label: 'nav.member' }];
+    return [
+      { to: '/member', label: 'nav.member' },
+      { to: '/teach', label: 'nav.teach' },
+    ];
   return [
     { to: '/staff', label: 'nav.staff' },
+    { to: '/teach', label: 'nav.teach' },
     ...(can('members.manage')
       ? [{ to: '/staff/members', label: 'nav.members' }]
       : []),
@@ -49,6 +54,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { me, membership, activeView, can } = useActiveMembership();
+  useBackgroundSync();
   const nav = [
     ...navFor(membership?.role, activeView, can),
     { to: '/account/devices', label: 'nav.devices' },

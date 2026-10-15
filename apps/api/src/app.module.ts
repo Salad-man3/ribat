@@ -17,6 +17,7 @@ import { MaterialsModule } from './materials/materials.module';
 import { CoursesModule } from './courses/courses.module';
 import { JobsQueueModule } from './jobs/jobs-queue.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { JobsModule } from './jobs/jobs.module';
     JobsQueueModule,
     MaterialsModule,
     CoursesModule,
+    ProgressModule,
     JobsModule,
     AuthModule,
   ],

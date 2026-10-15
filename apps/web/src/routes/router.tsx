@@ -1,5 +1,8 @@
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from '../layouts/AppShell';
+import { ClassLayout } from '../layouts/ClassLayout';
+import { ClassSessionPage } from '../pages/ClassSessionPage';
+import { TodayPage } from '../pages/TodayPage';
 import { AccountDevicesPage } from '../pages/AccountDevicesPage';
 import { AuditPage } from '../pages/AuditPage';
 import { CourseDetailPage } from '../pages/CourseDetailPage';
@@ -22,6 +25,15 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/setup/password', element: <PasswordSetupPage /> },
   { path: '/setup/organization', element: <SetupOrganizationPage /> },
+  {
+    // Outside ProtectedRoute: class mode opens from the cached kit with no network (SYNC-14).
+    path: '/teach',
+    element: <ClassLayout />,
+    children: [
+      { index: true, element: <TodayPage /> },
+      { path: ':id', element: <ClassSessionPage /> },
+    ],
+  },
   {
     element: <ProtectedRoute />,
     children: [

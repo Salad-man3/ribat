@@ -17,6 +17,11 @@ else is cached, so no data a teacher may not see ever reaches their phone (PERM-
 **SYNC-03** — The target is a full class offline, not days (decision 9.1). The kit is valid
 for 24 hours; after that the app warns that it is stale but still accepts writes.
 
+**Teacher time window** — a teacher may write a session's attendance and explanation pages on
+the session's date in the organization's timezone, or until the session ends if it runs past
+midnight. The check uses the (clamped) capture time, so a sync the next morning still lands.
+Staff have no window.
+
 ---
 
 ## 2. The class kit
@@ -98,7 +103,13 @@ only within one student and entity; the server does not assume a global order.
 `SyncMutation` row, write the audit entry. One rejection never fails the batch.
 
 **SYNC-10** — A key already present in `SyncMutation` returns the stored result without
-touching the row again (`duplicate`).
+touching the row again (`duplicate`). Only applied and superseded mutations are stored; a
+rejected one is answered but not remembered, so it can be retried once the cause is fixed.
+
+Inside a batch, mutations are split into **lanes** by what they write — one lane per
+(session, enrollment) for attendance and per (member, material) for memorization. A lane runs
+in the order sent; up to four lanes run side by side. That is what keeps a full 40-student
+batch under the 2-second budget without giving up per-student ordering (SYNC-08).
 
 **SYNC-11** — Authorisation happens at replay time with the teacher's current permissions
 (PERM-12). A teacher removed from a course gets `rejected: FORBIDDEN`, and the app shows those

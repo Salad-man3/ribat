@@ -13,7 +13,8 @@
     "test": "jest",
     "fmt": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.prisma\"",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "import:members": "tsx scripts/import-members.ts"
+    "import:members": "tsx scripts/import-members.ts",
+    "projections:rebuild": "tsx scripts/rebuild-projections.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -22,6 +23,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.7.1",
     "@prisma/client": "^6.8.2",
+    "@ribat/quran-data": "workspace:*",
     "@ribat/shared": "workspace:*",
     "adhan": "^4.4.6",
     "argon2": "^0.45.1",

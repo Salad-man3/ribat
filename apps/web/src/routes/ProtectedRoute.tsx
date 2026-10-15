@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
+import { ApiError } from '../api/api-fetch';
 import { useActiveMembership, useMe } from '../hooks/use-me';
 
 export function ProtectedRoute() {
@@ -11,6 +12,10 @@ export function ProtectedRoute() {
         …
       </div>
     );
+  }
+  // No network at all is not a signed-out session: open class mode from the cached kit.
+  if (me.isError && !(me.error instanceof ApiError)) {
+    return <Navigate to="/teach" replace />;
   }
   if (me.isError || !me.data) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;

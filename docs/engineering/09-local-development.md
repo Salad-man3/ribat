@@ -58,6 +58,7 @@ required secret is missing — there are no defaults for secrets, in any environ
 | `pnpm test:e2e` | Integration tests against a real database |
 | `pnpm db:migrate` · `pnpm db:reset` | Apply migrations · drop, recreate, seed |
 | `pnpm db:studio` | Prisma Studio |
+| `pnpm --filter api projections:rebuild` | Rebuild `MemorizationSummary` from the ledger ([ADR-0010](./adr/0010-read-models.md)); safe any time |
 | `pnpm --filter api projections:rebuild --target=summary\|stats` | Rebuild a read model ([ADR-0010](./adr/0010-read-models.md)) |
 | `pnpm --filter api worker` | Run queues and the dispatcher locally |
 | `pnpm --filter api import:members --file=members.csv` | Bulk entry for the pilot (scope §5.2) |

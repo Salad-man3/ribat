@@ -58,3 +58,12 @@ export function mergeRanges(ranges: AyahRange[]): AyahRange[] {
 
   return merged;
 }
+
+/** Ayahs in an inclusive range, across surah boundaries. Assumes a valid range. */
+export function ayahsInRange(range: AyahRange): number {
+  const { start, end } = range;
+  if (start.surah === end.surah) return end.ayah - start.ayah + 1;
+  let count = SURAH_BY_NUMBER.get(start.surah)!.ayahCount - start.ayah + 1;
+  for (let s = start.surah + 1; s < end.surah; s++) count += SURAH_BY_NUMBER.get(s)!.ayahCount;
+  return count + end.ayah;
+}

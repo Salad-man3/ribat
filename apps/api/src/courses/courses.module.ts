@@ -28,6 +28,6 @@ import { SessionGeneratorService } from './session-generator.service';
     ScheduleService,
     SessionGeneratorService,
   ],
-  exports: [SessionGeneratorService],
+  exports: [SessionGeneratorService, CourseAccessService],
 })
 export class CoursesModule {}

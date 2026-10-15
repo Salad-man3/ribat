@@ -29,6 +29,7 @@ import {
 } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 import { NotFoundPage } from './NotFoundPage';
+import { formatDateTime } from '../lib/domain';
 
 const RELATIONS: GuardianRelation[] = ['FATHER', 'MOTHER', 'OTHER'];
 const ASSIGNABLE: AssignableRole[] = ['MEMBER', 'GUARDIAN', 'ORG_ADMIN'];
@@ -504,7 +505,7 @@ function NotesSection({
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
               {nameOf(note.authorMemberId)} ·{' '}
-              {new Date(note.createdAt).toLocaleString(i18n.language)}
+              {formatDateTime(note.createdAt, i18n.language)}
               <Badge
                 tone={note.visibility === 'SHEIKH_ONLY' ? 'danger' : 'neutral'}
               >
@@ -614,7 +615,7 @@ function AccessSection({ member }: { member: MemberResponse }) {
           </p>
           <p className="mt-2 text-xs opacity-80">
             {t('access.expires')}:{' '}
-            {new Date(issued.expiresAt).toLocaleString(i18n.language)}
+            {formatDateTime(issued.expiresAt, i18n.language)}
           </p>
         </div>
       ) : null}

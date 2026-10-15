@@ -11,6 +11,7 @@ COPY . .
 # Demo builds list the fictional seed logins on the sign-in page.
 ARG VITE_DEMO=false
 RUN pnpm --filter @ribat/shared build \
+  && pnpm --filter @ribat/quran-data build \
   && pnpm --filter web build \
   && pnpm --filter api exec prisma generate \
   && pnpm --filter api build

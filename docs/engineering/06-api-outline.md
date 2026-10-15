@@ -79,8 +79,8 @@
 | Method | Path | Notes |
 | --- | --- | --- |
 | GET | `/sessions` | By course, date range, or teacher |
-| POST | `/sessions` | Add an extra session |
-| PATCH | `/sessions/:id` | Cancel, change topic or time |
+| POST | `/courses/:id/sessions` | Add an extra session (staff or a teacher of the course) |
+| PATCH | `/sessions/:id` | Cancel, restore or change the topic; a session with attendance cannot be cancelled |
 | GET | `/sessions/:id/attendance` | Roster with current marks |
 | POST | `/sessions/:id/attendance` | Batch marks; idempotent; same shape as the offline payload |
 | GET/POST | `/memorization/logs` | Filters: member, course, material, date range |

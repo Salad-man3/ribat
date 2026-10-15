@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { ayahsInRange, pagesForRange, SURAH_BY_NUMBER } from '@ribat/quran-data';
 import { hashSecret } from '../src/auth/credentials';
+import { addDays, dateIn, fromDateString, weekdayOf, zonedToUtc } from '../src/common/zoned-time';
+import { organizationScopeExtension } from '../src/prisma/organization-scope';
+import { writeSummary } from '../src/progress/memorization-summary';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'demo-ribat-2026';
@@ -144,9 +148,115 @@ async function seedOrg(params: {
         effectiveFrom: new Date('2026-09-01'),
       })),
     });
+    await seedClassHistory(org.id, course.id, quran.id, teacherId, wardId);
   }
 
   return { org, accounts: params.accounts };
+}
+
+/**
+ * S3 demo: six more fictional students, two past classes with attendance and recitations,
+ * and a class today so class mode has something to open on any day of the week.
+ */
+async function seedClassHistory(
+  organizationId: string,
+  courseId: string,
+  quranId: string,
+  teacherId: string,
+  wardId: string,
+) {
+  const tz = 'Asia/Damascus';
+  const names = ['Yusuf', 'Maryam', 'Hamza', 'Aisha', 'Bilal', 'Khadija'];
+  const students = [wardId];
+  for (const [i, firstName] of names.entries()) {
+    const member = await prisma.member.create({
+      data: {
+        organizationId,
+        firstName,
+        fatherName: 'Demo',
+        familyName: 'Student',
+        birthDate: new Date(`201${i % 6}-03-0${(i % 9) + 1}`),
+        joinedAt: new Date('2026-09-01'),
+      },
+    });
+    students.push(member.id);
+  }
+  const enrollments = [];
+  for (const memberId of students.slice(1))
+    enrollments.push(
+      await prisma.enrollment.create({
+        data: { organizationId, courseId, memberId, startedAt: new Date('2026-09-01') },
+      }),
+    );
+  const wardEnrollment = await prisma.enrollment.findFirstOrThrow({ where: { courseId, memberId: wardId } });
+  enrollments.unshift(wardEnrollment);
+
+  const today = dateIn(new Date(), tz);
+  const session = (date: string, status: 'HELD' | 'SCHEDULED') =>
+    prisma.courseSession.create({
+      data: {
+        organizationId,
+        courseId,
+        date: fromDateString(date),
+        startsAt: zonedToUtc(date, '15:30', tz),
+        endsAt: zonedToUtc(date, '17:30', tz),
+        status,
+        isException: true,
+      },
+    });
+  // The Sun/Tue/Thu schedule generates its own session; on other days add one by hand.
+  if (![0, 2, 4].includes(weekdayOf(today))) await session(today, 'SCHEDULED');
+
+  // Each student starts from An-Nas and works back through juz 30, a common order for children.
+  const statuses = ['PRESENT', 'PRESENT', 'LATE', 'PRESENT', 'ABSENT', 'PRESENT', 'EXCUSED'] as const;
+  for (const [day, offset] of [-7, -5].entries()) {
+    const date = addDays(today, offset);
+    const held = await session(date, 'HELD');
+    const at = zonedToUtc(date, '16:00', tz);
+    for (const [i, enrollment] of enrollments.entries()) {
+      const status = statuses[(i + day) % statuses.length];
+      await prisma.attendance.create({
+        data: {
+          organizationId,
+          sessionId: held.id,
+          enrollmentId: enrollment.id,
+          status,
+          markedByMemberId: teacherId,
+          markedAt: at,
+          source: 'OFFLINE',
+          idempotencyKey: crypto.randomUUID(),
+        },
+      });
+      if (status === 'ABSENT' || status === 'EXCUSED') continue;
+      const surah = 114 - day * 2 - (i % 3);
+      const range = { start: { surah, ayah: 1 }, end: { surah, ayah: Math.min(5, SURAH_BY_NUMBER.get(surah)!.ayahCount) } };
+      const pages = pagesForRange(range);
+      await prisma.memorizationLog.create({
+        data: {
+          organizationId,
+          memberId: enrollment.memberId,
+          materialId: quranId,
+          courseId,
+          type: 'NEW',
+          surahStart: surah,
+          ayahStart: 1,
+          surahEnd: surah,
+          ayahEnd: range.end.ayah,
+          pageFrom: pages.from,
+          pageTo: pages.to,
+          ayahCount: ayahsInRange(range),
+          grade: i % 2 ? 'VERY_GOOD' : 'GOOD',
+          mistakes: i % 3,
+          loggedByMemberId: teacherId,
+          loggedAt: at,
+          source: 'OFFLINE',
+          idempotencyKey: crypto.randomUUID(),
+        },
+      });
+    }
+  }
+  const scoped = prisma.$extends(organizationScopeExtension(organizationId));
+  for (const memberId of students) await writeSummary(scoped, organizationId, memberId, quranId);
 }
 
 async function main() {
@@ -155,6 +265,12 @@ async function main() {
   }
 
   await prisma.auditLog.deleteMany({});
+  await prisma.syncMutation.deleteMany({});
+  await prisma.attendance.deleteMany({});
+  await prisma.materialLog.deleteMany({});
+  await prisma.memorizationSummary.deleteMany({});
+  await prisma.memorizationTest.deleteMany({});
+  await prisma.memorizationLog.deleteMany({});
   await prisma.groupMember.deleteMany({});
   await prisma.courseGroup.deleteMany({});
   await prisma.courseSession.deleteMany({});

@@ -11,10 +11,12 @@ function readCookie(name: string): string | undefined {
 
 export class ApiError extends Error {
   readonly body: ApiErrorBody;
+  readonly status: number;
 
-  constructor(body: ApiErrorBody) {
+  constructor(body: ApiErrorBody, status = 0) {
     super(body.error.message);
     this.body = body;
+    this.status = status;
   }
 }
 
@@ -43,6 +45,7 @@ export async function apiFetch<T>(
       (payload as ApiErrorBody) ?? {
         error: { code: 'INTERNAL_ERROR', message: 'Request failed' },
       },
+      response.status,
     );
   }
   return payload as T;

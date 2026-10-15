@@ -9,6 +9,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // SYNC-04: the shell is cached so class mode opens offline; /api is never cached —
+      // domain data lives in Dexie, where code decides what is stale.
+      workbox: {
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [{ urlPattern: /\/api\//, handler: 'NetworkOnly' }],
+      },
       manifest: {
         name: 'Ribat',
         short_name: 'Ribat',
@@ -29,6 +36,12 @@ export default defineConfig({
       },
     }),
   ],
+  // @ribat/shared and @ribat/quran-data build to CommonJS. Pre-bundling converts them so
+  // class mode can run the same Zod schemas and Quran maths offline (SYNC-07).
+  optimizeDeps: { include: ['@ribat/shared', '@ribat/quran-data'] },
+  build: {
+    commonjsOptions: { include: [/packages\/(shared|quran-data)\//, /node_modules/] },
+  },
   server: {
     port: 5173,
     proxy: {

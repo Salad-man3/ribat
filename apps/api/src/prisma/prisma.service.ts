@@ -27,3 +27,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$extends(organizationScopeExtension(organizationId));
   }
 }
+
+export type OrgDb = ReturnType<PrismaService['forOrganization']>;
+/** The client inside `forOrganization(id).$transaction(async (tx) => …)`. */
+export type OrgTx = Parameters<
+  Extract<Parameters<OrgDb['$transaction']>[0], (...args: never[]) => unknown>
+>[0];

@@ -10,6 +10,7 @@ import {
   ErrorText,
   PageHeader,
 } from '../components/ui/form';
+import { formatDateTime } from '../lib/domain';
 
 const PAGE = 50;
 
@@ -47,7 +48,7 @@ export function AuditPage() {
                     <Badge>{row.entityType}</Badge>
                   </span>
                   <time className="text-xs text-muted">
-                    {new Date(row.createdAt).toLocaleString(i18n.language)}
+                    {formatDateTime(row.createdAt, i18n.language)}
                   </time>
                 </summary>
                 <pre

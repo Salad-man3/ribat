@@ -5,6 +5,7 @@ import type { DeviceResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { Button } from '../components/ui/button';
 import { Badge, Card, ErrorText, PageHeader } from '../components/ui/form';
+import { formatDateTime } from '../lib/domain';
 
 export function AccountDevicesPage() {
   const { t, i18n } = useTranslation();
@@ -34,7 +35,7 @@ export function AccountDevicesPage() {
       await queryClient.invalidateQueries({ queryKey: ['devices'] });
     },
   });
-  const date = (iso: string) => new Date(iso).toLocaleString(i18n.language);
+  const date = (iso: string) => formatDateTime(iso, i18n.language);
 
   return (
     <section className="grid gap-6">

@@ -429,7 +429,7 @@ Recipients per event follow decision 15.2.
 | Entity | Purpose |
 | --- | --- |
 | **AuditLog** | Append-only: `actorIdentityId`, `actorMembershipId`, `action`, `entityType`, `entityId`, `before`, `after`, `requestId`, `createdAt` (decision 19.4) |
-| **SyncMutation** | One row per replayed offline mutation: `idempotencyKey` (unique per organization), `type`, `status` (`APPLIED`, `REJECTED`, `SUPERSEDED`), `result` jsonb — see [05-offline-sync.md](./05-offline-sync.md) |
+| **SyncMutation** | One row per applied offline mutation: `idempotencyKey` (unique per organization), `type`, `status` (`APPLIED`, `SUPERSEDED`), `result` jsonb. Rejections are not stored, so a mutation refused for a fixable reason (a removed teacher reassigned) can replay later — see [05-offline-sync.md](./05-offline-sync.md) |
 | **StatsDaily** | Nightly aggregates: `date`, `scopeType` (`ORG`, `COURSE`, `TEACHER`, `MEMBER`), `scopeId`, `metrics` jsonb (NFR-10) |
 | **DomainEvent** | From S4: written in the same transaction as the domain change it describes; `type`, `aggregateType`, `aggregateId`, `payload`, `requestId`, `occurredAt`, `dispatchedAt` — see [07-events-and-jobs.md](./07-events-and-jobs.md) |
 | **EventDelivery** | One row per `(eventId, handler)`, unique: `status`, `attempts`, `lastError`, `nextAttemptAt`. Dead letters surface in a staff view |

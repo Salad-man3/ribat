@@ -13,7 +13,8 @@
     "member": "My portal",
     "guardian": "Family portal",
     "courses": "Courses",
-    "materials": "Materials"
+    "materials": "Materials",
+    "teach": "Class mode"
   },
   "shell": {
     "switchToMember": "Switch to member view",
@@ -400,5 +401,72 @@
     "to": "To",
     "reason": "Reason (optional)",
     "add": "Add pause"
+  },
+  "classMode": {
+    "title": "Class mode",
+    "today": "Today's classes",
+    "noKit": "Class mode needs one connection first to download today's classes.",
+    "noSessions": "No classes for you today.",
+    "refresh": "Refresh",
+    "back": "All classes",
+    "students": "{{count}} students",
+    "markAllPresent": "Mark all present",
+    "log": "Log",
+    "save": "Save",
+    "cancel": "Cancel",
+    "last": "Last: page {{page}}, {{surah}} {{ayah}}",
+    "lastPage": "Last: page {{page}}",
+    "noPosition": "No progress yet",
+    "queuedLogs": "{{count}} queued",
+    "status": {
+      "none": "Not marked",
+      "PRESENT": "Present",
+      "ABSENT": "Absent",
+      "LATE": "Late",
+      "EXCUSED": "Excused"
+    },
+    "type": {
+      "NEW": "New",
+      "REVISION": "Revision"
+    },
+    "grade": {
+      "EXCELLENT": "Excellent",
+      "VERY_GOOD": "Very good",
+      "GOOD": "Good",
+      "REPEAT": "Repeat"
+    },
+    "material": "Material",
+    "fromSurah": "From surah",
+    "toSurah": "To surah",
+    "fromAyah": "From ayah",
+    "toAyah": "To ayah",
+    "fromPage": "From page",
+    "toPage": "To page",
+    "mistakes": "Mistakes",
+    "note": "Note",
+    "invalidRange": "That ayah range does not exist.",
+    "explanation": "Pages explained in this class",
+    "pagesSaved": "Pages queued",
+    "sync": {
+      "queued": "{{count}} changes waiting",
+      "synced": "All changes sent",
+      "lastSynced": "Last sync {{time}}",
+      "never": "Not synced yet",
+      "offline": "Offline — changes are saved on this phone",
+      "now": "Sync now",
+      "needsLogin": "Your session ended. Sign in again — the {{count}} waiting changes are kept.",
+      "signIn": "Sign in",
+      "stale": "This class list is more than a day old. Connect to refresh it; your marks are still saved.",
+      "conflicts": "Changes the server did not keep",
+      "superseded": "Someone else's later mark won",
+      "rejected": "Refused: {{message}}",
+      "dismiss": "Dismiss",
+      "otherAccount": "{{count}} changes belong to another account on this phone and wait for it."
+    },
+    "syncType": {
+      "attendance_mark": "Attendance",
+      "memorization_log": "Recitation",
+      "material_log": "Explanation pages"
+    }
   }
 }

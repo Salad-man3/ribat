@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import type { AuditLog } from '@prisma/client';
 import type { AuditLogResponse, CursorPaginationQuery } from '@ribat/shared';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService, type OrgTx } from '../prisma/prisma.service';
 import type { AuditContext, AuditEventInput } from './audit-context';
 
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async record(ctx: AuditContext, event: AuditEventInput): Promise<void> {
-    await this.prisma.forOrganization(ctx.organizationId).auditLog.create({
+  /** Pass `tx` to write the audit row in the caller's transaction (SYNC-09). */
+  async record(ctx: AuditContext, event: AuditEventInput, tx?: OrgTx): Promise<void> {
+    const db = tx ?? this.prisma.forOrganization(ctx.organizationId);
+    await db.auditLog.create({
       data: {
         organizationId: ctx.organizationId,
         actorIdentityId: ctx.actorIdentityId,

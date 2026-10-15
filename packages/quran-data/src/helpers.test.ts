@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  ayahsInRange,
   mergeRanges,
   pageForAyah,
   pagesForRange,
@@ -59,5 +60,13 @@ describe('quran-data helpers', () => {
         { start: { surah: 2, ayah: 1 }, end: { surah: 2, ayah: 5 } },
       ],
     );
+  });
+
+  it('ayahsInRange counts across surah boundaries', () => {
+    assert.equal(ayahsInRange({ start: { surah: 1, ayah: 1 }, end: { surah: 1, ayah: 7 } }), 7);
+    // Al-Fatiha (7) + Al-Baqarah 1–5
+    assert.equal(ayahsInRange({ start: { surah: 1, ayah: 1 }, end: { surah: 2, ayah: 5 } }), 12);
+    // An-Naba 1 to An-Nas 6: the whole of juz 30 = 564 ayahs
+    assert.equal(ayahsInRange({ start: { surah: 78, ayah: 1 }, end: { surah: 114, ayah: 6 } }), 564);
   });
 });

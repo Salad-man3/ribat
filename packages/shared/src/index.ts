@@ -105,3 +105,4 @@ export {
   type UpdateMembershipInput,
 } from './people.js';
 export { setupCode } from './fields.js';export * from './courses.js';
+export * from './progress.js';

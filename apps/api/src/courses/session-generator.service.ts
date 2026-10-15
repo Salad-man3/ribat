@@ -68,13 +68,15 @@ export class SessionGeneratorService {
     }
 
     const wantedKeys = new Set(wanted.map(keyOf));
-    // ponytail: S3 must also keep sessions that already have attendance rows.
+    // A session that already has attendance or a material log is kept even if the schedule moved.
     const future = await db.courseSession.findMany({
       where: {
         courseId,
         status: 'SCHEDULED',
         scheduleId: { not: null },
         startsAt: { gt: now },
+        attendance: { none: {} },
+        materialLogs: { none: {} },
       },
       select: { id: true, date: true, startsAt: true },
     });

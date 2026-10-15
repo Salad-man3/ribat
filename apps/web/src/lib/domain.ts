@@ -1,7 +1,8 @@
 import type { CourseStatus, PrayerMethod, PrayerTimes } from '@ribat/shared';
 
-// @ribat/shared builds to CommonJS, so the web build imports its types only.
-// These mirror values defined there; keep them in step.
+// These mirror values defined in @ribat/shared; keep them in step. Runtime imports from it
+// work since vite.config.ts pre-bundles it (class mode uses its Zod schemas), so a new
+// constant can be imported instead of mirrored.
 
 export const PRAYER_METHODS: PrayerMethod[] = [
   'MuslimWorldLeague',
@@ -62,10 +63,34 @@ export function formatTime(iso: string, locale: string, timeZone?: string) {
   });
 }
 
+/** Umm al-Qura, the civil Hijri calendar. Built into every modern browser's Intl. */
+export function formatHijri(date: string, locale: string) {
+  return new Intl.DateTimeFormat(`${locale}-u-ca-islamic-umalqura`, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T12:00:00Z`));
+}
+
+/** NFR-02: Gregorian and Hijri wherever a date is shown. */
 export function formatDate(date: string, locale: string) {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, {
+  const gregorian = new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    timeZone: 'UTC',
   });
+  return `${gregorian} · ${formatHijri(date, locale)}`;
+}
+
+/** An instant in the viewer's clock, with the Hijri date of that local day. */
+export function formatDateTime(iso: string, locale: string) {
+  const instant = new Date(iso);
+  const hijri = new Intl.DateTimeFormat(`${locale}-u-ca-islamic-umalqura`, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(instant);
+  return `${instant.toLocaleString(locale)} · ${hijri}`;
 }

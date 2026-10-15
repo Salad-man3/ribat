@@ -14,9 +14,11 @@
     "fmt": "prettier --check \"src/**/*.{ts,tsx,css}\" \"index.html\" \"vite.config.ts\""
   },
   "dependencies": {
+    "@ribat/quran-data": "workspace:*",
     "@ribat/shared": "workspace:*",
     "@tanstack/react-query": "^5.104.1",
     "clsx": "^2.1.1",
+    "dexie": "^4.4.6",
     "i18next": "^25.2.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -31,6 +33,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.1.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",

@@ -18,6 +18,12 @@ const TENANT_MODELS = new Set([
     'CourseSchedule',
     'CoursePause',
     'CourseSession',
+    'Attendance',
+    'MemorizationLog',
+    'MemorizationTest',
+    'MemorizationSummary',
+    'MaterialLog',
+    'SyncMutation',
 ]);
 
 const UNIQUE_WHERE_OPERATIONS = new Set([

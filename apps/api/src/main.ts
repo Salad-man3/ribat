@@ -21,6 +21,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix('api/v1');
+  // A full sync batch (SYNC-12: 200 mutations with notes) can pass Express's 100 kB default.
+  app.useBodyParser('json', { limit: '1mb' });
   app.useGlobalFilters(new ApiExceptionFilter());
 
   if (env.SERVE_WEB) {
