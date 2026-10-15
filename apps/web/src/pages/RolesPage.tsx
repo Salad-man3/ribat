@@ -39,6 +39,11 @@ export function RolesPage() {
       : undefined;
     return row ? fullName(row) : '—';
   };
+  // Adding a member doesn't give them a login, so list them here instead of leaving them missing.
+  const withAccess = new Set(memberships.data?.map((row) => row.memberId));
+  const withoutAccess = memberships.data
+    ? (members.data ?? []).filter((m) => !withAccess.has(m.id))
+    : [];
 
   const update = useMutation({
     mutationFn: ({
@@ -146,7 +151,27 @@ export function RolesPage() {
         </ul>
         {memberships.isError ? <ErrorText error={memberships.error} /> : null}
       </Card>
-      <p className="text-xs text-muted">{t('roles.grantHint')}</p>
+      {withoutAccess.length ? (
+        <Card title={t('roles.noAccess')}>
+          <p className="text-xs text-muted">{t('roles.grantHint')}</p>
+          <ul className="mt-2 divide-y divide-line">
+            {withoutAccess.map((member) => (
+              <li
+                key={member.id}
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <span className="font-medium">{fullName(member)}</span>
+                <Link
+                  to={`/staff/members/${member.id}`}
+                  className="text-sm text-accent hover:text-accent-strong"
+                >
+                  {t('roles.grant')}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
     </section>
   );
 }

@@ -146,6 +146,8 @@
     "status": "Status",
     "passwordHint": "Role changes need your password. Enter it once, then change rows below.",
     "grantHint": "To give someone access, open their member page.",
+    "noAccess": "Members without access",
+    "grant": "Give access",
     "SHEIKH": "Sheikh",
     "ORG_ADMIN": "Admin",
     "MEMBER": "Member",
