@@ -1,3 +1,5 @@
+import type { AuditContext } from '../audit/audit-context';
+import { emit } from '../events/emit';
 import { Injectable } from '@nestjs/common';
 import type { Member, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -84,18 +86,26 @@ export class MembersRepository {
         });
     }
 
-    archive(organizationId: string, id: string): Promise<Member | null> {
-        return this.prisma.forOrganization(organizationId).member.updateMany({
-            where: { id, status: 'ACTIVE' },
-            data: {
-                status: 'ARCHIVED',
-                archivedAt: new Date(),
-            },
-        }).then(async (result) => {
+    /** The `member.archived` event commits with the archive; its handler closes enrollments and logins (WF-10). */
+    archive(organizationId: string, id: string, ctx: AuditContext): Promise<Member | null> {
+        return this.prisma.forOrganization(organizationId).$transaction(async (tx) => {
+            const result = await tx.member.updateMany({
+                where: { id, status: 'ACTIVE' },
+                data: {
+                    status: 'ARCHIVED',
+                    archivedAt: new Date(),
+                },
+            });
             if (result.count === 0) {
                 return null;
             }
-            return this.findById(organizationId, id);
+            await emit(tx, ctx, {
+                type: 'member.archived',
+                aggregateType: 'member',
+                aggregateId: id,
+                payload: { memberId: id },
+            });
+            return tx.member.findFirst({ where: { id } });
         });
     }
 }

@@ -7,6 +7,9 @@ import { AccountDevicesPage } from '../pages/AccountDevicesPage';
 import { AuditPage } from '../pages/AuditPage';
 import { CourseDetailPage } from '../pages/CourseDetailPage';
 import { CoursesPage } from '../pages/CoursesPage';
+import { ExcusesPage } from '../pages/ExcusesPage';
+import { FailedEventsPage } from '../pages/FailedEventsPage';
+import { NotificationsPage } from '../pages/NotificationsPage';
 import { MaterialsPage } from '../pages/MaterialsPage';
 import { GuardianHomePage } from '../pages/GuardianHomePage';
 import { LoginPage } from '../pages/LoginPage';
@@ -51,6 +54,9 @@ export const router = createBrowserRouter([
           { path: 'member/courses/:id', element: <CourseDetailPage /> },
           { path: 'staff/organization', element: <OrganizationPage /> },
           { path: 'staff/audit', element: <AuditPage /> },
+          { path: 'staff/excuses', element: <ExcusesPage /> },
+          { path: 'staff/events', element: <FailedEventsPage /> },
+          { path: 'notifications', element: <NotificationsPage /> },
           { path: 'member', element: <MemberHomePage /> },
           { path: 'guardian', element: <GuardianHomePage /> },
           { path: 'account/devices', element: <AccountDevicesPage /> },

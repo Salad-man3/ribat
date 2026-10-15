@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { MyCourseResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
+import { ProgressPanel, WeekTimetable } from '../components/family';
 import { Badge, Card, PageHeader } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 
@@ -30,7 +31,8 @@ export function MemberHomePage() {
         </dl>
       </Card>
       <TeachingCard />
-      <p className="text-sm text-muted">{t('member.comingSoon')}</p>
+      <WeekTimetable />
+      {membership?.memberId ? <ProgressPanel memberId={membership.memberId} /> : null}
     </section>
   );
 }

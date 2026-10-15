@@ -14,7 +14,10 @@
     "guardian": "Family portal",
     "courses": "Courses",
     "materials": "Materials",
-    "teach": "Class mode"
+    "teach": "Class mode",
+    "notifications": "Notifications",
+    "excuses": "Excuses",
+    "events": "Failed events"
   },
   "shell": {
     "switchToMember": "Switch to member view",
@@ -62,7 +65,6 @@
   "member": {
     "homeTitle": "My portal",
     "account": "My account",
-    "comingSoon": "Courses, attendance and progress arrive in the next release.",
     "teaching": "Courses I teach"
   },
   "guardian": {
@@ -467,6 +469,121 @@
       "attendance_mark": "Attendance",
       "memorization_log": "Recitation",
       "material_log": "Explanation pages"
+    }
+  },
+  "family": {
+    "week": "This week",
+    "noClasses": "No classes this week.",
+    "role": {
+      "TEACHING": "Teaching",
+      "STUDYING": "Studying",
+      "WARD": "Child"
+    },
+    "cancelled": "Cancelled",
+    "attendance": "Attendance",
+    "noCourses": "Not enrolled in any course yet.",
+    "memorization": "Memorization",
+    "pages_one": "{{count}} page",
+    "pages_other": "{{count}} pages",
+    "ayahs_one": "{{count}} ayah",
+    "ayahs_other": "{{count}} ayahs",
+    "tests": "Tests",
+    "juz": "Juz {{juz}}",
+    "attempt": "attempt {{n}}",
+    "scope": {
+      "JUZ": "Juz",
+      "SURAH": "Surah",
+      "RANGE": "Range",
+      "TEXT_PAGES": "Pages"
+    },
+    "homework": "Homework",
+    "noHomework": "No homework.",
+    "due": "due {{date}}"
+  },
+  "excuses": {
+    "title": "Excuses",
+    "subtitle": "Families ask before or after an absence; accepting one marks those classes excused.",
+    "empty": "No excuses.",
+    "from": "From",
+    "to": "To",
+    "reason": "Reason",
+    "submit": "Send excuse",
+    "sent": "Sent. The mosque will decide.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "status": {
+      "PENDING": "Waiting",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected"
+    }
+  },
+  "homework": {
+    "title": "Homework",
+    "what": "Homework",
+    "target": "For",
+    "due": "Due",
+    "assign": "Assign",
+    "empty": "No homework yet.",
+    "targetType": {
+      "COURSE": "Whole course",
+      "GROUP": "A group",
+      "MEMBER": "One student"
+    },
+    "status": {
+      "ASSIGNED": "Open",
+      "DONE": "Done",
+      "MISSED": "Missed"
+    }
+  },
+  "events": {
+    "title": "Failed events",
+    "subtitle": "Reactions that kept failing — a notification that was not sent, an enrollment not closed. The change itself was saved; retry once the cause is fixed.",
+    "empty": "Nothing failed.",
+    "retry": "Retry",
+    "status": {
+      "FAILED": "Retrying",
+      "DEAD": "Gave up"
+    },
+    "attempts_one": "{{count}} attempt",
+    "attempts_other": "{{count}} attempts"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing new.",
+    "markAll": "Mark all read",
+    "passed": "passed",
+    "failed": "did not pass",
+    "ABSENCE_SUMMARY": {
+      "title": "Today's absences — {{date}}",
+      "body": "{{items}}"
+    },
+    "ATTENDANCE_OVERRIDDEN": {
+      "title": "Your attendance mark was changed",
+      "body": "{{student}} in {{course}} on {{date}} is now: {{status}}."
+    },
+    "TEST_RESULT": {
+      "title": "Test result for {{student}}",
+      "body": "{{score}}/100 — {{result}}."
+    },
+    "HOMEWORK_ASSIGNED": {
+      "title": "New homework: {{title}}",
+      "body": "{{course}}, due {{dueDate}}."
+    },
+    "HOMEWORK_MISSED": {
+      "title": "Homework missed",
+      "body": "{{student}} did not finish \"{{title}}\" (due {{dueDate}})."
+    },
+    "SCHEDULE_CHANGE": {
+      "title": "Class cancelled",
+      "body": "{{course}} on {{date}} will not take place."
+    },
+    "EXCUSE_DECIDED": {
+      "title": "Excuse {{decision}}",
+      "body": "{{student}}, {{fromDate}} – {{toDate}}."
+    },
+    "SESSION_NOT_TAKEN": {
+      "title": "Attendance not taken",
+      "body": "{{course}} on {{date}} ended with no attendance."
     }
   }
 }

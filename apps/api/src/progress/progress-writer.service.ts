@@ -28,6 +28,7 @@ import {
   isStaffContext,
   type ClassScope,
 } from './class-scope.service';
+import { emit } from '../events/emit';
 import { writeSummary } from './memorization-summary';
 import {
   clampCapturedAt,
@@ -305,14 +306,20 @@ export class ProgressWriterService {
   ): Promise<(tx: OrgTx) => Promise<Applied>> {
     const marker = this.teacherMemberId(w.org);
     const { session, scope } = await this.writableSession(w, p.sessionId, at);
-    await this.student(w, scope, p.enrollmentId);
+    const enrollment = await this.student(w, scope, p.enrollmentId);
+    // Decision 8.3: an absence already covered by an accepted excuse is recorded as excused.
+    const status =
+      p.status === 'ABSENT' &&
+      (await this.excused(w, enrollment.memberId, session))
+        ? 'EXCUSED'
+        : p.status;
 
     return async (tx) => {
       const existing = await tx.attendance.findFirst({
         where: { sessionId: p.sessionId, enrollmentId: p.enrollmentId },
       });
       const incoming = {
-        status: p.status,
+        status,
         markedByMemberId: marker,
         markedAt: at,
       };
@@ -374,8 +381,42 @@ export class ProgressWriterService {
         },
         tx,
       );
+      await emit(tx, w.audit, {
+        type: 'attendance.marked',
+        aggregateType: 'attendance',
+        aggregateId: row.id,
+        payload: {
+          sessionId: row.sessionId,
+          enrollmentId: row.enrollmentId,
+          status: row.status,
+          markedByMemberId: marker,
+          supersededMemberId: existing?.markedByMemberId ?? null,
+        },
+      });
       return { status: 'applied', entityId: row.id };
     };
+  }
+
+  private excused(
+    w: Write,
+    memberId: string,
+    session: { courseId: string; date: Date },
+  ): Promise<boolean> {
+    const key = `excuse:${memberId}:${session.courseId}:${session.date.toISOString()}`;
+    return once(w, key, async () => {
+      const excuse = await this.prisma
+        .forOrganization(w.org.organizationId)
+        .excuseRequest.findFirst({
+          where: {
+            memberId,
+            status: 'ACCEPTED',
+            fromDate: { lte: session.date },
+            toDate: { gte: session.date },
+            OR: [{ courseId: null }, { courseId: session.courseId }],
+          },
+        });
+      return excuse !== null;
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -457,6 +498,20 @@ export class ProgressWriterService {
         },
         tx,
       );
+      await emit(tx, w.audit, {
+        type: 'memorization.logged',
+        aggregateType: 'member',
+        aggregateId: row.memberId,
+        payload: {
+          logId: row.id,
+          memberId: row.memberId,
+          materialId: row.materialId,
+          courseId: row.courseId,
+          type: row.type,
+          pages: row.pageTo - row.pageFrom + 1,
+          grade: row.grade,
+        },
+      });
       return { status: 'applied', entityId: row.id };
     };
   }
@@ -707,6 +762,19 @@ export class ProgressWriterService {
         },
         tx,
       );
+      await emit(tx, audit, {
+        type: 'test.recorded',
+        aggregateType: 'member',
+        aggregateId: created.memberId,
+        payload: {
+          testId: created.id,
+          memberId: created.memberId,
+          materialId: created.materialId,
+          scope: created.scopeType,
+          score: created.score,
+          passed: created.passed,
+        },
+      });
       return created;
     });
     return toTestResponse(row);

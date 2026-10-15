@@ -106,3 +106,4 @@ export {
 } from './people.js';
 export { setupCode } from './fields.js';export * from './courses.js';
 export * from './progress.js';
+export * from './families.js';

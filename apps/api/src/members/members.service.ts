@@ -88,7 +88,7 @@ export class MembersService {
         auditCtx: AuditContext,
     ): Promise<MemberResponse> {
         const before = await this.membersRepository.findById(organizationId, id);
-        const member = await this.membersRepository.archive(organizationId, id);
+        const member = await this.membersRepository.archive(organizationId, id, auditCtx);
         if (!member || !before) {
             throw new NotFoundException({
                 error: { code: 'NOT_FOUND', message: 'Member not found' },

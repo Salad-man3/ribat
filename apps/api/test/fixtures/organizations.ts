@@ -51,6 +51,12 @@ export async function removeTwoOrganizations(
     });
     await prisma.authSession.deleteMany({ where: { identityId: { in: identityIds } } });
     const scoped = { where: { organizationId: { in: ids } } };
+    await prisma.eventDelivery.deleteMany({ where: { event: { organizationId: { in: ids } } } });
+    await prisma.domainEvent.deleteMany(scoped);
+    await prisma.notification.deleteMany(scoped);
+    await prisma.homeworkTask.deleteMany(scoped);
+    await prisma.homework.deleteMany(scoped);
+    await prisma.excuseRequest.deleteMany(scoped);
     await prisma.syncMutation.deleteMany(scoped);
     await prisma.attendance.deleteMany(scoped);
     await prisma.materialLog.deleteMany(scoped);

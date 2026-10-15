@@ -14,7 +14,10 @@
     "guardian": "بوابة الأسرة",
     "courses": "الحلقات",
     "materials": "المواد",
-    "teach": "وضع الحلقة"
+    "teach": "وضع الحلقة",
+    "notifications": "الإشعارات",
+    "excuses": "الأعذار",
+    "events": "أحداث متعثّرة"
   },
   "shell": {
     "switchToMember": "التبديل إلى عرض العضو",
@@ -62,7 +65,6 @@
   "member": {
     "homeTitle": "بوابتي",
     "account": "حسابي",
-    "comingSoon": "الحلقات والحضور والتقدم في الإصدار القادم.",
     "teaching": "حلقات أدرّسها"
   },
   "guardian": {
@@ -467,6 +469,133 @@
       "attendance_mark": "الحضور",
       "memorization_log": "التسميع",
       "material_log": "صفحات الشرح"
+    }
+  },
+  "family": {
+    "week": "هذا الأسبوع",
+    "noClasses": "لا حلقات هذا الأسبوع.",
+    "role": {
+      "TEACHING": "تدريس",
+      "STUDYING": "دراسة",
+      "WARD": "ابن/ابنة"
+    },
+    "cancelled": "ملغاة",
+    "attendance": "الحضور",
+    "noCourses": "غير مسجّل في أي حلقة بعد.",
+    "memorization": "الحفظ",
+    "pages_zero": "{{count}} صفحة",
+    "pages_one": "صفحة واحدة",
+    "pages_two": "صفحتان",
+    "pages_few": "{{count}} صفحات",
+    "pages_many": "{{count}} صفحة",
+    "pages_other": "{{count}} صفحة",
+    "ayahs_zero": "{{count}} آية",
+    "ayahs_one": "آية واحدة",
+    "ayahs_two": "آيتان",
+    "ayahs_few": "{{count}} آيات",
+    "ayahs_many": "{{count}} آية",
+    "ayahs_other": "{{count}} آية",
+    "tests": "الاختبارات",
+    "juz": "الجزء {{juz}}",
+    "attempt": "المحاولة {{n}}",
+    "scope": {
+      "JUZ": "جزء",
+      "SURAH": "سورة",
+      "RANGE": "مقطع",
+      "TEXT_PAGES": "صفحات"
+    },
+    "homework": "الواجبات",
+    "noHomework": "لا واجبات.",
+    "due": "موعده {{date}}"
+  },
+  "excuses": {
+    "title": "الأعذار",
+    "subtitle": "يطلب الأهل العذر قبل الغياب أو بعده؛ قبوله يجعل تلك الحلقات بعذر.",
+    "empty": "لا أعذار.",
+    "from": "من",
+    "to": "إلى",
+    "reason": "السبب",
+    "submit": "إرسال العذر",
+    "sent": "أُرسل. سيقرّر المسجد.",
+    "accept": "قبول",
+    "reject": "رفض",
+    "status": {
+      "PENDING": "قيد الانتظار",
+      "ACCEPTED": "مقبول",
+      "REJECTED": "مرفوض"
+    }
+  },
+  "homework": {
+    "title": "الواجبات",
+    "what": "الواجب",
+    "target": "لِمَن",
+    "due": "الموعد",
+    "assign": "إسناد",
+    "empty": "لا واجبات بعد.",
+    "targetType": {
+      "COURSE": "الحلقة كاملة",
+      "GROUP": "مجموعة",
+      "MEMBER": "طالب واحد"
+    },
+    "status": {
+      "ASSIGNED": "مفتوح",
+      "DONE": "منجز",
+      "MISSED": "فائت"
+    }
+  },
+  "events": {
+    "title": "أحداث متعثّرة",
+    "subtitle": "ردود فعل فشلت مراراً — إشعار لم يُرسل أو تسجيل لم يُغلق. التغيير نفسه محفوظ؛ أعد المحاولة بعد إصلاح السبب.",
+    "empty": "لا شيء متعثّر.",
+    "retry": "إعادة المحاولة",
+    "status": {
+      "FAILED": "قيد الإعادة",
+      "DEAD": "توقّف"
+    },
+    "attempts_zero": "{{count}} محاولة",
+    "attempts_one": "محاولة واحدة",
+    "attempts_two": "محاولتان",
+    "attempts_few": "{{count}} محاولات",
+    "attempts_many": "{{count}} محاولة",
+    "attempts_other": "{{count}} محاولة"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "empty": "لا جديد.",
+    "markAll": "تعليم الكل كمقروء",
+    "passed": "ناجح",
+    "failed": "لم ينجح",
+    "ABSENCE_SUMMARY": {
+      "title": "غيابات اليوم — {{date}}",
+      "body": "{{items}}"
+    },
+    "ATTENDANCE_OVERRIDDEN": {
+      "title": "تغيّر تسجيل حضور سجّلته",
+      "body": "{{student}} في {{course}} بتاريخ {{date}} أصبح: {{status}}."
+    },
+    "TEST_RESULT": {
+      "title": "نتيجة اختبار {{student}}",
+      "body": "{{score}}/100 — {{result}}."
+    },
+    "HOMEWORK_ASSIGNED": {
+      "title": "واجب جديد: {{title}}",
+      "body": "{{course}}، موعده {{dueDate}}."
+    },
+    "HOMEWORK_MISSED": {
+      "title": "واجب فائت",
+      "body": "لم ينجز {{student}} «{{title}}» (موعده {{dueDate}})."
+    },
+    "SCHEDULE_CHANGE": {
+      "title": "أُلغيت حلقة",
+      "body": "لن تُعقد {{course}} بتاريخ {{date}}."
+    },
+    "EXCUSE_DECIDED": {
+      "title": "العذر {{decision}}",
+      "body": "{{student}}، {{fromDate}} – {{toDate}}."
+    },
+    "SESSION_NOT_TAKEN": {
+      "title": "لم يُسجَّل الحضور",
+      "body": "انتهت {{course}} بتاريخ {{date}} دون تسجيل حضور."
     }
   }
 }

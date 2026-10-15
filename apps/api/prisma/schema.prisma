@@ -153,6 +153,42 @@ enum TestScope {
   TEXT_PAGES
 }
 
+enum ExcuseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum HomeworkTarget {
+  COURSE
+  GROUP
+  MEMBER
+}
+
+enum HomeworkTaskStatus {
+  ASSIGNED
+  DONE
+  MISSED
+}
+
+enum NotificationType {
+  ABSENCE_SUMMARY
+  ATTENDANCE_OVERRIDDEN
+  TEST_RESULT
+  HOMEWORK_ASSIGNED
+  HOMEWORK_MISSED
+  SCHEDULE_CHANGE
+  EXCUSE_DECIDED
+  SESSION_NOT_TAKEN
+}
+
+enum DeliveryStatus {
+  PENDING
+  DONE
+  FAILED
+  DEAD
+}
+
 /// Rejected mutations are not stored, so a retry after the cause is fixed can apply.
 enum SyncStatus {
   APPLIED
@@ -198,6 +234,11 @@ model Organization {
   memorizationSums    MemorizationSummary[]
   materialLogs        MaterialLog[]
   syncMutations       SyncMutation[]
+  excuseRequests      ExcuseRequest[]
+  homework            Homework[]
+  homeworkTasks       HomeworkTask[]
+  notifications       Notification[]
+  domainEvents        DomainEvent[]
 
   @@index([status])
 }
@@ -738,6 +779,121 @@ model SyncMutation {
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, idempotencyKey])
+}
+
+// ---------------------------------------------------------------------------
+// Families and communication (§7, §9, §10, §12 — S4)
+// ---------------------------------------------------------------------------
+/// Decision 8.3: accepting sets matching attendance to EXCUSED.
+model ExcuseRequest {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  memberId              String       @db.Uuid
+  courseId              String?      @db.Uuid
+  fromDate              DateTime     @db.Date
+  toDate                DateTime     @db.Date
+  reason                String
+  submittedByIdentityId String       @db.Uuid
+  status                ExcuseStatus @default(PENDING)
+  decidedByMembershipId String?      @db.Uuid
+  decidedAt             DateTime?    @db.Timestamptz(6)
+  createdAt             DateTime     @default(now()) @db.Timestamptz(6)
+  organization          Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([organizationId, memberId, fromDate])
+}
+
+/// Decision 10.2: target a course, a group or one member; tasks are expanded at creation.
+model Homework {
+  id                String         @id @default(uuid()) @db.Uuid
+  organizationId    String         @db.Uuid
+  courseId          String         @db.Uuid
+  targetType        HomeworkTarget
+  groupId           String?        @db.Uuid
+  memberId          String?        @db.Uuid
+  title             String
+  description       String?
+  dueDate           DateTime       @db.Date
+  createdByMemberId String         @db.Uuid
+  createdAt         DateTime       @default(now()) @db.Timestamptz(6)
+  organization      Organization   @relation(fields: [organizationId], references: [id])
+  tasks             HomeworkTask[]
+
+  @@index([organizationId, courseId, dueDate])
+}
+
+model HomeworkTask {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @db.Uuid
+  homeworkId       String             @db.Uuid
+  enrollmentId     String             @db.Uuid
+  status           HomeworkTaskStatus @default(ASSIGNED)
+  markedByMemberId String?            @db.Uuid
+  markedAt         DateTime?          @db.Timestamptz(6)
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  homework         Homework           @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@unique([homeworkId, enrollmentId])
+  @@index([enrollmentId, status])
+}
+
+/// Keys and params, not sentences: each reader sees their own language (NFR-01).
+/// dedupeKey makes every producer idempotent: redelivery or a rerun job inserts nothing.
+model Notification {
+  id                  String           @id @default(uuid()) @db.Uuid
+  organizationId      String           @db.Uuid
+  recipientIdentityId String           @db.Uuid
+  type                NotificationType
+  titleKey            String
+  bodyKey             String
+  params              Json             @default("{}")
+  entityType          String?
+  entityId            String?          @db.Uuid
+  dedupeKey           String
+  readAt              DateTime?        @db.Timestamptz(6)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(6)
+  organization        Organization     @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, dedupeKey])
+  @@index([recipientIdentityId, readAt, createdAt(sort: Desc)])
+}
+
+/// ADR-0009: written in the same transaction as the change it describes. IDs and facts only.
+model DomainEvent {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @db.Uuid
+  type              String
+  aggregateType     String
+  aggregateId       String          @db.Uuid
+  payload           Json
+  requestId         String?
+  actorMembershipId String?         @db.Uuid
+  occurredAt        DateTime        @default(now()) @db.Timestamptz(6)
+  dispatchedAt      DateTime?       @db.Timestamptz(6)
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  deliveries        EventDelivery[]
+
+  @@index([dispatchedAt, occurredAt])
+  @@index([organizationId, type, occurredAt(sort: Desc)])
+}
+
+/// Unique (eventId, handler): the constraint that makes redelivery a no-op (EV-03).
+/// Not tenant-scoped on its own; always reached through its event.
+model EventDelivery {
+  id            String         @id @default(uuid()) @db.Uuid
+  eventId       String         @db.Uuid
+  handler       String
+  status        DeliveryStatus @default(PENDING)
+  attempts      Int            @default(0)
+  lastError     String?
+  nextAttemptAt DateTime?      @db.Timestamptz(6)
+  completedAt   DateTime?      @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  event         DomainEvent    @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, handler])
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------------

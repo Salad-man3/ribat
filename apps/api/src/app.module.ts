@@ -18,6 +18,7 @@ import { CoursesModule } from './courses/courses.module';
 import { JobsQueueModule } from './jobs/jobs-queue.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ProgressModule } from './progress/progress.module';
+import { FamiliesModule } from './families/families.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ProgressModule } from './progress/progress.module';
     MaterialsModule,
     CoursesModule,
     ProgressModule,
+    FamiliesModule,
     JobsModule,
     AuthModule,
   ],

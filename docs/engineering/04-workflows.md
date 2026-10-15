@@ -185,7 +185,8 @@ Guardians never see teacher notes (DM-13) or other families' data (DM-14).
 ## WF-10 · A member leaves
 
 Staff archive the member: status becomes `ARCHIVED`, enrollments close, logins are disabled,
-and all history stays queryable (decision 14.6). There is no delete, and guardians cannot
+and all history stays queryable (decision 14.6). The archive commits a `member.archived` event;
+its handler closes the enrollments, suspends the memberships and revokes sessions. There is no delete, and guardians cannot
 request one (decision 19.3).
 
 ---

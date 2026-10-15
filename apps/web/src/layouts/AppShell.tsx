@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Emblem } from '../components/Emblem';
 import { useActiveMembership } from '../hooks/use-me';
 import { useBackgroundSync } from '../offline/outbox';
+import { useNotifications } from '../pages/NotificationsPage';
 import { cn } from '../lib/utils';
 
 type NavItem = { to: string; label: string };
@@ -42,7 +43,13 @@ function navFor(
     ...(can('memberships.manage')
       ? [{ to: '/staff/roles', label: 'nav.roles' }]
       : []),
+    ...(can('members.manage')
+      ? [{ to: '/staff/excuses', label: 'nav.excuses' }]
+      : []),
     ...(can('audit.read') ? [{ to: '/staff/audit', label: 'nav.audit' }] : []),
+    ...(can('audit.read')
+      ? [{ to: '/staff/events', label: 'nav.events' }]
+      : []),
     ...(can('organization.manage')
       ? [{ to: '/staff/organization', label: 'nav.organization' }]
       : []),
@@ -55,8 +62,10 @@ export function AppShell() {
   const queryClient = useQueryClient();
   const { me, membership, activeView, can } = useActiveMembership();
   useBackgroundSync();
+  const unread = useNotifications().data?.unread ?? 0;
   const nav = [
     ...navFor(membership?.role, activeView, can),
+    { to: '/notifications', label: 'nav.notifications' },
     { to: '/account/devices', label: 'nav.devices' },
   ];
 
@@ -103,6 +112,11 @@ export function AppShell() {
       }
     >
       {t(item.label)}
+      {item.to === '/notifications' && unread ? (
+        <span className="ms-2 rounded-full bg-gold px-1.5 text-xs font-semibold text-chrome">
+          {unread}
+        </span>
+      ) : null}
     </NavLink>
   ));
 

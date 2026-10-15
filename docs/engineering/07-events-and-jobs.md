@@ -66,9 +66,15 @@ Properties worth knowing in an interview: `SKIP LOCKED` lets several workers run
 coordination; the table is the source of truth, so Redis losing its data delays reactions but
 loses nothing; crash between enqueue and commit results in re-enqueue, which EV-03 absorbs.
 
-**Retries:** attempts at 10s, 1m, 5m, 30m, 2h. After the fifth failure the delivery becomes
-`DEAD` and appears in the staff *failed events* view with a retry button. A dead letter also
-raises a Sentry event.
+**Retries:** after 10 s, 1 min, 5 min and 30 min. The fifth failure makes the delivery
+`DEAD`; it appears in the staff *failed events* view (`/staff/events`) with a retry button,
+and is logged at error level (Sentry once it is wired).
+
+**Built as:** `OutboxService` in the worker process (`JOBS_WORKER=inline|only`). The dispatcher
+loop runs every second; a sweep every minute re-enqueues deliveries still `PENDING` a minute
+after creation, which covers a crash between commit and enqueue. A handler's writes and the
+`DONE` mark share one transaction, and every notification carries a `dedupeKey`, so a
+re-run inserts nothing.
 
 **Monitoring:** undispatched events older than 60 seconds, deliveries in `DEAD`, and dispatcher
 loop duration. A stuck dispatcher is treated as an outage, not a warning.
@@ -79,7 +85,7 @@ loop duration. A stuck dispatcher is treated as an outage, not a warning.
 
 | Event | Emitted by | Payload | Consumers | Slice |
 | --- | --- | --- | --- | --- |
-| `attendance.marked` | Attendance write and sync replay | sessionId, enrollmentId, status, markedBy, supersededPrevious | absence summary (aggregates), points, stats | S4 |
+| `attendance.marked` | Attendance write and sync replay | sessionId, enrollmentId, status, markedByMemberId, supersededMemberId | `notify.attendanceOverridden`; points, stats later | S4 |
 | `attendance.corrected` | Staff correction | as above + previousStatus | notify overridden marker, points, stats | S4 |
 | `memorization.logged` | Progress write and sync replay | memberId, materialId, courseId, type, pages, grade | points, stats | S4 |
 | `memorization.voided` | Void with reason | logId, memberId, reason | points reversal, stats | S5 |
@@ -93,7 +99,12 @@ loop duration. A stuck dispatcher is treated as an outage, not a warning.
 | `announcement.published` | Announcement | announcementId, audience | fan-out to notifications | S5 |
 | `member.archived` | Archive | memberId | close enrollments, revoke sessions, stats | S4 |
 
-Handlers: `notifications.*`, `points.apply`, `stats.invalidate`, `push.send` (after beta).
+Beta handlers (`apps/api/src/events/handlers.ts`): `notify.attendanceOverridden`, `notify.testResult`,
+`notify.homeworkAssigned`, `notify.homeworkMissed`, `notify.sessionCancelled`,
+`notify.excuseDecided`, `members.closeOnArchive`. `memorization.logged` is stored with no
+subscriber yet, for points and statistics in S5. Accepting an excuse sets `EXCUSED` marks in the
+decision's own transaction, not in a handler (EV-01). After beta: `points.apply`,
+`stats.invalidate`, `push.send`.
 
 ---
 
@@ -110,6 +121,9 @@ Handlers: `notifications.*`, `points.apply`, `stats.invalidate`, `push.send` (af
 | `notifications.fanout` | From events | `eventId:handler` | Expands an audience into notification rows |
 | `push.send` | From notification creation | `notificationId:endpoint` | After beta; retries, prunes dead subscriptions |
 | `retention.prune` | Weekly | `week` | Deletes read notifications older than 90 days; never touches domain data |
+
+`attendance.dailySummary`, `sessions.notTakenAlert`, `homework.dueCheck` and `retention.prune` run
+together as one `evening-org` job at 21:30 in the organization's timezone (`EveningService`).
 
 All scheduled jobs run **per organization in its own timezone** — "end of day" means Damascus
 for the pilot and something else for a self-hoster in another country (SH-01).

@@ -28,6 +28,7 @@ import {
   zonedToUtc,
 } from '../common/zoned-time';
 import { memberName } from '../courses/course.mapper';
+import { emit } from '../events/emit';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ClassScopeService,
@@ -182,12 +183,22 @@ export class ProgressReaderService {
           ? 'HELD'
           : 'SCHEDULED'
         : (input.status ?? session.status);
-    const [row] = await db.courseSession.updateManyAndReturn({
-      where: { id: sessionId },
-      data: {
-        status,
-        ...(input.topic !== undefined ? { topic: input.topic } : {}),
-      },
+    const row = await db.$transaction(async (tx) => {
+      const [updated] = await tx.courseSession.updateManyAndReturn({
+        where: { id: sessionId },
+        data: {
+          status,
+          ...(input.topic !== undefined ? { topic: input.topic } : {}),
+        },
+      });
+      if (status === 'CANCELLED' && session.status !== 'CANCELLED')
+        await emit(tx, audit, {
+          type: 'session.cancelled',
+          aggregateType: 'course_session',
+          aggregateId: sessionId,
+          payload: { sessionId, courseId: session.courseId },
+        });
+      return updated;
     });
     await this.audit.record(audit, {
       action: status === 'CANCELLED' ? 'session.cancelled' : 'session.updated',

@@ -3,6 +3,7 @@ import { ayahsInRange, pagesForRange, SURAH_BY_NUMBER } from '@ribat/quran-data'
 import { hashSecret } from '../src/auth/credentials';
 import { addDays, dateIn, fromDateString, weekdayOf, zonedToUtc } from '../src/common/zoned-time';
 import { organizationScopeExtension } from '../src/prisma/organization-scope';
+import { identitiesOf, notify } from '../src/notifications/notify';
 import { writeSummary } from '../src/progress/memorization-summary';
 
 const prisma = new PrismaClient();
@@ -149,6 +150,7 @@ async function seedOrg(params: {
       })),
     });
     await seedClassHistory(org.id, course.id, quran.id, teacherId, wardId);
+    if (guardianId) await seedFamily(org.id, course.id, quran.id, teacherId, wardId, guardianId);
   }
 
   return { org, accounts: params.accounts };
@@ -259,12 +261,103 @@ async function seedClassHistory(
   for (const memberId of students) await writeSummary(scoped, organizationId, memberId, quranId);
 }
 
+/** S4 demo: homework, a juz test, a pending excuse, and a family inbox with something in it. */
+async function seedFamily(
+  organizationId: string,
+  courseId: string,
+  quranId: string,
+  teacherId: string,
+  wardId: string,
+  guardianId: string,
+) {
+  const tz = 'Asia/Damascus';
+  const today = dateIn(new Date(), tz);
+  const enrollments = await prisma.enrollment.findMany({ where: { courseId, status: 'ACTIVE' } });
+  const homework = await prisma.homework.create({
+    data: {
+      organizationId,
+      courseId,
+      targetType: 'COURSE',
+      title: 'مراجعة سورة النبأ',
+      description: 'Revise An-Naba 1–20 twice at home.',
+      dueDate: fromDateString(addDays(today, 2)),
+      createdByMemberId: teacherId,
+    },
+  });
+  await prisma.homeworkTask.createMany({
+    data: enrollments.map((e, i) => ({
+      organizationId,
+      homeworkId: homework.id,
+      enrollmentId: e.id,
+      status: i % 3 === 0 ? ('DONE' as const) : ('ASSIGNED' as const),
+    })),
+  });
+  await prisma.memorizationTest.create({
+    data: {
+      organizationId,
+      memberId: wardId,
+      materialId: quranId,
+      courseId,
+      scopeType: 'JUZ',
+      juz: 30,
+      score: 86,
+      passMark: 60,
+      passed: true,
+      attemptNo: 1,
+      examinerMemberId: teacherId,
+      takenAt: zonedToUtc(addDays(today, -5), '17:00', tz),
+      idempotencyKey: crypto.randomUUID(),
+    },
+  });
+  const guardianIdentity = await prisma.membership.findFirstOrThrow({ where: { memberId: guardianId } });
+  await prisma.excuseRequest.create({
+    data: {
+      organizationId,
+      memberId: wardId,
+      courseId,
+      fromDate: fromDateString(addDays(today, 1)),
+      toDate: fromDateString(addDays(today, 1)),
+      reason: 'Family travel — fictional demo excuse',
+      submittedByIdentityId: guardianIdentity.identityId,
+    },
+  });
+  const db = prisma.$extends(organizationScopeExtension(organizationId));
+  const family = await identitiesOf(db, [guardianId]);
+  const course = await prisma.course.findFirstOrThrow({ where: { id: courseId } });
+  await notify(db, organizationId, family, {
+    type: 'TEST_RESULT',
+    params: { student: 'Layla Salim Noor', course: course.name, score: 86, passed: true },
+    entityType: 'member',
+    entityId: wardId,
+  }, 'seed:test');
+  await notify(db, organizationId, family, {
+    type: 'HOMEWORK_ASSIGNED',
+    params: { title: homework.title, course: course.name, dueDate: addDays(today, 2) },
+    entityType: 'homework',
+    entityId: homework.id,
+  }, 'seed:homework');
+  await notify(db, organizationId, family, {
+    type: 'ABSENCE_SUMMARY',
+    params: {
+      date: addDays(today, -5),
+      count: 1,
+      items: [{ student: 'Layla Salim Noor', course: course.name, status: 'LATE' }],
+    },
+  }, 'seed:absence');
+}
+
 async function main() {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Refusing to seed in production');
   }
 
   await prisma.auditLog.deleteMany({});
+  await prisma.eventDelivery.deleteMany({});
+  await prisma.domainEvent.deleteMany({});
+  await prisma.notification.deleteMany({});
+  await prisma.homeworkTask.deleteMany({});
+  await prisma.homework.deleteMany({});
+  await prisma.excuseRequest.deleteMany({});
   await prisma.syncMutation.deleteMany({});
   await prisma.attendance.deleteMany({});
   await prisma.materialLog.deleteMany({});

@@ -4,8 +4,8 @@ Ribat is a multi-tenant SaaS that runs a mosque's teaching work: courses (Quran
 memorization and book explanation), attendance, progress, homework, and communication with
 families. It is an installable PWA that keeps working offline during class.
 
-**Stage:** S1 (people and access), S2 (courses and scheduling) and S3 (class mode, offline
-sync) built; not deployed yet. Pilot: one mosque, ~200 students. Screenshots are in the [root README](../README.md).
+**Stage:** S1 (people and access), S2 (courses and scheduling), S3 (class mode, offline sync)
+and S4 (families, homework, notifications, event outbox) built; not deployed yet. Pilot: one mosque, ~200 students. Screenshots are in the [root README](../README.md).
 
 ## Read in this order
 

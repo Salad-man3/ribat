@@ -95,8 +95,9 @@
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| GET/POST | `/homework` | Target: course, group or member (decision 10.2) |
-| PATCH | `/homework/tasks/:id` | Mark done or missed |
+| GET/POST | `/homework` | `?courseId=`; target: course, group or member (decision 10.2) |
+| GET | `/homework/:id/tasks` | One row per student; a teacher sees their own group |
+| PATCH | `/homework/tasks/:id` | Mark done, missed or open again |
 | GET | `/schedule` | The caller's weekly timetable: teaching and studying combined (decision 16.2) |
 | GET | `/notifications` | Inbox, unread first |
 | POST | `/notifications/read` | Mark one or all read |
@@ -110,6 +111,7 @@
 | GET | `/stats/teachers/:id` | Own group only for a teacher (PERM-04) |
 | GET | `/stats/members/:id` | Guardian-visible trends |
 | GET | `/audit` | Staff only; filter by entity, actor, date |
+| GET | `/events/failed` · POST `/events/deliveries/:id/retry` | Failed and dead event deliveries (T411) |
 | GET | `/health/live` · `/health/ready` | Process; database, Redis, migrations |
 
 ## 9. After beta

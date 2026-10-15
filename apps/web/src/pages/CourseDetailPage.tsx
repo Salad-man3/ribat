@@ -7,6 +7,7 @@ import { useActiveMembership } from '../hooks/use-me';
 import { isWritable } from '../lib/domain';
 import { statusTone } from './CoursesPage';
 import { GroupsSection } from './course/GroupsSection';
+import { HomeworkSection } from './course/HomeworkSection';
 import { MaterialsSection } from './course/MaterialsSection';
 import { OverviewSection } from './course/OverviewSection';
 import { StudentsSection, TeachersSection } from './course/PeopleSections';
@@ -76,6 +77,7 @@ export function CourseDetailPage() {
         <GroupsSection {...ctx} />
       ) : null}
       <ScheduleSection {...ctx} />
+      <HomeworkSection {...ctx} />
     </section>
   );
 }

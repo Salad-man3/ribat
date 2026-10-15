@@ -397,10 +397,11 @@ attached (decision 10.3).
 | Field | Type | Notes |
 | --- | --- | --- |
 | id, organizationId, recipientIdentityId | uuid | |
-| type | enum | `ABSENCE_SUMMARY`, `LATE`, `TEST_RESULT`, `HOMEWORK_ASSIGNED`, `HOMEWORK_MISSED`, `SCHEDULE_CHANGE`, `WARNING`, `REPORT_CARD`, `ANNOUNCEMENT`, `ACTIVITY_INVITE` |
+| type | enum | Beta: `ABSENCE_SUMMARY`, `ATTENDANCE_OVERRIDDEN`, `TEST_RESULT`, `HOMEWORK_ASSIGNED`, `HOMEWORK_MISSED`, `SCHEDULE_CHANGE`, `EXCUSE_DECIDED`, `SESSION_NOT_TAKEN`. After beta adds `WARNING`, `REPORT_CARD`, `ANNOUNCEMENT`, `ACTIVITY_INVITE` |
 | titleKey, bodyKey | text | i18n keys, not rendered text |
 | params | jsonb | values interpolated in the reader's language |
 | entityType, entityId | text, uuid | deep link target |
+| dedupeKey | text | unique per organization — `eventId:handler:recipient` or `job:date:recipient`, so every producer is safe to run twice |
 | readAt, createdAt | timestamptz | |
 
 Storing keys and parameters instead of finished sentences is what lets the same notification

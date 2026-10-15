@@ -24,6 +24,11 @@ const TENANT_MODELS = new Set([
     'MemorizationSummary',
     'MaterialLog',
     'SyncMutation',
+    'ExcuseRequest',
+    'Homework',
+    'HomeworkTask',
+    'Notification',
+    'DomainEvent',
 ]);
 
 const UNIQUE_WHERE_OPERATIONS = new Set([
