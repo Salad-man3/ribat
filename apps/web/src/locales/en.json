@@ -587,5 +587,19 @@
       "title": "Attendance not taken",
       "body": "{{course}} on {{date}} ended with no attendance."
     }
+  },
+  "theme": {
+    "button": "Theme",
+    "title": "Appearance",
+    "pattern": "Geometric pattern",
+    "names": {
+      "auto": "Auto",
+      "emerald": "Emerald",
+      "nabawi": "Nabawi",
+      "iznik": "Iznik",
+      "alhambra": "Alhambra",
+      "mushaf": "Mushaf",
+      "qiyam": "Qiyam (night)"
+    }
   }
 }

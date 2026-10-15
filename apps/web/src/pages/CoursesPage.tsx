@@ -64,7 +64,7 @@ export function CoursesPage() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-sm',
                 filter === value
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-accent-ink'
                   : 'text-muted hover:bg-paper hover:text-ink',
               )}
             >

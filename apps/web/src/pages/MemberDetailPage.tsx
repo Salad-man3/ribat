@@ -605,7 +605,7 @@ function AccessSection({ member }: { member: MemberResponse }) {
       )}
 
       {issued ? (
-        <div className="mb-4 rounded-xl bg-accent p-4 text-white">
+        <div className="mb-4 rounded-xl bg-accent p-4 text-accent-ink">
           <p className="text-xs opacity-80">{t('access.codeHint')}</p>
           <p
             dir="ltr"

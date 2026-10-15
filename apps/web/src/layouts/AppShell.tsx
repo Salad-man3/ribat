@@ -5,6 +5,7 @@ import type { ActiveView, MembershipRole, S1Permission } from '@ribat/shared';
 import { logout, switchView } from '../api/auth';
 import { Button } from '../components/ui/button';
 import { Emblem } from '../components/Emblem';
+import { ThemePicker } from '../components/ThemePicker';
 import { useActiveMembership } from '../hooks/use-me';
 import { useBackgroundSync } from '../offline/outbox';
 import { useNotifications } from '../pages/NotificationsPage';
@@ -116,7 +117,7 @@ export function AppShell() {
     >
       {t(item.label)}
       {item.to === '/notifications' && unread ? (
-        <span className="ms-2 rounded-full bg-gold px-1.5 text-xs font-semibold text-chrome">
+        <span className="ms-2 rounded-full bg-chrome-ink px-1.5 text-xs font-semibold text-chrome">
           {unread}
         </span>
       ) : null}
@@ -155,6 +156,7 @@ export function AppShell() {
             </Button>
           ) : null}
           {languageToggle}
+          <ThemePicker className={onChrome} />
           <Button
             variant="ghost"
             className={onChrome}
@@ -190,6 +192,7 @@ export function AppShell() {
               </Button>
             ) : null}
             {languageToggle}
+            <ThemePicker className={cn(onChrome, 'px-2')} />
             <Button
               variant="ghost"
               className={cn(onChrome, 'px-2')}

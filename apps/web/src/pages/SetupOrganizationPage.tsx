@@ -48,7 +48,7 @@ export function SetupOrganizationPage() {
         <p className="text-sm text-muted">{t('setup.codeHint')}</p>
         <p
           dir="ltr"
-          className="my-5 rounded-xl bg-accent p-4 text-center font-mono text-2xl tracking-[0.3em] text-white"
+          className="my-5 rounded-xl bg-accent p-4 text-center font-mono text-2xl tracking-[0.3em] text-accent-ink"
         >
           {issuedCode}
         </p>

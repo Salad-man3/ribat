@@ -77,7 +77,7 @@ export function StaffMembersPage() {
                 className={cn(
                   'rounded-md px-3 text-sm',
                   status === value
-                    ? 'bg-accent text-white'
+                    ? 'bg-accent text-accent-ink'
                     : 'text-muted hover:text-ink',
                 )}
               >

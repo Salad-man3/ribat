@@ -17,8 +17,168 @@
   --color-chrome-ink: #ffffff;
   --color-chrome-muted: #b9d6c4;
   --color-gold: #d4a94a;
+  /* Text on accent fills; dark themes flip it because their accent is light. */
+  --color-accent-ink: #ffffff;
+  --color-pattern: var(--color-chrome);
   --color-danger: #a1392a;
   --color-danger-soft: #f7e6e2;
+}
+
+/* Themes only swap the colour tokens, so every screen follows. The selector is
+   bare so a subtree (the picker's swatches) can be themed too. emerald repeats
+   the defaults so a swatch still shows it while another theme is active. */
+[data-theme='emerald'] {
+  --color-paper: #f1f6f2;
+  --color-surface: #ffffff;
+  --color-ink: #0f2a1e;
+  --color-muted: #51665b;
+  --color-line: #d3e2d8;
+  --color-accent: #0b6e3d;
+  --color-accent-strong: #08532e;
+  --color-accent-soft: #dff0e6;
+  --color-accent-ink: #ffffff;
+  --color-chrome: #0a4a2b;
+  --color-chrome-deep: #063820;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #b9d6c4;
+  --color-gold: #d4a94a;
+  --color-pattern: #0a4a2b;
+  --color-danger: #a1392a;
+  --color-danger-soft: #f7e6e2;
+  color-scheme: light;
+}
+
+/* Prophet's Mosque: dome green, marble white, brass. */
+[data-theme='nabawi'] {
+  --color-paper: #fbfaf6;
+  --color-surface: #ffffff;
+  --color-ink: #1d2a23;
+  --color-muted: #56645c;
+  --color-line: #e1e4da;
+  --color-accent: #2e7d4f;
+  --color-accent-strong: #22633d;
+  --color-accent-soft: #edf6f0;
+  --color-accent-ink: #ffffff;
+  --color-chrome: #1f5f3f;
+  --color-chrome-deep: #154a30;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #c3dccc;
+  --color-gold: #c9a24c;
+  --color-pattern: #1f5f3f;
+  --color-danger: #a1392a;
+  --color-danger-soft: #f8e8e3;
+  color-scheme: light;
+}
+
+/* Iznik tiles: cobalt, turquoise, cream, tile red for the active marks. */
+[data-theme='iznik'] {
+  --color-paper: #f6f1e6;
+  --color-surface: #fffdf8;
+  --color-ink: #1a2433;
+  --color-muted: #566174;
+  --color-line: #ded6c3;
+  --color-accent: #137a7f;
+  --color-accent-strong: #0d5e62;
+  --color-accent-soft: #ecf6f6;
+  --color-accent-ink: #ffffff;
+  --color-chrome: #16407a;
+  --color-chrome-deep: #0f2f5c;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #bccfec;
+  --color-gold: #f0705c;
+  --color-pattern: #16407a;
+  --color-danger: #a8321f;
+  --color-danger-soft: #f8e6e0;
+  color-scheme: light;
+}
+
+/* Alhambra: terracotta, cobalt, ochre. */
+[data-theme='alhambra'] {
+  --color-paper: #f7efe2;
+  --color-surface: #fffaf1;
+  --color-ink: #2b1d14;
+  --color-muted: #6b5a4c;
+  --color-line: #e3d5bf;
+  --color-accent: #1f4e8c;
+  --color-accent-strong: #173c6c;
+  --color-accent-soft: #e1e9f4;
+  --color-accent-ink: #ffffff;
+  --color-chrome: #7a3420;
+  --color-chrome-deep: #5c2616;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #ecc9b9;
+  --color-gold: #d9ab4a;
+  --color-pattern: #7a3420;
+  --color-danger: #a1281d;
+  --color-danger-soft: #f8e4de;
+  color-scheme: light;
+}
+
+/* Madinah mushaf page: teal frame on cream. */
+[data-theme='mushaf'] {
+  --color-paper: #fdf6e3;
+  --color-surface: #fffbf0;
+  --color-ink: #2a2416;
+  --color-muted: #665e48;
+  --color-line: #e6dcc0;
+  --color-accent: #0f6b5c;
+  --color-accent-strong: #0b5246;
+  --color-accent-soft: #dcefe9;
+  --color-accent-ink: #ffffff;
+  --color-chrome: #0f5257;
+  --color-chrome-deep: #0a3d41;
+  --color-chrome-ink: #ffffff;
+  --color-chrome-muted: #b8dadb;
+  --color-gold: #c9a24c;
+  --color-pattern: #0f5257;
+  --color-danger: #a1392a;
+  --color-danger-soft: #f8e7df;
+  color-scheme: light;
+}
+
+/* Night prayer. "auto" repeats this block under prefers-color-scheme. */
+[data-theme='qiyam'] {
+  --color-paper: #0f1b30;
+  --color-surface: #16243d;
+  --color-ink: #e6ecf5;
+  --color-muted: #9fb0c8;
+  --color-line: #2a3a58;
+  --color-accent: #4fb3a0;
+  --color-accent-strong: #6cc7b5;
+  --color-accent-soft: #173a40;
+  --color-accent-ink: #07201b;
+  --color-chrome: #0b1426;
+  --color-chrome-deep: #070d1a;
+  --color-chrome-ink: #e6ecf5;
+  --color-chrome-muted: #9fb0c8;
+  --color-gold: #e3c06a;
+  --color-pattern: #e3c06a;
+  --color-danger: #f0937f;
+  --color-danger-soft: #3a2328;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='auto'] {
+    --color-paper: #0f1b30;
+    --color-surface: #16243d;
+    --color-ink: #e6ecf5;
+    --color-muted: #9fb0c8;
+    --color-line: #2a3a58;
+    --color-accent: #4fb3a0;
+    --color-accent-strong: #6cc7b5;
+    --color-accent-soft: #173a40;
+    --color-accent-ink: #07201b;
+    --color-chrome: #0b1426;
+    --color-chrome-deep: #070d1a;
+    --color-chrome-ink: #e6ecf5;
+    --color-chrome-muted: #9fb0c8;
+    --color-gold: #e3c06a;
+    --color-pattern: #e3c06a;
+    --color-danger: #f0937f;
+    --color-danger-soft: #3a2328;
+    color-scheme: dark;
+  }
 }
 
 body {
@@ -26,6 +186,22 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /* Lets the pattern sit at z-index -1: above the page background, below content. */
+  isolation: isolate;
+}
+
+/* Eight-point star (khatam) as a mask, so it takes the theme's pattern colour. */
+:root[data-pattern='on'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--color-pattern);
+  opacity: 0.07;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='black' stroke-width='1.5'%3E%3Crect x='16' y='16' width='32' height='32'/%3E%3Crect x='16' y='16' width='32' height='32' transform='rotate(45 32 32)'/%3E%3C/g%3E%3C/svg%3E")
+    repeat;
+  mask-size: 64px;
 }
 
 :focus-visible {

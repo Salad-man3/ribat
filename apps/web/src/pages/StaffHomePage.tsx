@@ -55,7 +55,7 @@ export function StaffHomePage() {
         title={membership?.organizationName ?? t('staff.homeTitle')}
         subtitle={membership ? t(`roles.${membership.role}`) : undefined}
       />
-      <div className="rounded-2xl bg-accent p-6 text-white">
+      <div className="rounded-2xl bg-accent p-6 text-accent-ink">
         <p className="text-sm opacity-80">{t('staff.activeMembers')}</p>
         <p className="mt-1 text-4xl font-semibold">
           {count === undefined ? '…' : count >= 200 ? '200+' : count}
