@@ -2,6 +2,9 @@
 
 @theme {
   --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  /* Naskh in the mushaf tradition for titles; Kufic, as in mosque inscriptions, for the name. */
+  --font-display: 'Amiri', 'IBM Plex Sans Arabic', serif;
+  --font-brand: 'Reem Kufi', 'IBM Plex Sans Arabic', sans-serif;
   /* Islamic green: deep emerald chrome (sidebar, sign-in), light green-tinted
      paper for the work itself, gold only for the emblem and active marks. */
   --color-paper: #f1f6f2;
@@ -190,7 +193,12 @@ body {
   isolation: isolate;
 }
 
-/* Eight-point star (khatam) as a mask, so it takes the theme's pattern colour. */
+h1 {
+  font-family: var(--font-display);
+}
+
+/* Girih lattice (Hankin's method on the octagon-square tiling). It fades in below
+   the page header and every card is opaque, so text never sits on it. */
 :root[data-pattern='on'] body::before {
   content: '';
   position: fixed;
@@ -198,10 +206,57 @@ body {
   z-index: -1;
   pointer-events: none;
   background: var(--color-pattern);
-  opacity: 0.07;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='black' stroke-width='1.5'%3E%3Crect x='16' y='16' width='32' height='32'/%3E%3Crect x='16' y='16' width='32' height='32' transform='rotate(45 32 32)'/%3E%3C/g%3E%3C/svg%3E")
-    repeat;
-  mask-size: 64px;
+  opacity: 0.12;
+  mask-image: url('./ornaments/lattice.svg'),
+    linear-gradient(to bottom, transparent 8rem, #000 26rem);
+  mask-size: 128px, 100% 100%;
+  mask-repeat: repeat, no-repeat;
+  mask-composite: intersect;
+}
+
+/* A shamsa in the far corner, like the corner piece of a mushaf frame. Inline-end
+   is the left in Arabic, away from the menu and the start of every heading. */
+:root[data-pattern='on'] body::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  inset-block-end: -13rem;
+  inset-inline-end: -13rem;
+  width: min(34rem, 90vw);
+  aspect-ratio: 1;
+  background: var(--color-gold);
+  opacity: 0.28;
+  mask: url('./ornaments/shamsa.svg') center / contain no-repeat;
+}
+
+/* The same lattice in gold on the green chrome, and gold friezes along its edge. */
+.chrome-lattice {
+  isolation: isolate;
+}
+.chrome-lattice::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--color-gold);
+  opacity: 0.09;
+  mask: url('./ornaments/lattice.svg') 0 0 / 112px repeat;
+}
+.frieze-x,
+.frieze-y {
+  background: var(--color-gold);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.frieze-x {
+  height: 14px;
+  mask: url('./ornaments/frieze-x.svg') center / 30px 14px repeat-x;
+}
+.frieze-y {
+  width: 14px;
+  mask: url('./ornaments/frieze-y.svg') center / 14px 30px repeat-y;
 }
 
 :focus-visible {

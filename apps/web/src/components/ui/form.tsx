@@ -70,13 +70,32 @@ export function PageHeader({
   return (
     <header className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-bold">{title}</h1>
+        <TitleRule />
         {subtitle ? (
           <p className="mt-1 text-sm text-muted">{subtitle}</p>
         ) : null}
       </div>
       {actions}
     </header>
+  );
+}
+
+/** Rule, khatam, rule: the divider under every page title. */
+export function TitleRule() {
+  return (
+    <svg
+      viewBox="0 0 120 14"
+      aria-hidden="true"
+      className="mt-2 h-3.5 w-30 text-gold"
+    >
+      <path d="M0 7H46M74 7H120" stroke="currentColor" strokeWidth="1" />
+      <g fill="none" stroke="currentColor" strokeWidth="1.2">
+        <rect x="55" y="2" width="10" height="10" />
+        <rect x="55" y="2" width="10" height="10" transform="rotate(45 60 7)" />
+      </g>
+      <circle cx="60" cy="7" r="1.6" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -108,7 +127,7 @@ export function ErrorText({ error }: { error: unknown }) {
 
 export function Empty({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-muted">
+    <p className="rounded-xl border border-dashed border-line bg-surface px-4 py-8 text-center text-sm text-muted">
       {children}
     </p>
   );

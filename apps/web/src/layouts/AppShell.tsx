@@ -126,11 +126,12 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
-      <aside className="hidden bg-chrome text-chrome-ink md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:overflow-y-auto md:gap-6 md:p-4">
+      <aside className="chrome-lattice hidden bg-chrome text-chrome-ink md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:overflow-y-auto md:gap-6 md:p-4">
+        <div aria-hidden className="frieze-y absolute inset-y-0 end-0" />
         <div className="flex items-center gap-3">
           <Emblem className="size-8" />
           <div>
-            <p className="text-xl font-semibold">{t('appName')}</p>
+            <p className="font-brand text-2xl font-semibold">{t('appName')}</p>
             <p className="mt-0.5 text-sm text-chrome-muted">
               {membership?.organizationName}
             </p>
@@ -167,12 +168,12 @@ export function AppShell() {
         </div>
       </aside>
 
-      <header className="sticky top-0 z-10 bg-chrome text-chrome-ink md:hidden">
+      <header className="chrome-lattice sticky top-0 z-10 bg-chrome text-chrome-ink md:hidden">
         <div className="flex items-center justify-between gap-2 px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <Emblem />
             <div className="min-w-0">
-              <p className="font-semibold">{t('appName')}</p>
+              <p className="font-brand text-lg font-semibold leading-tight">{t('appName')}</p>
               <p className="truncate text-xs text-chrome-muted">
                 {membership?.organizationName}
               </p>
@@ -203,6 +204,7 @@ export function AppShell() {
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2">{links}</nav>
+        <div aria-hidden className="frieze-x" />
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-10">

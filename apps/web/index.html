@@ -9,7 +9,7 @@
       try {
         var d = document.documentElement;
         d.dataset.theme = localStorage.getItem("ribat.theme") || "emerald";
-        d.dataset.pattern = localStorage.getItem("ribat.pattern") || "off";
+        d.dataset.pattern = localStorage.getItem("ribat.pattern") || "on";
       } catch (e) {
         d.dataset.theme = "emerald";
       }
@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Amiri:wght@400;700&family=Reem+Kufi:wght@600&display=swap"
       rel="stylesheet"
     />
     <title>Ribat</title>

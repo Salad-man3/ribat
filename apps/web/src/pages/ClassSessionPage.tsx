@@ -89,7 +89,7 @@ export function ClassSessionPage() {
     <section className="grid gap-4">
       <Link to="/teach" className="text-sm text-accent"><span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}</Link>
       <div>
-        <h1 className="text-xl font-semibold">{session.courseName}</h1>
+        <h1 className="text-2xl font-bold">{session.courseName}</h1>
         <p className="text-sm text-muted">
           {formatDate(session.date, i18n.language)} ·{' '}
           {formatTimeRange(session.startsAt, session.endsAt, i18n.language, kit.timezone)}

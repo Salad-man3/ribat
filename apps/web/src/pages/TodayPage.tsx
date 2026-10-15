@@ -31,7 +31,7 @@ export function TodayPage() {
   return (
     <section className="grid gap-4">
       <div>
-        <h1 className="text-xl font-semibold">{t('classMode.today')}</h1>
+        <h1 className="text-2xl font-bold">{t('classMode.today')}</h1>
         {kit ? <p className="text-sm text-muted">{formatDate(kit.date, i18n.language)}</p> : null}
       </div>
       <SyncStatus />

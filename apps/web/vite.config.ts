@@ -12,6 +12,7 @@ export default defineConfig({
       // SYNC-04: the shell is cached so class mode opens offline; /api is never cached —
       // domain data lives in Dexie, where code decides what is stale.
       workbox: {
+        globPatterns: ['**/*.{js,css,html,svg}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [{ urlPattern: /\/api\//, handler: 'NetworkOnly' }],
