@@ -5,7 +5,7 @@ import { SURAH_BY_NUMBER, SURAHs, validateRange } from '@ribat/quran-data';
 import type { AttendanceStatus, ClassKit, Grade, MemorizationSummaryResponse } from '@ribat/shared';
 import { Button } from '../components/ui/button';
 import { Empty, Field, inputClass } from '../components/ui/form';
-import { formatDate, formatTime, normalizeArabic } from '../lib/domain';
+import { formatDate, formatTimeRange, normalizeArabic } from '../lib/domain';
 import { cn } from '../lib/utils';
 import { db } from '../offline/db';
 import { enqueue, useLive } from '../offline/outbox';
@@ -92,9 +92,7 @@ export function ClassSessionPage() {
         <h1 className="text-xl font-semibold">{session.courseName}</h1>
         <p className="text-sm text-muted">
           {formatDate(session.date, i18n.language)} ·{' '}
-          <span dir="ltr">
-            {formatTime(session.startsAt, i18n.language, kit.timezone)}–{formatTime(session.endsAt, i18n.language, kit.timezone)}
-          </span>
+          {formatTimeRange(session.startsAt, session.endsAt, i18n.language, kit.timezone)}
         </p>
       </div>
       <SyncStatus />

@@ -63,6 +63,11 @@ export function formatTime(iso: string, locale: string, timeZone?: string) {
   });
 }
 
+/** Each end is bidi-isolated: Arabic "ص/م" inside a forced-LTR span scrambled the order. */
+export function formatTimeRange(start: string, end: string, locale: string, timeZone?: string) {
+  return `\u2068${formatTime(start, locale, timeZone)}\u2069 – \u2068${formatTime(end, locale, timeZone)}\u2069`;
+}
+
 /** Umm al-Qura, the civil Hijri calendar. Built into every modern browser's Intl. */
 export function formatHijri(date: string, locale: string) {
   return new Intl.DateTimeFormat(`${locale}-u-ca-islamic-umalqura`, {

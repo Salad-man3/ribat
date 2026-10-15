@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Badge, Empty } from '../components/ui/form';
 import { cn } from '../lib/utils';
-import { formatDate, formatTime } from '../lib/domain';
+import { formatDate, formatTimeRange } from '../lib/domain';
 import { db } from '../offline/db';
 import { syncNow, useLive } from '../offline/outbox';
 import { SyncStatus } from '../offline/SyncStatus';
@@ -55,8 +55,8 @@ export function TodayPage() {
                     {current ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-ink">{t('classMode.now')}</span> : null}
                     {s.id === nextId ? <span className="rounded-full border border-gold bg-gold/20 px-2 py-0.5 text-xs font-medium text-ink">{t('classMode.next')}</span> : null}
                   </span>
-                  <span className="text-sm text-muted" dir="ltr">
-                    {formatTime(s.startsAt, i18n.language, kit.timezone)}–{formatTime(s.endsAt, i18n.language, kit.timezone)}
+                  <span className="text-sm text-muted">
+                    {formatTimeRange(s.startsAt, s.endsAt, i18n.language, kit.timezone)}
                   </span>
                 </span>
                 <span className="grid justify-items-end gap-1">

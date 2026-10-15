@@ -8,7 +8,7 @@ import type {
   ScheduleResponse,
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
-import { formatDate, formatTime, today } from '../lib/domain';
+import { formatDate, formatTimeRange, today } from '../lib/domain';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { Badge, Card, Empty, ErrorText, Field, inputClass } from './ui/form';
@@ -56,9 +56,8 @@ export function WeekTimetable({ filter, title }: { filter?: (e: ScheduleEntry) =
                   >
                     <span className="font-medium">{e.courseName}</span>
                     <span className="flex items-center gap-2">
-                      <span dir="ltr" className="text-xs">
-                        {formatTime(e.startsAt, i18n.language, schedule.data?.timezone)}–
-                        {formatTime(e.endsAt, i18n.language, schedule.data?.timezone)}
+                      <span className="text-xs">
+                        {formatTimeRange(e.startsAt, e.endsAt, i18n.language, schedule.data?.timezone)}
                       </span>
                       <Badge tone={e.role === 'TEACHING' ? 'accent' : 'neutral'}>
                         {e.role === 'WARD' ? e.memberName : t(`family.role.${e.role}`)}

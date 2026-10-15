@@ -23,7 +23,7 @@ import {
 } from '../../components/ui/form';
 import {
   formatDate,
-  formatTime,
+  formatTimeRange,
   fromMinutes,
   toMinutes,
   WEEKDAYS,
@@ -102,9 +102,8 @@ export function ScheduleSection({ course, staff, writable }: SectionProps) {
               className="flex justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-paper"
             >
               <span>{formatDate(s.date, i18n.language)}</span>
-              <span dir="ltr" className="tabular-nums text-muted">
-                {formatTime(s.startsAt, i18n.language, timeZone)} –{' '}
-                {formatTime(s.endsAt, i18n.language, timeZone)}
+              <span className="tabular-nums text-muted">
+                {formatTimeRange(s.startsAt, s.endsAt, i18n.language, timeZone)}
               </span>
             </li>
           ))}
