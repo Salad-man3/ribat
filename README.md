@@ -7,7 +7,7 @@ and a full audit trail. Installable PWA in Arabic (RTL) and English.
 
 [![CI](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml/badge.svg)](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml)
 
-### ▶ [Watch the 2-minute walkthrough](https://salad-man3.github.io/ribat/) · [MP4](docs/demo/ribat-walkthrough.mp4)
+### ▶ [Watch the 2-minute walkthrough](https://salad-man3.github.io/#ribat) · [MP4](docs/demo/ribat-walkthrough.mp4)
 
 <p align="center">
   <img src="docs/demo/class-mode-offline.gif" alt="A teacher marks attendance and logs a recitation with no internet, then the phone syncs" width="300" />
