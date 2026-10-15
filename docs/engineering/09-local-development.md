@@ -45,7 +45,9 @@ required secret is missing — there are no defaults for secrets, in any environ
 | `WEEKEND_DAYS` | no | `5,6` | Friday–Saturday; a self-hoster elsewhere changes it (SH-01) |
 | `PRAYER_METHOD` | no | `UmmAlQura` | Default calculation method for new organizations |
 | `SENTRY_DSN` | no | — | Error tracking; disabled when empty |
-| `WORKER` | no | `0` | `1` runs queues and the dispatcher instead of the HTTP server |
+| `JOBS_WORKER` | no | `inline` | `inline` runs the queues and the event dispatcher inside the API; `only` runs them with no HTTP server; `off` runs none (a separate worker, or e2e tests) |
+| `API_DOCS` | no | `false` | `true` serves Swagger UI at `/api/docs` and the spec at `/api/docs-json` |
+| `SERVE_WEB` | no | `false` | `true` serves the built PWA from the API (the production image) |
 
 ## 4. Commands
 

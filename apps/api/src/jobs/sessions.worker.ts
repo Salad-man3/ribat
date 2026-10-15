@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Worker, type Job } from 'bullmq';
 import type IORedis from 'ioredis';
+import { safeErrorSummary } from '../common/safe-error';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import { SessionGeneratorService } from '../courses/session-generator.service';
@@ -47,7 +48,7 @@ export class SessionsWorker implements OnModuleInit, OnModuleDestroy {
       },
     );
     this.worker.on('failed', (job, error) =>
-      this.logger.error(`job ${job?.name} ${job?.id} failed: ${error.message}`),
+      this.logger.error(`job ${job?.name} ${job?.id} failed: ${safeErrorSummary(error)}`),
     );
 
     // Re-register every organization's nightly run, so new orgs and timezone changes

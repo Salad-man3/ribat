@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { ApiErrorBody, ApiErrorCode } from '@ribat/shared';
 import type { Request, Response } from 'express';
+import { safeErrorStack } from './safe-error';
 
 type RequestWithId = Request & { id?: string; requestId?: string };
 
@@ -28,7 +29,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : exception);
+    this.logger.error(`Unhandled exception (request ${requestId})`, safeErrorStack(exception));
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       error: {
         code: 'INTERNAL_ERROR',

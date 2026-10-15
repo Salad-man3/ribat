@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NextFunction, Request, Response } from 'express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
@@ -24,6 +25,18 @@ async function bootstrap() {
   // A full sync batch (SYNC-12: 200 mutations with notes) can pass Express's 100 kB default.
   app.useBodyParser('json', { limit: '1mb' });
   app.useGlobalFilters(new ApiExceptionFilter());
+
+  if (env.API_DOCS) {
+    const config = new DocumentBuilder()
+      .setTitle('Ribat API')
+      .setDescription(
+        'Multi-tenant mosque education API. Request and response shapes are the Zod schemas in packages/shared.',
+      )
+      .setVersion('0.1.0-beta')
+      .addCookieAuth('ribat_session')
+      .build();
+    SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
+  }
 
   if (env.SERVE_WEB) {
     const dist = env.WEB_DIST_PATH ?? join(process.cwd(), '../web/dist');

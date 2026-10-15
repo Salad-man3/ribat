@@ -53,7 +53,9 @@ export function SyncStatus() {
         <div className="grid">
           <span className={state.mine ? 'font-semibold text-ink' : 'text-muted'}>
             {!online
-              ? t('classMode.sync.offline')
+              ? state.mine
+                ? t('classMode.sync.offlineQueued', { count: state.mine })
+                : t('classMode.sync.offline')
               : state.mine
                 ? t('classMode.sync.queued', { count: state.mine })
                 : t('classMode.sync.synced')}

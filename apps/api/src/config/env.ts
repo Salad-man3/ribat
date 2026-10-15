@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+/** `z.coerce.boolean()` reads the string "false" as true; environment flags need this instead. */
+const flag = z
+  .enum(['true', 'false', '1', '0', ''])
+  .default('false')
+  .transform((v) => v === 'true' || v === '1');
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
@@ -9,7 +15,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  SERVE_WEB: z.coerce.boolean().default(false),
+  SERVE_WEB: flag,
+  /** Swagger UI at /api/docs and the spec at /api/docs-json. On for the public demo only (06-api-outline). */
+  API_DOCS: flag,
   WEB_DIST_PATH: z.string().optional(),
   /**
    * BullMQ worker (ADR-0006): `inline` runs it inside the API process (dev, single-container

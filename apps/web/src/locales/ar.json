@@ -463,7 +463,13 @@
       "superseded": "تسجيل أحدث من شخص آخر هو المعتمد",
       "rejected": "رُفض: {{message}}",
       "dismiss": "إخفاء",
-      "otherAccount": "{{count}} تغييرات تخص حساباً آخر على هذا الهاتف وتنتظره."
+      "otherAccount": "{{count}} تغييرات تخص حساباً آخر على هذا الهاتف وتنتظره.",
+      "offlineQueued_zero": "غير متصل",
+      "offlineQueued_one": "غير متصل — تغيير واحد محفوظ على هذا الهاتف",
+      "offlineQueued_two": "غير متصل — تغييران محفوظان على هذا الهاتف",
+      "offlineQueued_few": "غير متصل — {{count}} تغييرات محفوظة على هذا الهاتف",
+      "offlineQueued_many": "غير متصل — {{count}} تغييراً محفوظاً على هذا الهاتف",
+      "offlineQueued_other": "غير متصل — {{count}} تغيير محفوظ على هذا الهاتف"
     },
     "syncType": {
       "attendance_mark": "الحضور",

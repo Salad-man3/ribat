@@ -463,7 +463,9 @@
       "superseded": "Someone else's later mark won",
       "rejected": "Refused: {{message}}",
       "dismiss": "Dismiss",
-      "otherAccount": "{{count}} changes belong to another account on this phone and wait for it."
+      "otherAccount": "{{count}} changes belong to another account on this phone and wait for it.",
+      "offlineQueued_one": "Offline — {{count}} change saved on this phone",
+      "offlineQueued_other": "Offline — {{count}} changes saved on this phone"
     },
     "syncType": {
       "attendance_mark": "Attendance",

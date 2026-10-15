@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ayahsInRange, pagesForRange, SURAH_BY_NUMBER } from '@ribat/quran-data';
 import { hashSecret } from '../src/auth/credentials';
-import { addDays, dateIn, fromDateString, weekdayOf, zonedToUtc } from '../src/common/zoned-time';
+import { addDays, dateIn, fromDateString, zonedToUtc } from '../src/common/zoned-time';
 import { organizationScopeExtension } from '../src/prisma/organization-scope';
 import { identitiesOf, notify } from '../src/notifications/notify';
 import { writeSummary } from '../src/progress/memorization-summary';
@@ -194,20 +194,20 @@ async function seedClassHistory(
   enrollments.unshift(wardEnrollment);
 
   const today = dateIn(new Date(), tz);
-  const session = (date: string, status: 'HELD' | 'SCHEDULED') =>
+  const session = (date: string, status: 'HELD' | 'SCHEDULED', from = '15:30', to = '17:30') =>
     prisma.courseSession.create({
       data: {
         organizationId,
         courseId,
         date: fromDateString(date),
-        startsAt: zonedToUtc(date, '15:30', tz),
-        endsAt: zonedToUtc(date, '17:30', tz),
+        startsAt: zonedToUtc(date, from, tz),
+        endsAt: zonedToUtc(date, to, tz),
         status,
         isException: true,
       },
     });
-  // The Sun/Tue/Thu schedule generates its own session; on other days add one by hand.
-  if (![0, 2, 4].includes(weekdayOf(today))) await session(today, 'SCHEDULED');
+  // An extra evening class today, so class mode has something to open on any day of the week.
+  await session(today, 'SCHEDULED', '18:00', '20:00');
 
   // Each student starts from An-Nas and works back through juz 30, a common order for children.
   const statuses = ['PRESENT', 'PRESENT', 'LATE', 'PRESENT', 'ABSENT', 'PRESENT', 'EXCUSED'] as const;

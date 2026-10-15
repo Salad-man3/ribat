@@ -1,25 +1,41 @@
 # Ribat
 
 Multi-tenant management system for mosque education: Quran memorization and book-explanation
-courses, members and their families, teachers, schedules built around prayer times, and a full
-audit trail. Installable PWA in Arabic (RTL) and English.
+courses, members and their families, teachers, schedules built around prayer times, attendance
+and progress that teachers record **offline** in class, a family portal, in-app notifications,
+and a full audit trail. Installable PWA in Arabic (RTL) and English.
 
 [![CI](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml/badge.svg)](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml)
 
-![Ribat sign-in](docs/screenshots/login.png)
+### ▶ [Watch the 2-minute walkthrough](https://salad-man3.github.io/ribat/) · [MP4](docs/demo/ribat-walkthrough.mp4)
+
+<p align="center">
+  <img src="docs/demo/class-mode-offline.gif" alt="A teacher marks attendance and logs a recitation with no internet, then the phone syncs" width="300" />
+  <br/><em>Class mode with no internet: every tap is queued on the phone, then replayed once — never twice.</em>
+</p>
 
 ## Status
 
-**Slice S1 (people and access) is done; slice S2 (courses and scheduling) is landing now.**
-Not deployed yet. Attendance, progress logs, homework and offline sync are the next slices.
+**The beta feature set (slices S1–S4) is built and tested.** Not deployed yet; the four-week
+pilot in a real mosque comes next.
 
 | Area | State |
 | --- | --- |
 | Accounts, sessions, roles, audit log | Done |
 | Members, households, guardians, private notes, CSV import | Done |
-| Courses, teachers, enrollment, groups, materials | Done, being polished |
-| Weekly schedule anchored to prayer times, holidays, generated sessions | Done, being polished |
-| Attendance, progress, homework, offline sync, notifications | Not started |
+| Courses, teachers, enrollment, groups, materials | Done |
+| Weekly schedule anchored to prayer times, holidays, generated sessions | Done |
+| Attendance, memorization log and tests, explanation pages — **offline**, with sync | Done |
+| Family portal, excuses, homework, in-app notifications, event outbox | Done |
+| Public demo deployment, four-week pilot | Next |
+
+| Test suite | What it proves |
+| --- | --- |
+| Tenant isolation | Every tenant route — 19 reads, 12 writes — answers **404** to another mosque, never 403 |
+| Offline sync | Duplicate batches, two teachers on one student, a teacher removed mid-class, a clock a day off, an expired session, 200 mutations in one request under 2 s |
+| Event outbox | Event and change commit together; redelivery and re-dispatch double nothing; dead letters are visible and retryable; no PII in payloads |
+| Projections | Rebuilding `MemorizationSummary` from the ledger equals the incrementally kept value |
+| Logs | No phone numbers, names or request bodies in any log line |
 
 ## What it does today
 
@@ -38,12 +54,26 @@ Not deployed yet. Attendance, progress logs, homework and offline sync are the n
 | ![Materials](docs/screenshots/materials.png) | |
 | **Materials.** The Quran (604 pages) and the texts (mutun) the mosque teaches. | |
 
+| | |
+| --- | --- |
+| ![Homework](docs/screenshots/homework.png) | ![Excuses](docs/screenshots/excuses.png) |
+| **Homework.** For the whole course, one group or one student; tracked to done, and marked missed by a nightly job. | **Excuses.** Families ask before or after an absence; accepting one turns the matching absences into "excused" — including marks taken later. |
+| ![Failed events](docs/screenshots/failed-events.png) | ![API docs](docs/screenshots/api-docs.png) |
+| **Failed events.** Reactions run on a transactional outbox; one that keeps failing becomes a visible dead letter with a retry button. | **OpenAPI.** Swagger UI for every endpoint, behind `API_DOCS=true`. |
+
+### For teachers — class mode, offline
+
+| | | |
+| --- | --- | --- |
+| ![Today's classes](docs/screenshots/class-mode-today.png) | ![Marking attendance offline](docs/screenshots/class-mode-offline.png) | ![Logging a recitation](docs/screenshots/class-mode-log.png) |
+| **Today.** The class kit — sessions, the teacher's own students, each one's last position — is cached on the phone. | **No internet.** One tap per student; changes wait in IndexedDB with an idempotency key made at the tap. | **Recitation.** Surah and ayah range → mushaf pages, checked offline against the Quran dataset. |
+
 ### For members and families
 
 | | |
 | --- | --- |
-| ![Member portal](docs/screenshots/member-home.png) | ![Family portal](docs/screenshots/guardian-home.png) |
-| **Member portal.** A member who also teaches sees the courses they lead. | **Family portal.** A guardian sees only their own children, enforced by the API, not just hidden in the UI. |
+| ![Family portal](docs/screenshots/guardian-home.png) | ![Notifications](docs/screenshots/notifications.png) |
+| **Family portal.** Each child's week in Hijri and Gregorian dates, attendance rate, memorization, tests, homework and excuses — only their own children, enforced by the API. | **Notifications.** Test results, homework, cancelled classes and a nightly absence summary, stored as translation keys so each reader gets their own language. |
 
 ## How it is built
 
@@ -53,14 +83,28 @@ flowchart TD
   Caddy --> API
   subgraph API["NestJS API (one Docker image, migrates on boot)"]
     Guards["Rate limit → session cookie → CSRF token → organization → permission"]
-    Guards --> Modules["auth · members · memberships · organizations · courses · materials · prayer times · audit"]
+    Guards --> Modules["auth · members · courses · progress · sync · families · notifications · audit"]
   end
+  Phone["Teacher's phone<br/>Dexie: class kit + outbox"] -->|"POST /sync/mutations<br/>idempotent batch"| API
   Modules --> Ext["Prisma tenant extension<br/>adds organizationId to every tenant query, throws if missing"]
-  Ext --> PG[(PostgreSQL)]
-  Modules --> Redis[(Redis)]
-  Redis --> Worker["Worker (same image)<br/>BullMQ: generates class sessions"]
+  Ext --> PG[(PostgreSQL<br/>domain rows + DomainEvent outbox)]
+  PG --> Worker["Worker (same image)<br/>dispatcher: FOR UPDATE SKIP LOCKED<br/>BullMQ: deliveries, sessions, nightly jobs"]
+  Worker --> Redis[(Redis)]
   Worker --> PG
 ```
+
+- **Offline class mode that cannot double-count.** The teacher's phone keeps a class kit and an
+  outbox in IndexedDB. Each tap gets an idempotency key once; the server replays a batch in
+  per-student lanes, authorises every mutation with the teacher's permissions *at replay time*,
+  and records it in the same transaction as the write and its audit row. Attendance conflicts
+  resolve last-writer-wins by class time, with the loser kept in the audit log.
+  See [05-offline-sync.md](docs/engineering/05-offline-sync.md) and [ADR-0004](docs/engineering/adr/0004-offline-sync.md).
+- **Memorization as a ledger.** Logs are append-only ayah ranges; mistakes are voided with a
+  reason, never edited. A derived summary per student is rewritten in the same transaction and
+  can be rebuilt from the ledger at any time ([ADR-0005](docs/engineering/adr/0005-memorization-model.md), [ADR-0010](docs/engineering/adr/0010-read-models.md)).
+- **Transactional outbox.** Domain events commit with the change; a `SKIP LOCKED` dispatcher fans
+  them out to BullMQ; handlers are idempotent per event and end as visible dead letters after
+  five failures ([ADR-0009](docs/engineering/adr/0009-events-and-outbox.md)).
 
 - **Tenant isolation in one place.** Many mosques share one schema. A Prisma client
   extension injects `organizationId` into every query on a tenant table and throws if a
@@ -85,7 +129,7 @@ flowchart TD
 | Layer | Choice |
 | --- | --- |
 | API | NestJS 11, TypeScript, Prisma 6, PostgreSQL 16, Redis 7, BullMQ |
-| Web | React 19, Vite 6, Tailwind CSS 4, TanStack Query, React Router, i18next, PWA |
+| Web | React 19, Vite 6, Tailwind CSS 4, TanStack Query, React Router, i18next, Dexie, Workbox PWA |
 | Shared | Zod contracts (`packages/shared`), Quran reference data (`packages/quran-data`) |
 | Prayer times | `adhan` for calculation, Aladhan for city lookup, per-prayer mosque offsets |
 | Monorepo | pnpm workspaces, Turborepo |
@@ -106,8 +150,9 @@ pnpm db:seed                       # wipes and recreates the demo data
 pnpm dev
 ```
 
-- PWA: http://localhost:5173
+- PWA: http://localhost:5173 — class mode at `/teach`
 - API: http://localhost:3000/api/v1/health/live
+- API docs: http://localhost:3000/api/docs (with `API_DOCS=true`)
 
 Postgres listens on **5435** and Redis on **16379** so they don't clash with other local
 services.
@@ -120,7 +165,7 @@ All demo accounts use the password `demo-ribat-2026`. The data is fictional.
 | --- | --- | --- |
 | `+963999001001` | Sheikh | Everything in Demo Mosque, including private notes |
 | `+963999001010` | Admin | Members, courses and settings |
-| `+963999001030` | Member | Their own portal and the courses they teach |
+| `+963999001030` | Member, teacher | Their portal, the course they teach, and class mode at `/teach` |
 | `+963999001050` | Guardian | Their own children only |
 | `+963999002001` | Sheikh, Isolation Test Mosque | Nothing from Demo Mosque |
 
@@ -145,6 +190,7 @@ The import validates every row first and writes nothing if any row fails.
 | `pnpm db:migrate` | Apply Prisma migrations |
 | `pnpm db:seed` | Reset the demo data |
 | `pnpm db:studio` | Open Prisma Studio |
+| `pnpm --filter api projections:rebuild` | Rebuild memorization summaries from the ledger |
 
 CI runs lint, typecheck, unit tests, e2e tests and the build on every push.
 

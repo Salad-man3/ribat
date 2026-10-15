@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
 import type IORedis from 'ioredis';
 import { conflict, notFound } from '../common/errors';
+import { safeErrorSummary } from '../common/safe-error';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import { bullConnection } from '../jobs/sessions-queue';
@@ -67,7 +68,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       concurrency: 4,
       settings: { backoffStrategy: (attemptsMade: number) => RETRY_DELAYS_MS[attemptsMade - 1] ?? 7_200_000 },
     });
-    this.worker.on('failed', (job, error) => this.logger.warn(`events job ${job?.id} failed: ${error.message}`));
+    this.worker.on('failed', (job, error) => this.logger.warn(`events job ${job?.id} failed: ${safeErrorSummary(error)}`));
 
     const orgs = await this.prisma.platform.organization.findMany({
       where: { status: 'ACTIVE' },
@@ -86,7 +87,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       await this.dispatchOnce();
       if (++this.ticks % 60 === 0) await this.sweep();
     } catch (error) {
-      this.logger.error(`dispatcher: ${error instanceof Error ? error.message : error}`);
+      this.logger.error(`dispatcher: ${safeErrorSummary(error)}`);
     } finally {
       this.running = false;
     }
@@ -186,7 +187,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       });
       return 'done';
     } catch (error) {
-      const message = (error instanceof Error ? error.message : String(error)).slice(0, 500);
+      const message = safeErrorSummary(error);
       await this.prisma.platform.eventDelivery.update({
         where: { id: deliveryId },
         data: { status: final ? 'DEAD' : 'FAILED', attempts: { increment: 1 }, lastError: message },
