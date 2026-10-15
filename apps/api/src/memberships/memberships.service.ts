@@ -56,11 +56,9 @@ export class MembershipsService {
   async create(
     organizationId: string,
     actor: OrgContext,
-    actorIdentityId: string,
     input: CreateMembershipInput,
     auditCtx: AuditContext,
   ): Promise<MembershipResponse> {
-    await this.assertPassword(actorIdentityId, input.currentPassword);
     this.assertCanAssign(actor, input.role);
 
     const member = await this.prisma.forOrganization(organizationId).member.findFirst({
@@ -107,11 +105,9 @@ export class MembershipsService {
     organizationId: string,
     id: string,
     actor: OrgContext,
-    actorIdentityId: string,
     input: UpdateMembershipInput,
     auditCtx: AuditContext,
   ): Promise<MembershipResponse> {
-    await this.assertPassword(actorIdentityId, input.currentPassword);
 
     const before = await this.prisma.forOrganization(organizationId).membership.findFirst({
       where: { id },
@@ -165,12 +161,9 @@ export class MembershipsService {
     organizationId: string,
     memberId: string,
     actor: OrgContext,
-    actorIdentityId: string,
     role: AssignableRole,
-    password: string,
     auditCtx: AuditContext,
   ) {
-    await this.assertPassword(actorIdentityId, password);
     this.assertCanAssign(actor, role);
 
     const member = await this.prisma.forOrganization(organizationId).member.findFirst({
@@ -222,11 +215,8 @@ export class MembershipsService {
     organizationId: string,
     memberId: string,
     actor: OrgContext,
-    actorIdentityId: string,
-    password: string,
     auditCtx: AuditContext,
   ) {
-    await this.assertPassword(actorIdentityId, password);
 
     const membership = await this.prisma.forOrganization(organizationId).membership.findFirst({
       where: { memberId, status: 'ACTIVE' },
@@ -253,10 +243,5 @@ export class MembershipsService {
     if (role === 'ORG_ADMIN' && actor.role !== 'SHEIKH') {
       throw forbidden();
     }
-  }
-
-  private async assertPassword(identityId: string, password: string): Promise<void> {
-    const ok = await this.identities.passwordMatches(identityId, password);
-    if (!ok) throw forbidden('Current password is incorrect');
   }
 }

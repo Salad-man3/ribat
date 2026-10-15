@@ -135,7 +135,6 @@
     "needsPhone": "Add a phone number first to give this member access.",
     "codeHint": "Give this code to the member once. It is not shown again.",
     "expires": "Expires",
-    "yourPassword": "Your password (to confirm)",
     "resetCode": "Issue a new setup code",
     "grant": "Grant access"
   },
@@ -144,7 +143,6 @@
     "subtitle": "Everyone who can sign in to this mosque",
     "label": "Role",
     "status": "Status",
-    "passwordHint": "Role changes need your password. Enter it once, then change rows below.",
     "grantHint": "To give someone access, open their member page.",
     "noAccess": "Members without access",
     "grant": "Give access",

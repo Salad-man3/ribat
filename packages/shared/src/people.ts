@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { CursorPaginationQuerySchema } from './pagination.js';
 import {
-    currentPassword,
     e164Phone,
     isoDateTime,
     requiredName,
@@ -109,7 +108,6 @@ export type ListMembershipsQuery = z.infer<typeof ListMembershipsQuerySchema>;
 export const CreateMembershipSchema = z.object({
     memberId: uuid,
     role: AssignableRoleSchema,
-    currentPassword: currentPassword,
 });
 export type CreateMembershipInput = z.infer<typeof CreateMembershipSchema>;
 
@@ -117,7 +115,6 @@ export const UpdateMembershipSchema = z
     .object({
         role: AssignableRoleSchema.optional(),
         status: MembershipStatusSchema.optional(),
-        currentPassword,
     })
     .refine((value) => value.role !== undefined || value.status !== undefined, {
         message: 'At least one field is required',
@@ -139,14 +136,8 @@ export type MembershipResponse = z.infer<typeof MembershipResponseSchema>;
 /** POST /members/:id/access. Phone comes from the member row, not the body. */
 export const GrantMemberAccessSchema = z.object({
     role: AssignableRoleSchema,
-    currentPassword,
 });
 export type GrantMemberAccessInput = z.infer<typeof GrantMemberAccessSchema>;
-
-export const ResetSetupCodeSchema = z.object({
-    currentPassword,
-});
-export type ResetSetupCodeInput = z.infer<typeof ResetSetupCodeSchema>;
 
 /** Plaintext code, returned once. Log the ids, never `setupCode`. */
 export const SetupCodeResponseSchema = z.object({

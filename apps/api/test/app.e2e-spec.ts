@@ -537,7 +537,7 @@ describe('API (e2e)', () => {
           .post(`/api/v1/members/${created.body.id}/access`)
           .set('cookie', admin.cookie)
           .set(admin.csrfHeader, admin.csrf)
-          .send({ role: 'ORG_ADMIN', currentPassword: staffPassword })
+          .send({ role: 'ORG_ADMIN' })
           .expect(403);
       } finally {
         await removeAuthFixtures(prisma, [sheikh.identityId, admin.identityId]);
@@ -558,7 +558,7 @@ describe('API (e2e)', () => {
           .post(`/api/v1/members/${created.body.id}/access`)
           .set('cookie', sheikh.cookie)
           .set(sheikh.csrfHeader, sheikh.csrf)
-          .send({ role: 'MEMBER', currentPassword: staffPassword })
+          .send({ role: 'MEMBER' })
           .expect(201);
 
         expect(access.body.setupCode).toMatch(/^[A-Z0-9]{8}$/);

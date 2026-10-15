@@ -48,7 +48,6 @@ export class MembershipsController {
     return this.memberships.create(
       org.organizationId,
       org,
-      session.identityId,
       body,
       auditContextFromOrg(org, session.identityId, requestIdFrom(req)),
     );
@@ -66,7 +65,6 @@ export class MembershipsController {
       org.organizationId,
       id,
       org,
-      session.identityId,
       body,
       auditContextFromOrg(org, session.identityId, requestIdFrom(req)),
     );

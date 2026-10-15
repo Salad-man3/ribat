@@ -82,7 +82,6 @@ export {
   MembershipResponseSchema,
   MembershipRoleSchema,
   MembershipStatusSchema,
-  ResetSetupCodeSchema,
   SetupCodeResponseSchema,
   UpdateMembershipSchema,
   type AssignableRole,
@@ -100,7 +99,6 @@ export {
   type MembershipResponse,
   type MembershipRole,
   type MembershipStatus,
-  type ResetSetupCodeInput,
   type SetupCodeResponse,
   type UpdateMembershipInput,
 } from './people.js';

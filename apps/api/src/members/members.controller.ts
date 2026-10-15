@@ -18,7 +18,6 @@ import {
   GrantMemberAccessSchema,
   LinkSiblingSchema,
   ListMembersQuerySchema,
-  ResetSetupCodeSchema,
   UpdateMemberSchema,
   type CreateGuardianLinkInput,
   type CreateMemberInput,
@@ -26,7 +25,6 @@ import {
   type GrantMemberAccessInput,
   type LinkSiblingInput,
   type ListMembersQuery,
-  type ResetSetupCodeInput,
   type UpdateMemberInput,
 } from '@ribat/shared';
 import { GuardiansService } from '../guardians/guardians.service';
@@ -200,9 +198,7 @@ export class MembersController {
       org.organizationId,
       id,
       org,
-      session.identityId,
       body.role,
-      body.currentPassword,
       this.auditCtx(org, session, req),
     );
   }
@@ -214,14 +210,11 @@ export class MembersController {
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(ResetSetupCodeSchema)) body: ResetSetupCodeInput,
   ) {
     return this.membershipsService.resetMemberSetupCode(
       org.organizationId,
       id,
       org,
-      session.identityId,
-      body.currentPassword,
       this.auditCtx(org, session, req),
     );
   }

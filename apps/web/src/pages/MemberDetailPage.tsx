@@ -565,7 +565,6 @@ function AccessSection({ member }: { member: MemberResponse }) {
   });
   const existing = memberships.data?.find((m) => m.memberId === member.id);
   const [role, setRole] = useState<AssignableRole>('MEMBER');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [issued, setIssued] = useState<SetupCodeResponse | null>(null);
 
   const submit = useMutation({
@@ -576,14 +575,11 @@ function AccessSection({ member }: { member: MemberResponse }) {
           : `/api/v1/members/${member.id}/access`,
         {
           method: 'POST',
-          body: JSON.stringify(
-            existing ? { currentPassword } : { role, currentPassword },
-          ),
+          body: JSON.stringify(existing ? {} : { role }),
         },
       ),
     onSuccess: async (data) => {
       setIssued(data);
-      setCurrentPassword('');
       await queryClient.invalidateQueries({ queryKey: ['memberships'] });
     },
   });
@@ -643,16 +639,6 @@ function AccessSection({ member }: { member: MemberResponse }) {
               </select>
             </Field>
           ) : null}
-          <Field label={t('access.yourPassword')}>
-            <input
-              type="password"
-              className={inputClass}
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
-          </Field>
           <div>
             <Button type="submit" disabled={submit.isPending}>
               {existing ? t('access.resetCode') : t('access.grant')}

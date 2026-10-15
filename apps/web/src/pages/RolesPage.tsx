@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type {
@@ -15,7 +14,6 @@ import {
   Badge,
   Card,
   ErrorText,
-  Field,
   inputClass,
   PageHeader,
 } from '../components/ui/form';
@@ -26,7 +24,6 @@ const STATUSES: MembershipStatus[] = ['ACTIVE', 'SUSPENDED'];
 export function RolesPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [currentPassword, setCurrentPassword] = useState('');
   const memberships = useQuery({
     queryKey: ['memberships'],
     queryFn: () =>
@@ -49,10 +46,10 @@ export function RolesPage() {
     mutationFn: ({
       id,
       ...patch
-    }: { id: string } & Omit<UpdateMembershipInput, 'currentPassword'>) =>
+    }: { id: string } & UpdateMembershipInput) =>
       apiFetch<MembershipResponse>(`/api/v1/memberships/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ ...patch, currentPassword }),
+        body: JSON.stringify(patch),
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['memberships'] }),
@@ -61,23 +58,7 @@ export function RolesPage() {
   return (
     <section className="grid gap-6">
       <PageHeader title={t('roles.title')} subtitle={t('roles.subtitle')} />
-      <Card>
-        <Field label={t('access.yourPassword')} className="max-w-xs">
-          <input
-            type="password"
-            className={inputClass}
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-          />
-        </Field>
-        <p className="mt-1 text-xs text-muted">{t('roles.passwordHint')}</p>
-        {update.isError ? (
-          <div className="mt-3">
-            <ErrorText error={update.error} />
-          </div>
-        ) : null}
-      </Card>
+      {update.isError ? <ErrorText error={update.error} /> : null}
       <Card>
         <ul className="divide-y divide-line">
           {(memberships.data ?? []).map((row) => (
@@ -112,7 +93,7 @@ export function RolesPage() {
                     aria-label={t('roles.label')}
                     className={`${inputClass} w-auto`}
                     value={row.role}
-                    disabled={!currentPassword || update.isPending}
+                    disabled={update.isPending}
                     onChange={(e) =>
                       update.mutate({
                         id: row.id,
@@ -130,7 +111,7 @@ export function RolesPage() {
                     aria-label={t('roles.status')}
                     className={`${inputClass} w-auto`}
                     value={row.status}
-                    disabled={!currentPassword || update.isPending}
+                    disabled={update.isPending}
                     onChange={(e) =>
                       update.mutate({
                         id: row.id,

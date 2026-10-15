@@ -31,7 +31,7 @@ test('CreateMemberNoteSchema defaults visibility to sheikh only', () => {
     assert.equal(parsed.visibility, 'SHEIKH_ONLY');
 });
 
-test('UpdateMembershipSchema requires a role or a status besides the password', () => {
-    const result = UpdateMembershipSchema.safeParse({ currentPassword: 'secret' });
+test('UpdateMembershipSchema requires a role or a status', () => {
+    const result = UpdateMembershipSchema.safeParse({});
     assert.equal(result.success, false);
 });
