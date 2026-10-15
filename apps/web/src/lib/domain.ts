@@ -94,3 +94,12 @@ export function formatDateTime(iso: string, locale: string) {
   }).format(instant);
   return `${instant.toLocaleString(locale)} · ${hijri}`;
 }
+
+/** Search key for Arabic names: no tashkeel or tatweel, one alef, ة=ه, ى=ي. */
+export const normalizeArabic = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي');

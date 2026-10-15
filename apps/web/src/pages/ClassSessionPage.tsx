@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { SURAH_BY_NUMBER, SURAHs, validateRange } from '@ribat/quran-data';
 import type { AttendanceStatus, ClassKit, Grade, MemorizationSummaryResponse } from '@ribat/shared';
 import { Button } from '../components/ui/button';
 import { Empty, Field, inputClass } from '../components/ui/form';
-import { formatDate, formatTime } from '../lib/domain';
+import { formatDate, formatTime, normalizeArabic } from '../lib/domain';
 import { cn } from '../lib/utils';
 import { db } from '../offline/db';
 import { enqueue, useLive } from '../offline/outbox';
@@ -15,15 +15,6 @@ type KitSession = ClassKit['sessions'][number];
 type KitMaterial = ClassKit['materials'][number];
 type Student = KitSession['roster'][number];
 
-/** One tap moves to the next mark (NFR-05). */
-const NEXT: Record<AttendanceStatus | 'none', AttendanceStatus> = {
-  none: 'PRESENT',
-  PRESENT: 'ABSENT',
-  ABSENT: 'LATE',
-  LATE: 'EXCUSED',
-  EXCUSED: 'PRESENT',
-};
-
 const TONE: Record<AttendanceStatus | 'none', string> = {
   none: 'border-line bg-surface text-muted',
   PRESENT: 'border-accent bg-accent-soft text-accent-strong',
@@ -32,6 +23,7 @@ const TONE: Record<AttendanceStatus | 'none', string> = {
   EXCUSED: 'border-line bg-paper text-ink',
 };
 
+const STATUSES: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
 const GRADES: Grade[] = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'REPEAT'];
 
 /** WF-05: attendance, recitations and explanation pages for one session, all through the outbox. */
@@ -51,6 +43,13 @@ export function ClassSessionPage() {
     return { session, kit: source, pending };
   }, [id]);
   const [open, setOpen] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    if (!saved) return;
+    const timer = setTimeout(() => setSaved(null), 3000);
+    return () => clearTimeout(timer);
+  }, [saved]);
 
   if (!data) return null;
   const { session, kit, pending } = data;
@@ -79,6 +78,12 @@ export function ClassSessionPage() {
   const mark = (s: Student, status: AttendanceStatus) =>
     enqueue({ type: 'attendance.mark', payload: { sessionId: session.id, enrollmentId: s.enrollmentId, status } });
   const unmarked = session.roster.filter((s) => statusOf(s) === 'none');
+  const counts = Object.fromEntries(STATUSES.map((st) => [st, session.roster.filter((s) => statusOf(s) === st).length]));
+  const marked = session.roster.length - unmarked.length;
+  const needle = normalizeArabic(query.trim());
+  const shown = session.roster.length > 8 && needle
+    ? session.roster.filter((s) => normalizeArabic(s.name).includes(needle))
+    : session.roster;
 
   return (
     <section className="grid gap-4">
@@ -94,14 +99,20 @@ export function ClassSessionPage() {
       </div>
       <SyncStatus />
 
-      {unmarked.length ? (
-        <Button onClick={() => void Promise.all(unmarked.map((s) => mark(s, 'PRESENT')))}>
-          {t('classMode.markAllPresent')} ({unmarked.length})
-        </Button>
+      {session.roster.length > 8 ? (
+        <input
+          type="search"
+          className={inputClass}
+          placeholder={t('classMode.search')}
+          aria-label={t('classMode.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       ) : null}
 
+      {shown.length === 0 ? <Empty>{t('classMode.noMatch')}</Empty> : null}
       <ul className="grid gap-2">
-        {session.roster.map((s) => {
+        {shown.map((s) => {
           const status = statusOf(s);
           const first = memorization[0];
           const position = first ? positionOf(s.memberId, first.materialId) : undefined;
@@ -109,14 +120,6 @@ export function ClassSessionPage() {
           return (
             <li key={s.enrollmentId} className="rounded-2xl border border-line bg-surface p-3">
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-label={`${s.name}: ${t(`classMode.status.${status}`)}`}
-                  onClick={() => void mark(s, NEXT[status])}
-                  className={cn('min-h-11 min-w-24 rounded-lg border px-2 text-sm font-medium', TONE[status])}
-                >
-                  {t(`classMode.status.${status}`)}
-                </button>
                 <div className="grid min-w-0 flex-1">
                   <span dir="auto" className="truncate text-start font-medium">{s.name}</span>
                   <span className="truncate text-xs text-muted">
@@ -130,13 +133,31 @@ export function ClassSessionPage() {
                   </Button>
                 ) : null}
               </div>
+              <div role="radiogroup" aria-label={s.name} className="mt-2 grid grid-cols-4 gap-1">
+                {STATUSES.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    role="radio"
+                    aria-checked={status === st}
+                    onClick={() => void mark(s, st)}
+                    className={cn('min-h-11 rounded-lg border px-1 text-sm font-medium', status === st ? TONE[st] : TONE.none)}
+                  >
+                    {t(`classMode.status.${st}`)}
+                  </button>
+                ))}
+              </div>
+              {saved === s.enrollmentId ? <p role="status" className="mt-2 text-sm text-accent">{t('classMode.logSaved')}</p> : null}
               {open === s.enrollmentId ? (
                 <LogForm
                   student={s}
                   courseId={session.courseId}
                   materials={memorization}
                   positionOf={positionOf}
-                  onDone={() => setOpen(null)}
+                  onDone={(ok) => {
+                    setOpen(null);
+                    if (ok) setSaved(s.enrollmentId);
+                  }}
                 />
               ) : null}
             </li>
@@ -147,6 +168,34 @@ export function ClassSessionPage() {
       {explanation.length ? (
         <PagesForm session={session} materials={explanation} />
       ) : null}
+
+      <div className="sticky bottom-0 z-10 grid gap-2 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
+          {STATUSES.map((st) => (
+            <span key={st} className={cn('rounded-full border px-2 py-0.5', TONE[st])}>
+              {t(`classMode.status.${st}`)} {counts[st]}
+            </span>
+          ))}
+          <span className={cn('rounded-full border px-2 py-0.5', TONE.none)}>
+            {t('classMode.status.none')} {unmarked.length}
+          </span>
+        </div>
+        <div
+          role="progressbar"
+          aria-label={t('classMode.progress')}
+          aria-valuemin={0}
+          aria-valuemax={session.roster.length}
+          aria-valuenow={marked}
+          className="h-1.5 overflow-hidden rounded bg-line"
+        >
+          <div className="h-full bg-accent" style={{ width: `${session.roster.length ? (marked / session.roster.length) * 100 : 0}%` }} />
+        </div>
+        {unmarked.length ? (
+          <Button onClick={() => void Promise.all(unmarked.map((s) => mark(s, 'PRESENT')))}>
+            {t('classMode.markAllPresent')} ({unmarked.length})
+          </Button>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -177,7 +226,7 @@ function LogForm({
   courseId: string;
   materials: KitMaterial[];
   positionOf: (memberId: string, materialId: string) => MemorizationSummaryResponse | undefined;
-  onDone: () => void;
+  onDone: (saved: boolean) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [materialId, setMaterialId] = useState(materials[0].materialId);
@@ -220,7 +269,7 @@ function LogForm({
           ...(note.trim() ? { note: note.trim() } : {}),
         },
       });
-      onDone();
+      onDone(true);
     } catch {
       setError(t('classMode.invalidRange'));
     }
@@ -231,7 +280,9 @@ function LogForm({
       {s.number}. {i18n.language === 'ar' ? s.nameAr : s.nameEn}
     </option>
   ));
-  const num = (value: string) => Math.max(1, Number(value) || 1);
+  const num = (value: string, max = Infinity) => Math.min(max, Math.max(1, Number(value) || 1));
+  const startCount = SURAH_BY_NUMBER.get(range.surahStart)!.ayahCount;
+  const endCount = SURAH_BY_NUMBER.get(range.surahEnd)!.ayahCount;
 
   return (
     <div className="mt-3 grid gap-3 border-t border-line pt-3">
@@ -266,15 +317,20 @@ function LogForm({
             </select>
           </Field>
           <Field label={t('classMode.fromAyah')}>
-            <input className={inputClass} inputMode="numeric" value={range.ayahStart} onChange={(e) => setRange({ ...range, ayahStart: num(e.target.value) })} />
+            <input className={inputClass} inputMode="numeric" value={range.ayahStart} onChange={(e) => setRange({ ...range, ayahStart: num(e.target.value, startCount) })} />
+            <span className="text-xs font-normal text-muted">/ {startCount}</span>
           </Field>
           <Field label={t('classMode.toSurah')}>
-            <select className={inputClass} value={range.surahEnd} onChange={(e) => setRange({ ...range, surahEnd: Number(e.target.value) })}>
+            <select className={inputClass} value={range.surahEnd} onChange={(e) => {
+                const surahEnd = Number(e.target.value);
+                setRange({ ...range, surahEnd, ayahEnd: Math.min(range.ayahEnd, SURAH_BY_NUMBER.get(surahEnd)!.ayahCount) });
+              }}>
               {surahOptions}
             </select>
           </Field>
           <Field label={t('classMode.toAyah')}>
-            <input className={inputClass} inputMode="numeric" value={range.ayahEnd} onChange={(e) => setRange({ ...range, ayahEnd: num(e.target.value) })} />
+            <input className={inputClass} inputMode="numeric" value={range.ayahEnd} onChange={(e) => setRange({ ...range, ayahEnd: num(e.target.value, endCount) })} />
+            <span className="text-xs font-normal text-muted">/ {endCount}</span>
           </Field>
         </div>
       ) : (
@@ -294,10 +350,15 @@ function LogForm({
           </Button>
         ))}
       </div>
-      <div className="grid grid-cols-[8rem_1fr] gap-2">
-        <Field label={t('classMode.mistakes')}>
-          <input className={inputClass} inputMode="numeric" value={mistakes} onChange={(e) => setMistakes(Math.max(0, Number(e.target.value) || 0))} />
-        </Field>
+      <div className="grid grid-cols-[11rem_1fr] gap-2">
+        <div role="group" aria-label={t('classMode.mistakes')} className="grid gap-1.5 text-sm font-medium text-ink">
+          {t('classMode.mistakes')}
+          <div className="flex gap-1">
+            <Button variant="ghost" className="px-3" aria-label={t('classMode.fewerMistakes')} onClick={() => setMistakes(Math.max(0, mistakes - 1))}>−</Button>
+            <input className={cn(inputClass, 'min-w-0 text-center')} inputMode="numeric" value={mistakes} onChange={(e) => setMistakes(Math.max(0, Number(e.target.value) || 0))} />
+            <Button variant="ghost" className="px-3" aria-label={t('classMode.moreMistakes')} onClick={() => setMistakes(mistakes + 1)}>+</Button>
+          </div>
+        </div>
         <Field label={t('classMode.note')}>
           <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
@@ -305,7 +366,7 @@ function LogForm({
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       <div className="flex gap-2">
         <Button className="flex-1" onClick={() => void save()}>{t('classMode.save')}</Button>
-        <Button variant="ghost" onClick={onDone}>{t('classMode.cancel')}</Button>
+        <Button variant="ghost" onClick={() => onDone(false)}>{t('classMode.cancel')}</Button>
       </div>
     </div>
   );
