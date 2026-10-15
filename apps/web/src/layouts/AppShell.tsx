@@ -18,7 +18,7 @@ const onChrome =
 
 /** Which links a viewer sees. The API enforces the same rules; this only hides dead ends. */
 function navFor(
-  role: MembershipRole | undefined,
+  role: MembershipRole,
   activeView: ActiveView | null,
   can: (permission: S1Permission) => boolean,
 ): NavItem[] {
@@ -63,11 +63,14 @@ export function AppShell() {
   const { me, membership, activeView, can } = useActiveMembership();
   useBackgroundSync();
   const unread = useNotifications().data?.unread ?? 0;
-  const nav = [
-    ...navFor(membership?.role, activeView, can),
-    { to: '/notifications', label: 'nav.notifications' },
-    { to: '/account/devices', label: 'nav.devices' },
-  ];
+  // No membership (offline or still loading): class mode is the only link that works.
+  const nav = membership
+    ? [
+        ...navFor(membership.role, activeView, can),
+        { to: '/notifications', label: 'nav.notifications' },
+        { to: '/account/devices', label: 'nav.devices' },
+      ]
+    : [{ to: '/teach', label: 'nav.teach' }];
 
   const toggleView = useMutation({
     mutationFn: () => switchView(activeView === 'MEMBER' ? 'ADMIN' : 'MEMBER'),
