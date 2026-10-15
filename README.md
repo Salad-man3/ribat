@@ -159,15 +159,19 @@ services.
 
 ### Demo accounts
 
-All demo accounts use the password `demo-ribat-2026`. The data is fictional.
+All demo accounts use the password `demo-ribat-2026`. The data is fictional: مسجد النور has
+100 members with Arabic names, 10 circles and lessons, 10 materials, and four weeks of
+attendance, recitations and lesson pages, so every screen has something to show.
 
 | Phone | Role | Sees |
 | --- | --- | --- |
-| `+963999001001` | Sheikh | Everything in Demo Mosque, including private notes |
+| `+963999001001` | Sheikh | Everything in مسجد النور, including private notes |
 | `+963999001010` | Admin | Members, courses and settings |
-| `+963999001030` | Member, teacher | Their portal, the course they teach, and class mode at `/teach` |
-| `+963999001050` | Guardian | Their own children only |
-| `+963999002001` | Sheikh, Isolation Test Mosque | Nothing from Demo Mosque |
+| `+963999001030` | Member, teacher | Their portal, the two circles they teach, and class mode at `/teach` |
+| `+963999001101`…`109` | Member, teacher | One circle or lesson each |
+| `+963999001050` | Guardian | Their own child only |
+| `+963999001201`…`224` | Guardian | Their own children only |
+| `+963999002001` | Sheikh, isolation test mosque | Nothing from مسجد النور |
 
 ### Import members from CSV
 
