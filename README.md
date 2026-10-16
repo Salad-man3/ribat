@@ -1,17 +1,16 @@
 # Ribat
 
-Multi-tenant management system for mosque education: Quran memorization and book-explanation
-courses, members and their families, teachers, schedules built around prayer times, attendance
-and progress that teachers record **offline** in class, a family portal, in-app notifications,
-and a full audit trail. Installable PWA in Arabic (RTL) and English.
+Multi-tenant management system for all the teaching in a mosque: Quran memorization circles and
+lessons in any subject, members and their families, teachers, schedules set by the clock or by
+prayer times, attendance and progress that teachers record **offline** in class, a family portal,
+in-app notifications, and a full audit trail. Installable PWA in Arabic (RTL) and English.
 
 [![CI](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml/badge.svg)](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml)
 
-### ▶ [Watch the 2-minute walkthrough](https://salad-man3.github.io/#ribat) · [MP4](docs/demo/ribat-walkthrough.mp4)
-
 <p align="center">
-  <img src="docs/demo/class-mode-offline.gif" alt="A teacher marks attendance and logs a recitation with no internet, then the phone syncs" width="300" />
-  <br/><em>Class mode with no internet: every tap is queued on the phone, then replayed once — never twice.</em>
+  <a href="https://salad-man3.github.io/#ribat"><img src="docs/demo/poster.jpg" alt="Ribat: a five-minute tour" width="720" /></a>
+  <br/><strong>▶ <a href="https://salad-man3.github.io/#ribat">Watch the five-minute tour</a></strong> · <a href="docs/demo/ribat-tour.mp4">MP4</a>
+  <br/><em>English narration, Arabic subtitles: the sheikh, a teacher whose phone goes offline mid-class, a student and his father.</em>
 </p>
 
 ## Status
@@ -41,39 +40,46 @@ pilot in a real mosque comes next.
 
 ### For the mosque's staff (sheikh and admins)
 
-| | |
-| --- | --- |
-| ![Staff overview](docs/screenshots/staff-overview.png) | ![Members list in Arabic](docs/screenshots/members-arabic.png) |
-| **Overview.** Every tool the signed-in role is allowed to use, nothing else. | **Members, in Arabic.** Search and filter by status; the whole UI flips to right-to-left. |
-| ![Member detail](docs/screenshots/member-detail.png) | ![Courses](docs/screenshots/courses.png) |
-| **A member.** Guardians, siblings in the same household, private staff notes with their own visibility, and app access issued with a one-time setup code. | **Courses.** Draft, active, paused, finished and archived, with the lifecycle enforced by the API. |
-| ![Course detail](docs/screenshots/course-detail.png) | ![Weekly schedule](docs/screenshots/course-schedule.png) |
-| **A course.** Materials from the mosque's catalogue, a lead teacher and assistants, enrollment and groups. | **Schedule.** Classes start and end at a prayer ("from Asr to Maghrib") or at a fixed time; holidays pause them, and the next four weeks of sessions are generated. |
-| ![Mosque settings and prayer times](docs/screenshots/settings.png) | ![Audit log](docs/screenshots/audit.png) |
-| **Prayer times.** Look up the city, then correct any prayer to match the mosque's own adhan; the offset is kept for every day. | **Audit log.** Every login and every change to people, roles and courses, with who did it and the request it came from. |
-| ![Materials](docs/screenshots/materials.png) | |
-| **Materials.** The Quran (604 pages) and the texts (mutun) the mosque teaches. | |
-
-| | |
-| --- | --- |
-| ![Homework](docs/screenshots/homework.png) | ![Excuses](docs/screenshots/excuses.png) |
-| **Homework.** For the whole course, one group or one student; tracked to done, and marked missed by a nightly job. | **Excuses.** Families ask before or after an absence; accepting one turns the matching absences into "excused" — including marks taken later. |
-| ![Failed events](docs/screenshots/failed-events.png) | ![API docs](docs/screenshots/api-docs.png) |
-| **Failed events.** Reactions run on a transactional outbox; one that keeps failing becomes a visible dead letter with a retry button. | **OpenAPI.** Swagger UI for every endpoint, behind `API_DOCS=true`. |
+- **Overview.** Every tool the signed-in role is allowed to use, nothing else.
+- **Members, in Arabic.** Search and filter by status; the whole UI flips to right-to-left.
+- **A member.** Guardians, siblings in the same household, education (school, university, or highest
+  qualification), private staff notes with their own visibility, and app access issued with a
+  one-time setup code.
+- **Courses (حلقات).** Memorization, explanation or both. One teacher for everyone, or a lead
+  teacher with assistants and the students split into groups, each teacher seeing only his own.
+  Draft, active, paused, finished and archived, with the lifecycle enforced by the API.
+- **Schedule.** Classes start and end at a fixed time or at a prayer ("from Asr to Maghrib");
+  holidays pause them, and the next four weeks of sessions are generated.
+- **Prayer times.** Look up the city, then correct any prayer to match the mosque's own adhan; the
+  offset is kept for every day.
+- **Materials.** The Quran (604 pages) and the texts (mutun) and books the mosque teaches.
+- **Homework.** For the whole course, one group or one student; tracked to done, and marked missed
+  by a nightly job.
+- **Excuses.** Families ask before or after an absence; accepting one turns the matching absences
+  into "excused", including marks taken later.
+- **Audit log.** Every login and every change to people, roles and courses, with who did it and the
+  request it came from.
+- **Failed events.** Reactions run on a transactional outbox; one that keeps failing becomes a
+  visible dead letter with a retry button.
+- **OpenAPI.** Swagger UI for every endpoint, behind `API_DOCS=true`.
 
 ### For teachers — class mode, offline
 
-| | | |
-| --- | --- | --- |
-| ![Today's classes](docs/screenshots/class-mode-today.png) | ![Marking attendance offline](docs/screenshots/class-mode-offline.png) | ![Logging a recitation](docs/screenshots/class-mode-log.png) |
-| **Today.** The class kit — sessions, the teacher's own students, each one's last position — is cached on the phone. | **No internet.** One tap per student; changes wait in IndexedDB with an idempotency key made at the tap. | **Recitation.** Surah and ayah range → mushaf pages, checked offline against the Quran dataset. |
+- **Today.** The class kit (sessions, the teacher's own students, each one's last position) is
+  cached on the phone, with the class happening now and the next one marked.
+- **No internet.** One tap per student; changes wait in IndexedDB with an idempotency key made at the
+  tap, and a tally shows who is left.
+- **Recitation.** New memorization, revision or a test; surah and ayah range → mushaf pages, checked
+  offline against the Quran dataset. Explanation lessons log the pages covered.
 
 ### For members and families
 
-| | |
-| --- | --- |
-| ![Family portal](docs/screenshots/guardian-home.png) | ![Notifications](docs/screenshots/notifications.png) |
-| **Family portal.** Each child's week in Hijri and Gregorian dates, attendance rate, memorization, tests, homework and excuses — only their own children, enforced by the API. | **Notifications.** Test results, homework, cancelled classes and a nightly absence summary, stored as translation keys so each reader gets their own language. |
+- **Family portal.** Each child's week in Hijri and Gregorian dates, attendance rate, memorization,
+  tests, homework and excuses — only their own children, enforced by the API.
+- **Notifications.** Test results, homework, cancelled classes and a nightly absence summary, stored
+  as translation keys so each reader gets their own language.
+- **Themes.** Six palettes drawn from the Prophet's Mosque, Iznik tiles, the Alhambra, the mushaf page
+  and the night prayer, with a girih pattern.
 
 ## How it is built
 
