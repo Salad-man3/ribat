@@ -77,6 +77,19 @@ export function WeekTimetable({ filter, title }: { filter?: (e: ScheduleEntry) =
 const pct = (rate: number | null) => (rate === null ? '—' : `${Math.round(rate * 100)}%`);
 
 /** The member card's numbers: attendance, memorization, tests, homework, excuses (PERM-07). */
+const STATUSES = ['PRESENT', 'LATE', 'ABSENT', 'EXCUSED'] as const;
+type Status = (typeof STATUSES)[number];
+const DOT: Record<Status, string> = { PRESENT: 'bg-accent', LATE: 'bg-gold', ABSENT: 'bg-danger', EXCUSED: 'bg-muted' };
+const PILL: Record<Status, string> = {
+  PRESENT: 'bg-accent-soft text-accent-strong',
+  LATE: 'bg-gold/20 text-ink',
+  ABSENT: 'bg-danger-soft text-danger',
+  EXCUSED: 'border border-line text-muted',
+};
+/** "Thursday 15 October": enough to place a class, without the Hijri date on every row. */
+const shortDate = (date: string, locale: string) =>
+  new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+
 export function ProgressPanel({ memberId }: { memberId: string }) {
   const { t, i18n } = useTranslation();
   const progress = useProgress(memberId);
@@ -88,30 +101,52 @@ export function ProgressPanel({ memberId }: { memberId: string }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <Card title={t('family.attendance')}>
         {p.courses.length === 0 ? <Empty>{t('family.noCourses')}</Empty> : null}
-        <ul className="grid gap-2 text-sm">
-          {p.courses.map((c) => (
-            <li key={c.courseId} className="grid gap-1 rounded-lg bg-paper px-3 py-2">
-              <span className="flex items-center justify-between gap-2">
-                <span className="font-medium">{c.courseName}</span>
-                <span className="text-lg font-semibold text-accent">{pct(c.attendance.rate)}</span>
-              </span>
-              <span className="text-xs text-muted">
-                {(['PRESENT', 'LATE', 'ABSENT', 'EXCUSED'] as const)
-                  .map((s) => `${t(`classMode.status.${s}`)} ${c.attendance[s]}`)
-                  .join(' · ')}
-              </span>
-            </li>
-          ))}
+        <ul className="grid gap-3 text-sm">
+          {p.courses.map((c) => {
+            const total = STATUSES.reduce((sum, s) => sum + c.attendance[s], 0);
+            const shown = STATUSES.filter((s) => c.attendance[s] > 0);
+            return (
+              <li key={c.courseId} className="grid gap-2.5 rounded-xl bg-paper p-3">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="font-medium">{c.courseName}</span>
+                  <span className="text-2xl font-semibold text-accent">{pct(c.attendance.rate)}</span>
+                </span>
+                {total ? (
+                  <span className="flex h-2 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                    {shown.map((s) => (
+                      <span key={s} className={DOT[s]} style={{ width: `${(c.attendance[s] / total) * 100}%` }} />
+                    ))}
+                  </span>
+                ) : null}
+                <span className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                  {shown.map((s) => (
+                    <span key={s} className="flex items-center gap-1.5">
+                      <span className={cn('size-2 rounded-full', DOT[s])} />
+                      {t(`classMode.status.${s}`)} {c.attendance[s]}
+                    </span>
+                  ))}
+                </span>
+              </li>
+            );
+          })}
         </ul>
         {p.recentAttendance.length ? (
-          <ul className="mt-3 grid gap-1 text-xs text-muted">
-            {p.recentAttendance.slice(0, 6).map((a, i) => (
-              <li key={i} className="flex justify-between gap-2">
-                <span>{formatDate(a.date, i18n.language)} · {a.courseName}</span>
-                <span className={a.status === 'ABSENT' ? 'text-danger' : ''}>{t(`classMode.status.${a.status}`)}</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <h3 className="mt-4 mb-1 text-sm font-semibold">{t('family.recent')}</h3>
+            <ul className="text-sm">
+              {p.recentAttendance.slice(0, 6).map((a, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 border-b border-line py-2 last:border-0">
+                  <span>
+                    {shortDate(a.date, i18n.language)}
+                    {p.courses.length > 1 ? <span className="text-muted"> · {a.courseName}</span> : null}
+                  </span>
+                  <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', PILL[a.status])}>
+                    {t(`classMode.status.${a.status}`)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
         ) : null}
       </Card>
 

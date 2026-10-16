@@ -508,7 +508,8 @@
     },
     "homework": "Homework",
     "noHomework": "No homework.",
-    "due": "due {{date}}"
+    "due": "due {{date}}",
+    "recent": "Recent classes"
   },
   "excuses": {
     "title": "Excuses",

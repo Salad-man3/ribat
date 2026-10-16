@@ -136,10 +136,10 @@ async function seedDemo() {
   await addMember({ firstName: 'سالم', fatherName: 'كريم', familyName: 'العظم', gender: 'M', birthDate: '1988-02-10', phone: '+963999001010', role: 'ORG_ADMIN' });
   await addMember({ firstName: 'رامي', fatherName: 'نبيل', familyName: 'العظم', gender: 'M', birthDate: '1990-06-15', phone: '+963999001011', role: 'ORG_ADMIN' });
   const tariq = await addMember({ firstName: 'طارق', fatherName: 'سالم', familyName: 'النوري', gender: 'M', birthDate: '2005-08-20', phone: '+963999001030', role: 'MEMBER', householdId: noor.id });
-  const layla = await addMember({ firstName: 'ليلى', fatherName: 'سالم', familyName: 'النوري', motherName: 'هدى الشامي', gender: 'F', birthDate: '2014-01-12', phone: '+963999001040', role: 'MEMBER', householdId: noor.id, schoolGrade: 'السادس' });
+  const ward = await addMember({ firstName: 'يوسف', fatherName: 'سالم', familyName: 'النوري', motherName: 'هدى الشامي', gender: 'M', birthDate: '2014-01-12', phone: '+963999001040', role: 'MEMBER', householdId: noor.id, schoolGrade: 'السادس' });
   const salim = await addMember({ firstName: 'سالم', fatherName: 'كريم', familyName: 'النوري', gender: 'M', birthDate: '1982-11-03', phone: '+963999001050', role: 'GUARDIAN', householdId: noor.id });
   await prisma.guardianLink.create({
-    data: { organizationId, guardianMemberId: salim.id, wardMemberId: layla.id, relation: 'FATHER', isPrimary: true },
+    data: { organizationId, guardianMemberId: salim.id, wardMemberId: ward.id, relation: 'FATHER', isPrimary: true },
   });
 
   // Nine more teachers, each able to sign in for class mode.
@@ -161,8 +161,8 @@ async function seedDemo() {
 
   // 24 fathers, each with a household and one to three children.
   const guardians: Person[] = [];
-  const kids: Person[] = [layla];
-  const wardsOf = new Map<string, Person[]>([[salim.id, [layla]]]);
+  const kids: Person[] = [ward];
+  const wardsOf = new Map<string, Person[]>([[salim.id, [ward]]]);
   for (let i = 0; i < 24; i++) {
     const familyName = FAMILIES[i];
     const household = await prisma.household.create({ data: { organizationId, name: `آل ${familyName}` } });
@@ -238,11 +238,11 @@ async function seedDemo() {
     students: Person[];
   };
   const byAge = (min: number, max: number, gender?: 'M' | 'F') =>
-    kids.filter((k) => k.age >= min && k.age <= max && (!gender || k.gender === gender) && k !== layla);
+    kids.filter((k) => k.age >= min && k.age <= max && (!gender || k.gender === gender) && k !== ward);
   const take = (list: Person[], n: number) => shuffle(list).slice(0, n);
 
   const courses: CourseSpec[] = [
-    { name: 'حلقة تحفيظ العصر', description: 'حفظ جزء عمّ وتبارك للأولاد بين العصر والمغرب.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 7, maxAge: 16, weekdays: [0, 2, 4], from: '15:30', to: '17:30', prayer: { start: 'ASR', end: 'MAGHRIB' }, memorize: 'quran', lead: tariq, students: [layla, ...take(byAge(9, 14, 'M'), 10)] },
+    { name: 'حلقة تحفيظ العصر', description: 'حفظ جزء عمّ وتبارك للأولاد بين العصر والمغرب.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 7, maxAge: 16, weekdays: [0, 2, 4], from: '15:30', to: '17:30', prayer: { start: 'ASR', end: 'MAGHRIB' }, memorize: 'quran', lead: tariq, students: [ward, ...take(byAge(9, 14, 'M'), 10)] },
     { name: 'حلقة الفجر للكبار', description: 'حفظ ومراجعة للكبار بعد صلاة الفجر.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 18, weekdays: [6, 1, 3], from: '05:15', to: '06:15', prayer: { start: 'FAJR', end: 'SUNRISE' }, memorize: 'quran', lead: teachers[1], students: [...take(adults, 7), ...take(guardians, 4)] },
     { name: 'حلقة البراعم', description: 'تلقين قصار السور للصغار.', type: 'MEMORIZATION', location: 'قاعة الأطفال', minAge: 5, maxAge: 8, weekdays: [6, 1, 3], from: '16:00', to: '17:00', memorize: 'quran', lead: teachers[2], students: take(byAge(5, 8), 11) },
     { name: 'حلقة الفتيات', description: 'حلقة تحفيظ للبنات يوم الجمعة والسبت.', type: 'MEMORIZATION', location: 'مصلى النساء', minAge: 9, maxAge: 15, weekdays: [5, 6], from: '10:00', to: '12:00', memorize: 'quran', lead: teachers[3], students: take(byAge(9, 14, 'F'), 11) },
@@ -466,7 +466,7 @@ async function seedDemo() {
     });
   }
   await prisma.memorizationTest.create({
-    data: { organizationId, memberId: layla.id, materialId: material.quran.id, courseId: courseIds[0], scopeType: 'JUZ', juz: 30, score: 86, passMark: 60, passed: true, attemptNo: 1, examinerMemberId: tariq.id, takenAt: zonedToUtc(addDays(today, -5), '17:00', TZ), idempotencyKey: crypto.randomUUID() },
+    data: { organizationId, memberId: ward.id, materialId: material.quran.id, courseId: courseIds[0], scopeType: 'JUZ', juz: 30, score: 86, passMark: 60, passed: true, attemptNo: 1, examinerMemberId: tariq.id, takenAt: zonedToUtc(addDays(today, -5), '17:00', TZ), idempotencyKey: crypto.randomUUID() },
   });
 
   // Excuses in every state, from the fathers.
@@ -474,13 +474,13 @@ async function seedDemo() {
   const reasons = ['سفر عائلي', 'مرض', 'امتحانات المدرسة', 'موعد طبيب', 'زيارة الأقارب', 'عرس في العائلة'];
   const families = [...wardsOf.entries()].filter(([, wards]) => wards.length);
   for (const [i, [guardianId, wards]] of families.slice(0, 9).entries()) {
-    const ward = guardianId === salim.id ? layla : wards[0];
+    const child = wards[0];
     const status = i < 3 ? 'PENDING' : i < 7 ? 'ACCEPTED' : 'REJECTED';
     const day = addDays(today, i < 3 ? i + 1 : -(i * 2));
     await prisma.excuseRequest.create({
       data: {
         organizationId,
-        memberId: ward.id,
+        memberId: child.id,
         fromDate: fromDateString(day),
         toDate: fromDateString(addDays(day, i % 2)),
         reason: reasons[i % reasons.length],
@@ -499,13 +499,13 @@ async function seedDemo() {
     });
   }
 
-  // Layla's father has something in his inbox.
+  // The demo ward's father has something in his inbox.
   const db = prisma.$extends(organizationScopeExtension(organizationId));
   const family = await identitiesOf(db, [salim.id]);
   const asr = courses[0].name;
-  await notify(db, organizationId, family, { type: 'TEST_RESULT', params: { student: layla.name, course: asr, score: 86, passed: true }, entityType: 'member', entityId: layla.id }, 'seed:test');
-  await notify(db, organizationId, family, { type: 'HOMEWORK_ASSIGNED', params: { title: 'مراجعة محفوظ الأسبوع', course: asr, dueDate: addDays(today, 3) }, entityType: 'member', entityId: layla.id }, 'seed:homework');
-  await notify(db, organizationId, family, { type: 'ABSENCE_SUMMARY', params: { date: addDays(today, -5), count: 1, items: [{ student: layla.name, course: asr, status: 'LATE' }] } }, 'seed:absence');
+  await notify(db, organizationId, family, { type: 'TEST_RESULT', params: { student: ward.name, course: asr, score: 86, passed: true }, entityType: 'member', entityId: ward.id }, 'seed:test');
+  await notify(db, organizationId, family, { type: 'HOMEWORK_ASSIGNED', params: { title: 'مراجعة محفوظ الأسبوع', course: asr, dueDate: addDays(today, 3) }, entityType: 'member', entityId: ward.id }, 'seed:homework');
+  await notify(db, organizationId, family, { type: 'ABSENCE_SUMMARY', params: { date: addDays(today, -5), count: 1, items: [{ student: ward.name, course: asr, status: 'LATE' }] } }, 'seed:absence');
 
   return {
     org,
