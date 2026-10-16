@@ -15,7 +15,7 @@ export const AttendanceStatusSchema = z.enum([
 ]);
 export type AttendanceStatus = z.infer<typeof AttendanceStatusSchema>;
 
-export const MemorizationTypeSchema = z.enum(['NEW', 'REVISION', 'INITIAL']);
+export const MemorizationTypeSchema = z.enum(['NEW', 'REVISION', 'INITIAL', 'TEST']);
 export type MemorizationType = z.infer<typeof MemorizationTypeSchema>;
 
 export const GradeSchema = z.enum(['EXCELLENT', 'VERY_GOOD', 'GOOD', 'REPEAT']);

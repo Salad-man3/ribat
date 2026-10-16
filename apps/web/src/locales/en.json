@@ -455,7 +455,8 @@
     },
     "type": {
       "NEW": "New",
-      "REVISION": "Revision"
+      "REVISION": "Revision",
+      "TEST": "Test"
     },
     "grade": {
       "EXCELLENT": "Excellent",

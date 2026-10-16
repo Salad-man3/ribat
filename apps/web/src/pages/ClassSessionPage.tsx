@@ -234,7 +234,7 @@ function LogForm({
   const startSurah = position?.lastSurah ?? 1;
   const lastAyah = position?.lastAyah ?? 0;
   const startAyah = Math.min(lastAyah + 1, SURAH_BY_NUMBER.get(startSurah)!.ayahCount);
-  const [type, setType] = useState<'NEW' | 'REVISION'>('NEW');
+  const [type, setType] = useState<'NEW' | 'REVISION' | 'TEST'>('NEW');
   const [range, setRange] = useState({ surahStart: startSurah, ayahStart: startAyah, surahEnd: startSurah, ayahEnd: startAyah });
   const nextPage = (position?.lastPageReached ?? 0) + 1;
   const [pages, setPages] = useState({ pageFrom: nextPage, pageTo: nextPage });
@@ -294,7 +294,7 @@ function LogForm({
         </Field>
       ) : null}
       <div className="flex gap-2">
-        {(['NEW', 'REVISION'] as const).map((value) => (
+        {(['NEW', 'REVISION', 'TEST'] as const).map((value) => (
           <Button key={value} variant={type === value ? 'primary' : 'ghost'} className="flex-1" onClick={() => setType(value)}>
             {t(`classMode.type.${value}`)}
           </Button>

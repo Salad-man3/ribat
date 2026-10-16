@@ -128,6 +128,16 @@ describe('summarize', () => {
     expect(s.lastLoggedAt).toEqual(new Date('2026-10-03T10:00:00Z'));
   });
 
+  it('leaves coverage and position unchanged for a test, like a revision', () => {
+    const base = [quran('NEW', [78, 1, 78, 20], [582, 582], '2026-10-01T10:00:00Z')];
+    const withTest = summarize([
+      ...base,
+      quran('TEST', [1, 1, 1, 7], [1, 1], '2026-10-02T10:00:00Z'),
+    ]);
+    const before = summarize(base);
+    expect(withTest).toEqual({ ...before, lastLoggedAt: new Date('2026-10-02T10:00:00Z') });
+  });
+
   it('takes the last position by class time, not by insertion order', () => {
     const s = summarize([
       quran('NEW', [80, 1, 80, 10], [585, 585], '2026-10-05T10:00:00Z'),

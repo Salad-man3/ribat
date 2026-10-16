@@ -455,7 +455,8 @@
     },
     "type": {
       "NEW": "حفظ جديد",
-      "REVISION": "مراجعة"
+      "REVISION": "مراجعة",
+      "TEST": "اختبار"
     },
     "grade": {
       "EXCELLENT": "ممتاز",

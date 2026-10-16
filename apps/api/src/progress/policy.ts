@@ -41,7 +41,7 @@ export function incomingAttendanceWins(
 }
 
 export type LedgerRow = {
-  type: 'NEW' | 'REVISION' | 'INITIAL';
+  type: 'NEW' | 'REVISION' | 'INITIAL' | 'TEST';
   surahStart: number | null;
   ayahStart: number | null;
   surahEnd: number | null;
@@ -62,14 +62,14 @@ export type Summary = {
 
 /**
  * ADR-0005: progress is the union of memorized ranges, so order does not matter.
- * Only NEW and INITIAL logs add coverage; a revision re-recites what is already there.
+ * Only NEW and INITIAL logs add coverage; revisions and tests re-recite what is already there.
  * Callers pass non-voided logs only.
  */
 export function summarize(logs: LedgerRow[]): Summary {
   const sorted = [...logs].sort(
     (a, b) => a.loggedAt.getTime() - b.loggedAt.getTime(),
   );
-  const coverage = sorted.filter((l) => l.type !== 'REVISION');
+  const coverage = sorted.filter((l) => l.type === 'NEW' || l.type === 'INITIAL');
 
   const pages = new Set<number>();
   for (const l of coverage)
