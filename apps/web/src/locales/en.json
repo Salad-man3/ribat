@@ -92,6 +92,32 @@
     "address": "Address",
     "schoolGrade": "School grade",
     "schoolName": "School",
+    "education": "Education",
+    "studyStatusValue": {
+      "SCHOOL": "In school",
+      "UNIVERSITY": "In university",
+      "NOT_STUDYING": "Not studying"
+    },
+    "university": "University",
+    "faculty": "Faculty / major",
+    "universityYear": "Year",
+    "highestEducation": "Highest qualification",
+    "highestLine": "Highest qualification: {{level}}",
+    "universityStudent": "University student",
+    "educationLevel": {
+      "NONE": "None",
+      "PRIMARY": "Primary school",
+      "MIDDLE": "Middle school",
+      "SECONDARY": "High school",
+      "DIPLOMA": "Diploma",
+      "BACHELOR": "Bachelor's",
+      "MASTER": "Master's",
+      "DOCTORATE": "Doctorate"
+    },
+    "year": {
+      "1": "Year 1", "2": "Year 2", "3": "Year 3", "4": "Year 4",
+      "5": "Year 5", "6": "Year 6", "7": "Year 7", "8": "Year 8"
+    },
     "notes": "Notes",
     "statusValue": {
       "ACTIVE": "Active",

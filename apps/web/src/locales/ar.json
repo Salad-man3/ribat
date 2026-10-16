@@ -92,6 +92,32 @@
     "address": "العنوان",
     "schoolGrade": "الصف الدراسي",
     "schoolName": "المدرسة",
+    "education": "الدراسة",
+    "studyStatusValue": {
+      "SCHOOL": "في المدرسة",
+      "UNIVERSITY": "في الجامعة",
+      "NOT_STUDYING": "لا يدرس حالياً"
+    },
+    "university": "الجامعة",
+    "faculty": "الكلية / الاختصاص",
+    "universityYear": "السنة الدراسية",
+    "highestEducation": "أعلى شهادة",
+    "highestLine": "أعلى شهادة: {{level}}",
+    "universityStudent": "طالب جامعي",
+    "educationLevel": {
+      "NONE": "بدون شهادة",
+      "PRIMARY": "الابتدائية",
+      "MIDDLE": "الإعدادية",
+      "SECONDARY": "الثانوية",
+      "DIPLOMA": "دبلوم",
+      "BACHELOR": "إجازة جامعية",
+      "MASTER": "ماجستير",
+      "DOCTORATE": "دكتوراه"
+    },
+    "year": {
+      "1": "السنة الأولى", "2": "السنة الثانية", "3": "السنة الثالثة", "4": "السنة الرابعة",
+      "5": "السنة الخامسة", "6": "السنة السادسة", "7": "السنة السابعة", "8": "السنة الثامنة"
+    },
     "notes": "ملاحظات",
     "statusValue": {
       "ACTIVE": "نشط",

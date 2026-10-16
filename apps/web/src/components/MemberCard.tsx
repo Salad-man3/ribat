@@ -1,4 +1,5 @@
 import type { MemberResponse } from '@ribat/shared';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Badge } from './ui/form';
@@ -9,12 +10,33 @@ export function fullName(
   return `${member.firstName} ${member.fatherName} ${member.familyName}`;
 }
 
+/** One readable line per study status, or null while it is unknown. */
+export function educationLine(member: MemberResponse, t: TFunction) {
+  const parts: (string | null)[] =
+    member.studyStatus === 'SCHOOL'
+      ? [member.schoolGrade, member.schoolName]
+      : member.studyStatus === 'UNIVERSITY'
+        ? [
+            t('members.universityStudent'),
+            member.university,
+            member.faculty,
+            member.universityYear ? t(`members.year.${member.universityYear}`) : null,
+          ]
+        : member.studyStatus === 'NOT_STUDYING' && member.highestEducation
+          ? [
+              t('members.highestLine', {
+                level: t(`members.educationLevel.${member.highestEducation}`),
+              }),
+              member.faculty,
+            ]
+          : [];
+  return parts.filter(Boolean).join(' · ') || null;
+}
+
 const FIELDS = [
   'phone',
   'birthDate',
   'motherName',
-  'schoolGrade',
-  'schoolName',
   'address',
   'joinedAt',
   'notes',
@@ -32,9 +54,11 @@ export function MemberCard({
   to?: string;
 }) {
   const { t } = useTranslation();
-  const rows = FIELDS.filter(
+  const rows: [string, string][] = FIELDS.filter(
     (key) => member[key] != null && member[key] !== '',
-  );
+  ).map((key) => [key, String(member[key])]);
+  const education = educationLine(member, t);
+  if (education) rows.splice(3, 0, ['education', education]);
   const title = <h2 className="text-lg font-semibold">{fullName(member)}</h2>;
   return (
     <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
@@ -54,14 +78,14 @@ export function MemberCard({
       </header>
       {rows.length ? (
         <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-          {rows.map((key) => (
+          {rows.map(([key, value]) => (
             <div key={key}>
               <dt className="text-xs text-muted">{t(`members.${key}`)}</dt>
               <dd
                 dir={key === 'phone' ? 'ltr' : undefined}
                 className="text-start"
               >
-                {String(member[key])}
+                {value}
               </dd>
             </div>
           ))}

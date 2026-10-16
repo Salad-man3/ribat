@@ -18,6 +18,11 @@ export function shapeMember(member: Member, org: OrgContext): MemberResponse {
     address: null,
     schoolGrade: null,
     schoolName: null,
+    studyStatus: null,
+    university: null,
+    faculty: null,
+    universityYear: null,
+    highestEducation: null,
     notes: null,
   };
 }

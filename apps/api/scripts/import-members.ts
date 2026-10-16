@@ -41,6 +41,11 @@ export function validateImportRows(rows: ParsedImportRow[]) {
       address: row.data.address || undefined,
       schoolGrade: row.data.schoolGrade || undefined,
       schoolName: row.data.schoolName || undefined,
+      studyStatus: row.data.study_status || undefined,
+      university: row.data.university || undefined,
+      faculty: row.data.faculty || undefined,
+      universityYear: row.data.university_year ? Number(row.data.university_year) : undefined,
+      highestEducation: row.data.highest_education || undefined,
       notes: row.data.notes || undefined,
     };
     const parsed = CreateMemberSchema.safeParse(payload);

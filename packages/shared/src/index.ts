@@ -16,14 +16,19 @@ export {
 } from './audit.js';
 export {
   CreateMemberSchema,
+  EducationLevelSchema,
+  LEVELS_WITH_FACULTY,
   ListMembersQuerySchema,
   MemberResponseSchema,
   MemberStatusSchema,
+  StudyStatusSchema,
   UpdateMemberSchema,
   type CreateMemberInput,
+  type EducationLevel,
   type ListMembersQuery,
   type MemberResponse,
   type MemberStatus,
+  type StudyStatus,
   type UpdateMemberInput,
 } from './members.js';
 export {

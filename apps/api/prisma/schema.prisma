@@ -137,6 +137,24 @@ enum MemorizationType {
   NEW
   REVISION
   INITIAL
+  TEST
+}
+
+enum StudyStatus {
+  SCHOOL
+  UNIVERSITY
+  NOT_STUDYING
+}
+
+enum EducationLevel {
+  NONE
+  PRIMARY
+  MIDDLE
+  SECONDARY
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
 }
 
 enum Grade {
@@ -339,6 +357,11 @@ model Member {
   address                 String?
   schoolGrade             String?
   schoolName              String?
+  studyStatus             StudyStatus?
+  university              String?
+  faculty                 String?
+  universityYear          Int?
+  highestEducation        EducationLevel?
   joinedAt                DateTime              @db.Date
   notes                   String?
   status                  MemberStatus          @default(ACTIVE)

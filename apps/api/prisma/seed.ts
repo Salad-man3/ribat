@@ -30,6 +30,20 @@ const weekdayOf = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
 const BOYS = ['محمد', 'أحمد', 'عمر', 'علي', 'يوسف', 'إبراهيم', 'خالد', 'حمزة', 'بلال', 'عبد الله', 'عبد الرحمن', 'مصطفى', 'أنس', 'زيد', 'معاذ', 'سعد', 'طه', 'ياسين', 'إياد', 'مالك', 'عثمان', 'حسن', 'حسين', 'سليمان', 'نور الدين', 'صلاح الدين', 'عمار', 'قصي'];
 const GIRLS = ['فاطمة', 'عائشة', 'مريم', 'خديجة', 'زينب', 'سارة', 'آمنة', 'رقية', 'هدى', 'نور', 'سلمى', 'أسماء', 'حفصة', 'ليان', 'جنى', 'شهد', 'رغد', 'بتول', 'إسراء', 'سمية'];
 const MEN = ['محمود', 'عبد الكريم', 'رضوان', 'وائل', 'ماهر', 'هشام', 'عماد', 'باسل', 'فراس', 'نزار', 'غسان', 'مازن', 'زياد', 'مروان', 'أيمن', 'بسام', 'عدنان', 'جمال', 'منير', 'سامر', 'رياض', 'فايز', 'نبيل', 'كمال'];
+
+const FACULTIES = ['كلية الشريعة', 'كلية الهندسة المعلوماتية', 'كلية الطب البشري', 'كلية الحقوق', 'كلية الآداب', 'كلية العلوم', 'كلية الاقتصاد', 'كلية الصيدلة'];
+const TEACHER_LEVELS = ['SECONDARY', 'BACHELOR', 'BACHELOR', 'MASTER', 'DIPLOMA', 'DOCTORATE', 'MIDDLE'] as const;
+
+/** Index-driven, not random(), so adding education does not shift the rest of the seed. */
+function educationFor(n: number, inSchool: boolean, student: boolean) {
+  if (inSchool) return { studyStatus: 'SCHOOL' as const };
+  if (student && n % 2 === 0)
+    return { studyStatus: 'UNIVERSITY' as const, university: 'جامعة دمشق', faculty: FACULTIES[n % FACULTIES.length], universityYear: (n % 5) + 1 };
+  const highestEducation = student ? (['SECONDARY', 'MIDDLE', 'BACHELOR'] as const)[n % 3] : TEACHER_LEVELS[n % TEACHER_LEVELS.length];
+  const graduate = ['DIPLOMA', 'BACHELOR', 'MASTER', 'DOCTORATE'].includes(highestEducation);
+  return { studyStatus: 'NOT_STUDYING' as const, highestEducation, faculty: graduate ? FACULTIES[n % FACULTIES.length] : undefined };
+}
+
 const FAMILIES = ['الحلبي', 'الشامي', 'العطار', 'الخطيب', 'الدمشقي', 'القباني', 'السمان', 'الصباغ', 'البيطار', 'الحموي', 'الطباع', 'النحاس', 'الجزائري', 'الحكيم', 'الرفاعي', 'العمري', 'الدقاق', 'الشهابي', 'القدسي', 'الزين', 'المصري', 'الأيوبي', 'الكردي', 'الزعبي'];
 
 type Role = 'SHEIKH' | 'ORG_ADMIN' | 'MEMBER' | 'GUARDIAN';
@@ -92,7 +106,9 @@ async function seedDemo() {
     householdId?: string;
     role?: Role;
     schoolGrade?: string;
+    student?: boolean;
   }) {
+    const education = educationFor(people.size, input.schoolGrade !== undefined, input.student === true);
     const member = await prisma.member.create({
       data: {
         organizationId,
@@ -105,6 +121,7 @@ async function seedDemo() {
         phone: input.phone,
         householdId: input.householdId,
         schoolGrade: input.schoolGrade,
+        ...education,
       },
     });
     const age = year - Number(input.birthDate.slice(0, 4));
@@ -216,6 +233,7 @@ async function seedDemo() {
         gender,
         birthDate: birth(between(1975, year - 18)),
         phone: `+9639990013${pad(i + 1)}`,
+        student: true,
       }),
     );
   }

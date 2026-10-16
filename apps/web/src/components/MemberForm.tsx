@@ -1,17 +1,31 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CreateMemberInput, MemberResponse } from '@ribat/shared';
+import {
+  EducationLevelSchema,
+  LEVELS_WITH_FACULTY,
+  StudyStatusSchema,
+  type CreateMemberInput,
+  type EducationLevel,
+  type MemberResponse,
+  type StudyStatus,
+} from '@ribat/shared';
 import { Button } from './ui/button';
 import { Field, inputClass } from './ui/form';
 
-const TEXT_FIELDS = [
-  'motherName',
-  'phone',
+const TEXT_FIELDS = ['motherName', 'phone', 'address'] as const;
+const EDUCATION_KEYS = [
+  'studyStatus',
   'schoolGrade',
   'schoolName',
-  'address',
+  'university',
+  'faculty',
+  'universityYear',
+  'highestEducation',
 ] as const;
-type Values = Record<keyof Omit<CreateMemberInput, 'householdId'>, string>;
+type Values = Record<
+  Exclude<keyof CreateMemberInput, 'householdId' | (typeof EDUCATION_KEYS)[number]> | (typeof EDUCATION_KEYS)[number],
+  string
+>;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -39,8 +53,20 @@ export function MemberForm({
     address: initial?.address ?? '',
     schoolGrade: initial?.schoolGrade ?? '',
     schoolName: initial?.schoolName ?? '',
+    studyStatus: initial?.studyStatus ?? '',
+    university: initial?.university ?? '',
+    faculty: initial?.faculty ?? '',
+    universityYear: initial?.universityYear?.toString() ?? '',
+    highestEducation: initial?.highestEducation ?? '',
     notes: initial?.notes ?? '',
   });
+  const status = values.studyStatus as StudyStatus | '';
+  const level = values.highestEducation as EducationLevel | '';
+  const showFaculty =
+    status === 'UNIVERSITY' ||
+    (status === 'NOT_STUDYING' &&
+      level !== '' &&
+      LEVELS_WITH_FACULTY.includes(level));
   const bind = (key: keyof Values) => ({
     value: values[key],
     onChange: (event: { target: { value: string } }) =>
@@ -52,12 +78,28 @@ export function MemberForm({
       className="grid gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        const payload = Object.fromEntries(
+        const rest = Object.fromEntries(
           Object.entries(values)
+            .filter(([key]) => !(EDUCATION_KEYS as readonly string[]).includes(key))
             .map(([key, value]) => [key, value.trim()])
             .filter(([, value]) => value !== ''),
-        ) as CreateMemberInput;
-        onSubmit(payload);
+        );
+        // Only the chosen status's fields go out; the rest are nulled so they cannot linger.
+        const text = (key: keyof Values, on: boolean) =>
+          on ? values[key].trim() || null : null;
+        onSubmit({
+          ...rest,
+          studyStatus: status || null,
+          schoolGrade: text('schoolGrade', status === 'SCHOOL'),
+          schoolName: text('schoolName', status === 'SCHOOL'),
+          university: text('university', status === 'UNIVERSITY'),
+          universityYear:
+            status === 'UNIVERSITY' && values.universityYear
+              ? Number(values.universityYear)
+              : null,
+          highestEducation: status === 'NOT_STUDYING' ? level || null : null,
+          faculty: text('faculty', showFaculty),
+        } as CreateMemberInput);
       }}
     >
       <div className="grid gap-3 sm:grid-cols-3">
@@ -103,6 +145,61 @@ export function MemberForm({
             />
           </Field>
         ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={t('members.education')}>
+          <select className={inputClass} {...bind('studyStatus')}>
+            <option value="" />
+            {StudyStatusSchema.options.map((value) => (
+              <option key={value} value={value}>
+                {t(`members.studyStatusValue.${value}`)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {status === 'SCHOOL' ? (
+          <>
+            <Field label={t('members.schoolGrade')}>
+              <input className={inputClass} {...bind('schoolGrade')} />
+            </Field>
+            <Field label={t('members.schoolName')}>
+              <input className={inputClass} {...bind('schoolName')} />
+            </Field>
+          </>
+        ) : null}
+        {status === 'UNIVERSITY' ? (
+          <>
+            <Field label={t('members.university')}>
+              <input className={inputClass} {...bind('university')} />
+            </Field>
+            <Field label={t('members.universityYear')}>
+              <input
+                type="number"
+                min={1}
+                max={8}
+                className={inputClass}
+                {...bind('universityYear')}
+              />
+            </Field>
+          </>
+        ) : null}
+        {status === 'NOT_STUDYING' ? (
+          <Field label={t('members.highestEducation')}>
+            <select className={inputClass} {...bind('highestEducation')}>
+              <option value="" />
+              {EducationLevelSchema.options.map((value) => (
+                <option key={value} value={value}>
+                  {t(`members.educationLevel.${value}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+        {showFaculty ? (
+          <Field label={t('members.faculty')}>
+            <input className={inputClass} {...bind('faculty')} />
+          </Field>
+        ) : null}
       </div>
       <Field label={t('members.notes')}>
         <textarea
