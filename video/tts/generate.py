@@ -10,7 +10,7 @@ import edge_tts
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT.parent / 'docs/video/script.md'
-VOICE, RATE = 'en-US-AndrewNeural', '-6%'
+VOICE, RATE = 'en-US-AndrewMultilingualNeural', '-6%'
 
 
 def lines():

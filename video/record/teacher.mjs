@@ -26,6 +26,11 @@ await role('teacher', { phone: '+963999001030', device: PHONE, theme: 'nabawi', 
     const row = page.locator('main li').first();
     await s.tap(row.getByRole('button', { name: 'تسجيل' }));
     await s.wait(0.5);
+    await s.zoom(row.getByRole('button', { name: 'اختبار', exact: true }).locator('xpath=..'), 3, 1.3);
+    await s.wait(1);
+    await s.tap(row.getByRole('button', { name: 'مراجعة', exact: true }));
+    await s.tap(row.getByRole('button', { name: 'اختبار', exact: true }));
+    await s.tap(row.getByRole('button', { name: 'حفظ جديد', exact: true }));
     const from = Number(await row.getByLabel('من آية').inputValue());
     const to = row.getByLabel('إلى آية');
     await s.tap(to);

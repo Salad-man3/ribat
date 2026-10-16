@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")/.."
 export PGPASSWORD=ribat DB=postgresql://ribat:ribat@127.0.0.1:5435/ribat_video
-(cd ../apps/api && DATABASE_URL=$DB npx tsx prisma/seed.ts > /dev/null)
+(cd ../apps/api && DATABASE_URL=$DB npx prisma migrate deploy > /dev/null && DATABASE_URL=$DB npx tsx prisma/seed.ts > /dev/null)
 psql -h 127.0.0.1 -p 5435 -U ribat -d ribat_video -q <<'SQL'
 insert into "CourseSession" (id, "organizationId", "courseId", date, "startsAt", "endsAt", status, "isException", topic)
 select gen_random_uuid(), c."organizationId", c.id, (now() at time zone 'Asia/Damascus')::date,

@@ -51,24 +51,40 @@ await role('sheikh', { phone: '+963999001001', device: DESKTOP, theme: 'emerald'
   await s.line('2.5', async () => {
     await s.tap(nav(page, 'الحلقات'));
     await page.waitForLoadState('networkidle');
-    await s.wait(0.8);
-    await page.mouse.move(700, 500, { steps: 30 });
-    await s.wait(0.8);
-    await s.tap(page.locator('main a', { hasText: 'حلقة تحفيظ العصر' }).first());
+    await s.wait(0.6);
+    await s.tap(page.locator('main summary', { hasText: 'حلقة جديدة' }));
+    const form = page.locator('main details form');
+    await s.type(form.getByLabel('الاسم'), 'حلقة الناشئة');
+    await form.getByLabel('النوع').selectOption('BOTH');
+    await s.wait(0.5);
+    await s.type(form.getByLabel('المكان'), 'المكتبة');
+    await s.tap(form.getByRole('button', { name: 'حلقة جديدة' }));
+    await page.waitForURL(/\/staff\/courses\/[0-9a-f-]{36}/);
     await page.waitForLoadState('networkidle');
-    await s.wait(0.8);
-    await s.scroll(500, 2);
   });
 
   await s.line('2.6', async () => {
-    const schedule = card(page, 'الجدول الأسبوعي');
-    await schedule.scrollIntoViewIfNeeded();
-    await s.zoom(schedule, 4);
-    await s.wait(4);
-    await s.zoom(card(page, 'الأسابيع الأربعة القادمة'), 3.5);
+    const toggles = page.locator('main label', { hasText: 'عدة معلمين' });
+    await s.zoom(toggles.locator('xpath=..'), 6, 1.3);
+    await s.tap(toggles.locator('input[type=checkbox]'));
+    await s.wait(1.2);
+    await s.tap(page.locator('main label', { hasText: 'مجموعات' }).locator('input[type=checkbox]'));
+    await s.wait(1.2);
+    await s.zoom(card(page, 'المجموعات'), 3, 1.2);
   });
 
   await s.line('2.7', async () => {
+    await s.tap(nav(page, 'الحلقات'));
+    await page.waitForLoadState('networkidle');
+    await s.tap(page.locator('main a', { hasText: 'حلقة تحفيظ العصر' }).first());
+    await page.waitForLoadState('networkidle');
+    const schedule = card(page, 'الجدول الأسبوعي');
+    await s.zoom(schedule, 4.5);
+    await s.wait(4.5);
+    await s.zoom(card(page, 'الأسابيع الأربعة القادمة'), 3.5);
+  });
+
+  await s.line('2.8', async () => {
     await s.tap(nav(page, 'إعدادات المسجد'));
     await page.waitForLoadState('networkidle');
     await s.wait(0.6);
@@ -83,7 +99,7 @@ await role('sheikh', { phone: '+963999001001', device: DESKTOP, theme: 'emerald'
     await page.keyboard.press('ArrowUp');
   });
 
-  await s.line('2.8', async () => {
+  await s.line('2.9', async () => {
     await s.tap(nav(page, 'سجل التغييرات'));
     await page.waitForLoadState('networkidle');
     await s.wait(0.8);
