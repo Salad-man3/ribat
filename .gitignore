@@ -16,3 +16,12 @@ docs/internal
 .vscode
 .claude
 .playwright-mcp
+
+# Promo video: generated media and installed agent skills
+video/node_modules/
+video/out/
+video/public/rec/
+video/public/vo/
+video/.agents/
+video/.claude/
+video/skills-lock.json
