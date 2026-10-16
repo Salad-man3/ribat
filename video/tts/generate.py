@@ -1,4 +1,5 @@
-"""Voice for the Ribat video: one edge-tts clip per script line, durations into src/lines.json.
+"""English voice for the Ribat video: one edge-tts clip per script line; the Arabic subtitle
+and each clip's length go into src/lines.json.
 
 Run from video/: uv run --with edge-tts python3 tts/generate.py
 """
@@ -9,7 +10,7 @@ import edge_tts
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT.parent / 'docs/video/script.md'
-VOICE, RATE = 'ar-SY-LaithNeural', '-8%'
+VOICE, RATE = 'en-US-AndrewNeural', '-6%'
 
 
 def lines():
@@ -21,7 +22,7 @@ def lines():
         if scene is None or not re.fullmatch(r'\d+\.\d+', cells[0]):
             continue
         # Rows are "# | voiceover | subtitle" or "# | screen | voiceover | subtitle".
-        yield {'id': cells[0], 'scene': scene, 'ar': cells[-2], 'en': cells[-1]}
+        yield {'id': cells[0], 'scene': scene, 'vo': cells[-2], 'sub': cells[-1]}
 
 
 def duration(path):
@@ -34,8 +35,7 @@ async def main():
     rows = list(lines())
     for row in rows:
         out = ROOT / 'public/vo' / f"{row['id']}.mp3"
-        # The Arabic voice cannot say the honorific glyph; the script spells it out already.
-        await edge_tts.Communicate(row['ar'].replace('«', '').replace('»', ''), VOICE, rate=RATE).save(str(out))
+        await edge_tts.Communicate(row['vo'], VOICE, rate=RATE).save(str(out))
         row['seconds'] = duration(out)
         print(row['id'], row['seconds'])
     (ROOT / 'src/lines.json').write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding='utf8')

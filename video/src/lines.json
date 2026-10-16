@@ -2,288 +2,281 @@
  {
   "id": "0.1",
   "scene": 0,
-  "ar": "في كلِّ مسجدٍ حَلْقة، تُحفَظ فيها آياتُ الله.",
-  "en": "In every mosque there is a circle where the words of God are memorized.",
-  "seconds": 4.104
+  "vo": "In every mosque, there is a circle where the Quran is memorized.",
+  "sub": "في كلِّ مسجدٍ حلقةٌ يُحفَظ فيها القرآن.",
+  "seconds": 4.416
  },
  {
   "id": "0.2",
   "scene": 0,
-  "ar": "لكنّ الدفاترَ تضيع، والغيابَ يُنسى، والأهلُ لا يعرفون أين وصل أبناؤهم.",
-  "en": "But notebooks get lost, absences are forgotten, and parents never know how far their children have come.",
-  "seconds": 6.264
+  "vo": "But notebooks get lost, absences are forgotten, and parents rarely know how far their children have come.",
+  "sub": "لكنّ الدفاترَ تضيع، والغيابَ يُنسى، والأهلُ لا يعرفون أين وصل أبناؤهم.",
+  "seconds": 6.744
  },
  {
   "id": "0.3",
   "scene": 0,
-  "ar": "والإنترنتُ في صحنِ المسجد… ضعيف.",
-  "en": "And the internet in the mosque courtyard… is weak.",
-  "seconds": 4.704
+  "vo": "And the internet in the courtyard… is weak.",
+  "sub": "والإنترنتُ في صحنِ المسجد… ضعيف.",
+  "seconds": 2.976
  },
  {
   "id": "1.1",
   "scene": 1,
-  "ar": "قال رسولُ الله صلى الله عليه وسلم: «وكثرةُ الخُطا إلى المساجد، وانتظارُ الصلاةِ بعد الصلاة، فذلكم الرِّباط».",
-  "en": "The Prophet ﷺ said: \"Many steps to the mosques, and waiting for the next prayer after the prayer — that is ribat.\" (Muslim)",
-  "seconds": 8.616
+  "vo": "This is Ribaat: one complete system for a mosque's Quran circles and lessons.",
+  "sub": "هذا رباط: نظامٌ متكاملٌ لحلقات التحفيظ ودروس العلم في المسجد.",
+  "seconds": 5.856
  },
  {
   "id": "1.2",
   "scene": 1,
-  "ar": "ومن هنا جاء الاسم: رِباط.",
-  "en": "That is where the name comes from: Ribat.",
-  "seconds": 3.36
- },
- {
-  "id": "1.3",
-  "scene": 1,
-  "ar": "نظامٌ متكاملٌ لإدارة حلقات التحفيظ ودروس العلم في المسجد.",
-  "en": "One complete system for a mosque's Quran circles and lessons.",
-  "seconds": 5.184
- },
- {
-  "id": "1.4",
-  "scene": 1,
-  "ar": "للشيخ، وللمعلّم، وللطالب، ولأهله… كلٌّ يرى ما يخصّه.",
-  "en": "For the sheikh, the teacher, the student and the family: each sees what is theirs.",
-  "seconds": 6.672
+  "vo": "For the sheikh, the teacher, the student and his family. Each sees exactly what is his.",
+  "sub": "للشيخ، وللمعلّم، وللطالب وأهله… كلٌّ يرى ما يخصّه.",
+  "seconds": 6.048
  },
  {
   "id": "2.1",
   "scene": 2,
-  "ar": "لنبدأ من مكتبِ الشيخ.",
-  "en": "Let's start at the sheikh's desk.",
-  "seconds": 2.832
+  "vo": "Let's start at the sheikh's desk.",
+  "sub": "لنبدأ من مكتب الشيخ.",
+  "seconds": 1.992
  },
  {
   "id": "2.2",
   "scene": 2,
-  "ar": "كلُّ أعضاءِ المسجد في مكانٍ واحد: الطلاب، والمعلّمون، والآباء، مع العائلاتِ والإخوة.",
-  "en": "Every member of the mosque in one place: students, teachers and fathers, with their families and siblings.",
-  "seconds": 7.608
+  "vo": "Every member of the mosque, in one place: students, teachers and fathers, with their families.",
+  "sub": "كلُّ أعضاء المسجد في مكانٍ واحد: الطلاب والمعلّمون والآباء، مع عائلاتهم.",
+  "seconds": 6.96
  },
  {
   "id": "2.3",
   "scene": 2,
-  "ar": "لا يحتاج أحدٌ إلى بريدٍ إلكتروني. يمنحه المسجدُ رمزاً لمرّةٍ واحدة، فيختار كلمةَ مروره بنفسه.",
-  "en": "Nobody needs an email address. The mosque gives a one-time code, and the person chooses their own password.",
-  "seconds": 8.712
+  "vo": "No email needed. The mosque hands out a one-time code, and each person sets his own password.",
+  "sub": "لا حاجة إلى بريدٍ إلكتروني. يعطي المسجدُ رمزاً لمرّةٍ واحدة، ويختار كلُّ شخصٍ كلمةَ مروره بنفسه.",
+  "seconds": 6.384
  },
  {
   "id": "2.4",
   "scene": 2,
-  "ar": "وللشيخِ ملاحظاتٌ خاصّة… لا يراها غيرُه.",
-  "en": "And the sheikh keeps private notes that no one else sees.",
-  "seconds": 4.968
+  "vo": "The sheikh keeps private notes that nobody else can see.",
+  "sub": "وللشيخ ملاحظاتٌ خاصّة لا يراها غيرُه.",
+  "seconds": 3.312
  },
  {
   "id": "2.5",
   "scene": 2,
-  "ar": "عشرُ حلقاتٍ ودروس، لكلٍّ منها معلّمُها وطلابُها وموادُّها، من المصحفِ الشريف إلى المتون.",
-  "en": "Ten circles and lessons, each with its teacher, students and materials, from the Quran to the classical texts.",
-  "seconds": 7.296
+  "vo": "Ten circles and lessons, each with its teacher, its students and its texts, from the Quran to the classical mutun.",
+  "sub": "عشرُ حلقاتٍ ودروس، لكلٍّ منها معلّمُها وطلابُها وموادُّها، من المصحف إلى المتون.",
+  "seconds": 8.304
  },
  {
   "id": "2.6",
   "scene": 2,
-  "ar": "والجدولُ يتبعُ الصلاةَ لا الساعة: من العصرِ إلى المغرب. ومع تغيُّرِ الفصول، تتحرّكُ الحلقةُ معها.",
-  "en": "The schedule follows the prayers, not the clock: from Asr to Maghrib. As the seasons change, the class moves with them.",
-  "seconds": 8.568
+  "vo": "The schedule follows the prayers, not the clock: from Asr to Maghrib. As the seasons turn, the class moves with them.",
+  "sub": "الجدولُ يتبع الصلاة لا الساعة: من العصر إلى المغرب. ومع تغيُّر الفصول تتحرّك الحلقةُ معها.",
+  "seconds": 8.256
  },
  {
   "id": "2.7",
   "scene": 2,
-  "ar": "ويضبطُ المسجدُ مواقيتَه على أذانِه هو، دقيقةً بدقيقة.",
-  "en": "And the mosque sets the times to its own adhan, to the minute.",
-  "seconds": 4.656
+  "vo": "And the mosque sets every prayer to its own adhan, to the minute.",
+  "sub": "ويضبط المسجدُ كلَّ صلاةٍ على أذانه هو، دقيقةً بدقيقة.",
+  "seconds": 4.44
  },
  {
   "id": "2.8",
   "scene": 2,
-  "ar": "وكلُّ تغييرٍ مسجَّل: مَن فعله، ومتى.",
-  "en": "Every change is recorded: who made it, and when.",
-  "seconds": 4.08
+  "vo": "Every change is on record: who made it, and when.",
+  "sub": "وكلُّ تغييرٍ مسجَّل: مَن فعله، ومتى.",
+  "seconds": 3.648
  },
  {
   "id": "3.1",
   "scene": 3,
-  "ar": "والآن… إلى الحلقة. يفتحُ المعلّمُ هاتفه، فيجدُ حلقاتِ اليوم، والحلقةَ القائمةَ الآن.",
-  "en": "Now, to the circle. The teacher opens their phone and finds today's classes, and the one happening now.",
-  "seconds": 9.432
+  "vo": "Now, to the circle. The teacher opens his phone and sees today's classes, and the one happening right now.",
+  "sub": "والآن إلى الحلقة. يفتح المعلّمُ هاتفه، فيرى حلقاتِ اليوم، والحلقةَ القائمةَ الآن.",
+  "seconds": 7.032
  },
  {
   "id": "3.2",
   "scene": 3,
-  "ar": "التحضيرُ بلمسةٍ واحدةٍ لكلّ طالب: حاضر، غائب، متأخّر، معذور.",
-  "en": "Attendance takes one tap per student: present, absent, late, excused.",
-  "seconds": 6.552
+  "vo": "Attendance is one tap per student: present, absent, late, or excused.",
+  "sub": "التحضيرُ بلمسةٍ واحدةٍ لكلّ طالب: حاضر، غائب، متأخّر، أو معذور.",
+  "seconds": 6.216
  },
  {
   "id": "3.3",
   "scene": 3,
-  "ar": "والعدّادُ في الأسفل يخبرُه كم بقي.",
-  "en": "The tally at the bottom shows how many are left.",
-  "seconds": 3.288
+  "vo": "The tally at the bottom shows who is left.",
+  "sub": "والعدّادُ في الأسفل يُظهر مَن بقي.",
+  "seconds": 2.808
  },
  {
   "id": "3.4",
   "scene": 3,
-  "ar": "ثم التسميع: من أيِّ سورة، ومن أيِّ آيةٍ إلى أيِّ آية. يتحقّقُ رِباط من المدى، ويحسبُ صفحاتِ المصحف تلقائياً.",
-  "en": "Then the recitation: which surah, from which ayah to which. Ribat checks the range and works out the mushaf pages by itself.",
-  "seconds": 9.96
+  "vo": "Then the recitation: which surah, from which ayah to which. Ribaat checks the range and works out the mushaf pages on its own.",
+  "sub": "ثم التسميع: أيُّ سورة، ومن أيِّ آيةٍ إلى أيِّ آية. يتحقّق رباط من المدى، ويحسب صفحاتِ المصحف تلقائياً.",
+  "seconds": 8.568
  },
  {
   "id": "3.5",
   "scene": 3,
-  "ar": "ويبدأُ كلُّ طالبٍ من حيثُ توقّفَ آخرَ مرّة.",
-  "en": "Each student starts where they stopped last time.",
-  "seconds": 3.792
+  "vo": "Every student picks up exactly where he stopped last time.",
+  "sub": "ويبدأ كلُّ طالبٍ من حيث توقّف آخرَ مرّة.",
+  "seconds": 3.408
  },
  {
   "id": "3.6",
   "scene": 3,
-  "ar": "وإن انقطعَ الإنترنت؟",
-  "en": "And if the internet drops?",
-  "seconds": 2.568
+  "vo": "And if the internet drops?",
+  "sub": "وإن انقطع الإنترنت؟",
+  "seconds": 1.776
  },
  {
   "id": "3.7",
   "scene": 3,
-  "ar": "لا شيءَ يتوقّف.",
-  "en": "Nothing stops.",
-  "seconds": 2.52
+  "vo": "Nothing stops.",
+  "sub": "لا شيء يتوقّف.",
+  "seconds": 1.872
  },
  {
   "id": "3.8",
   "scene": 3,
-  "ar": "كلُّ لمسةٍ تُحفَظ على الهاتف، ثمّ تُرسَلُ حين يعودُ الاتصال… مرّةً واحدة، لا مرّتين.",
-  "en": "Every tap is saved on the phone, then sent when the connection returns: once, never twice.",
-  "seconds": 8.04
+  "vo": "Every tap waits safely on the phone, then goes through when the connection returns. Once, never twice.",
+  "sub": "كلُّ لمسةٍ تُحفَظ على الهاتف، ثمّ تُرسَل حين يعود الاتصال… مرّةً واحدة، لا مرّتين.",
+  "seconds": 7.488
  },
  {
   "id": "3.9",
   "scene": 3,
-  "ar": "وفي دروسِ الشرح، يسجّلُ المعلّمُ الصفحاتِ التي شرحها، ويُسندُ الواجباتِ للحلقة، أو لطالبٍ بعينه.",
-  "en": "In explanation lessons, the teacher records the pages covered and sets homework for the class or for one student.",
-  "seconds": 8.352
+  "vo": "In explanation lessons, the teacher logs the pages he covered, and sets homework for the class or for one student.",
+  "sub": "وفي دروس الشرح، يسجّل المعلّمُ الصفحاتِ التي شرحها، ويُسند الواجباتِ للحلقة أو لطالبٍ بعينه.",
+  "seconds": 7.488
  },
  {
   "id": "4.1",
   "scene": 4,
-  "ar": "والطالبةُ ليلى ترى أسبوعَها بالتاريخين الهجريِّ والميلاديّ…",
-  "en": "Layla, a student, sees her week in Hijri and Gregorian dates…",
-  "seconds": 4.416
+  "vo": "Yusuf, a student, sees his week in both Hijri and Gregorian dates…",
+  "sub": "والطالبُ يوسف يرى أسبوعه بالتاريخين الهجريّ والميلاديّ…",
+  "seconds": 5.448
  },
  {
   "id": "4.2",
   "scene": 4,
-  "ar": "وآخرَ موضعٍ وصلت إليه في المصحف، ونتائجَ اختباراتها، وواجباتِها.",
-  "en": "…the last place she reached in the Quran, her test results and her homework.",
-  "seconds": 6.264
+  "vo": "…his attendance, the last place he reached in the Quran, his test results and his homework.",
+  "sub": "…وحضورَه، وآخرَ موضعٍ وصل إليه في المصحف، ونتائجَ اختباراته، وواجباته.",
+  "seconds": 5.976
  },
  {
   "id": "4.3",
   "scene": 4,
-  "ar": "تعرفُ أين هي… وإلى أين تمضي.",
-  "en": "She knows where she is, and where she is going.",
-  "seconds": 4.344
+  "vo": "He knows where he is, and where he is heading.",
+  "sub": "يعرف أين هو… وإلى أين يمضي.",
+  "seconds": 2.832
  },
  {
   "id": "5.1",
   "scene": 5,
-  "ar": "أمّا الأبُ، فلا ينتظرُ نهايةَ الفصلِ ليعرف.",
-  "en": "Her father doesn't wait for the end of term to find out.",
-  "seconds": 4.248
+  "vo": "His father doesn't wait for the end of term to find out.",
+  "sub": "أمّا الأب، فلا ينتظر نهايةَ الفصل ليعرف.",
+  "seconds": 3.288
  },
  {
   "id": "5.2",
   "scene": 5,
-  "ar": "يرى نسبةَ حضورِ ابنته، وما حفظتْه، ونتيجةَ اختبارِ الجزءِ الثلاثين.",
-  "en": "He sees his daughter's attendance rate, what she has memorized, and her result in the juz 30 test.",
-  "seconds": 6.0
+  "vo": "He sees his son's attendance, what he has memorized, and his result in the juz thirty test.",
+  "sub": "يرى نسبةَ حضور ابنه، وما حفظه، ونتيجةَ اختبار الجزء الثلاثين.",
+  "seconds": 5.976
  },
  {
   "id": "5.3",
   "scene": 5,
-  "ar": "وتصلُه الإشعارات: نتيجةُ اختبار، وواجبٌ جديد، وملخّصُ الغيابِ كلَّ ليلة.",
-  "en": "Notifications reach him: a test result, new homework, and a nightly absence summary.",
-  "seconds": 6.744
+  "vo": "Notifications come to him: a test result, new homework, and a nightly absence summary.",
+  "sub": "وتصله الإشعارات: نتيجةُ اختبار، وواجبٌ جديد، وملخّصُ الغياب كلَّ ليلة.",
+  "seconds": 6.096
  },
  {
   "id": "5.4",
   "scene": 5,
-  "ar": "وإن احتاجت إلى غياب، يُرسلُ عذرَها من هاتفه… وحين يقبلُه الشيخ، يصبحُ الغيابُ بعذر.",
-  "en": "If she needs to be absent, he sends her excuse from his phone, and once the sheikh accepts it, the absence is marked excused.",
-  "seconds": 8.256
+  "vo": "If his son must miss a class, he sends the excuse from his phone. Once the sheikh accepts it, the absence is marked excused.",
+  "sub": "وإن احتاج ابنُه إلى غياب، يرسل عذره من هاتفه… وحين يقبله الشيخ، يصبح الغيابُ بعذر.",
+  "seconds": 8.304
  },
  {
   "id": "5.5",
   "scene": 5,
-  "ar": "وكلُّ أبٍ يرى أبناءَه هو فقط.",
-  "en": "And every father sees his own children, and no one else's.",
-  "seconds": 3.096
+  "vo": "And every father sees his own children. No one else's.",
+  "sub": "وكلُّ أبٍ يرى أبناءه هو فقط.",
+  "seconds": 3.768
  },
  {
   "id": "6.1",
   "scene": 6,
-  "ar": "بالعربيةِ أولاً، وبالإنجليزيةِ أيضاً.",
-  "en": "Arabic first, and English too.",
-  "seconds": 4.128
+  "vo": "Arabic first, and English too.",
+  "sub": "بالعربية أولاً، وبالإنجليزية أيضاً.",
+  "seconds": 2.352
  },
  {
   "id": "6.2",
   "scene": 6,
-  "ar": "بتصاميمَ مستوحاةٍ من المسجدِ النبويّ، وخزفِ إزنيق، وقصرِ الحمراء، وصفحةِ المصحف، وليلِ القيام.",
-  "en": "With designs drawn from the Prophet's Mosque, Iznik tiles, the Alhambra, the mushaf page and the night prayer.",
-  "seconds": 8.328
+  "vo": "With designs drawn from the Prophet's Mosque, Iznik tiles, the Alhambra, the mushaf page and the night prayer.",
+  "sub": "بتصاميمَ مستوحاةٍ من المسجد النبويّ، وخزف إزنيق، وقصر الحمراء، وصفحة المصحف، وليل القيام.",
+  "seconds": 7.464
  },
  {
   "id": "6.3",
   "scene": 6,
-  "ar": "ويُثبَّتُ على الهاتفِ كأيِّ تطبيق.",
-  "en": "And it installs on the phone like any app.",
-  "seconds": 3.168
+  "vo": "And it installs on the phone like any app.",
+  "sub": "ويُثبَّت على الهاتف كأيِّ تطبيق.",
+  "seconds": 2.664
  },
  {
   "id": "7.1",
   "scene": 7,
-  "ar": "وتحتَ الواجهة، هندسةٌ متينة.",
-  "en": "Under the surface, solid engineering.",
-  "seconds": 3.48
+  "vo": "Under the surface, the engineering is solid.",
+  "sub": "وتحت الواجهة، هندسةٌ متينة.",
+  "seconds": 3.024
  },
  {
   "id": "7.2",
   "scene": 7,
-  "ar": "كلُّ مسجدٍ معزولٌ تماماً عن غيره، وكلُّ عمليّةٍ مسجَّلة.",
-  "en": "Every mosque is fully isolated from the others, and every action is recorded.",
-  "seconds": 4.824
+  "vo": "NestJS, PostgreSQL and Prisma on the server. React, and an offline-first web app on the phone.",
+  "sub": "NestJS وPostgreSQL وPrisma في الخادم، وReact مع تطبيقٍ يعمل دون اتصال على الهاتف.",
+  "seconds": 7.776
  },
  {
   "id": "7.3",
   "scene": 7,
-  "ar": "والمزامنةُ مختبَرةٌ ضدَّ كلِّ ما قد يحدثُ في الحلقة: هاتفانِ على طالبٍ واحد، أو ساعةٌ متأخّرةٌ يوماً كاملاً.",
-  "en": "Sync is tested against what a real class can throw at it: two phones on one student, or a clock a whole day off.",
-  "seconds": 8.208
+  "vo": "Every mosque is fully isolated from the others, and every action is recorded.",
+  "sub": "كلُّ مسجدٍ معزولٌ تماماً عن غيره، وكلُّ عمليّةٍ مسجَّلة.",
+  "seconds": 5.52
  },
  {
   "id": "7.4",
   "scene": 7,
-  "ar": "ومفتوحُ المصدر.",
-  "en": "And it is open source.",
-  "seconds": 2.472
+  "vo": "And sync is tested against what a real class throws at it: two phones on one student, or a clock a whole day off.",
+  "sub": "والمزامنةُ مختبَرةٌ ضدّ ما قد يحدث في الحلقة: هاتفان على طالبٍ واحد، أو ساعةٌ متأخّرةٌ يوماً كاملاً.",
+  "seconds": 7.272
+ },
+ {
+  "id": "7.5",
+  "scene": 7,
+  "vo": "And it's open source.",
+  "sub": "ومفتوحُ المصدر.",
+  "seconds": 1.536
  },
  {
   "id": "8.1",
   "scene": 8,
-  "ar": "رِباط… لأنّ كلَّ آيةٍ تُحفَظ، تستحقُّ أن تُحفَظ.",
-  "en": "Ribat. Because every ayah that is memorized deserves to be kept.",
-  "seconds": 5.736
+  "vo": "Ribaat. Because every ayah that is memorized deserves to be kept.",
+  "sub": "رباط… لأنّ كلَّ آيةٍ تُحفَظ، تستحقُّ أن تُحفَظ.",
+  "seconds": 4.512
  },
  {
   "id": "8.2",
   "scene": 8,
-  "ar": "ونبحثُ عن مسجدٍ يشاركُنا التجربةَ الأولى.",
-  "en": "And we are looking for a mosque to join our first pilot.",
-  "seconds": 3.888
+  "vo": "We're looking for a mosque to join our first pilot.",
+  "sub": "ونبحث عن مسجدٍ يشاركنا التجربةَ الأولى.",
+  "seconds": 2.952
  }
 ]

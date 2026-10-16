@@ -4,7 +4,7 @@ await role('father', { phone: '+963999001050', device: PHONE, theme: 'iznik', st
   const { page } = s;
   const card = (title) => page.locator('section', { has: page.getByRole('heading', { name: title, exact: true }) });
   await s.line('5.1', async () => {
-    await s.zoom(page.locator('header nav a', { hasText: 'الإشعارات' }), 3, 1.5);
+    await s.zoom(page.locator('header nav a', { hasText: 'الإشعارات' }), 3, 1.15);
   });
   await s.line('5.2', async () => {
     await s.scroll(650, 2.5);

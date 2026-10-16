@@ -1,7 +1,7 @@
 import { Audio, Video } from '@remotion/media';
-import { loadFont as loadAmiri } from '@remotion/google-fonts/Amiri';
 import { loadFont as loadKufi } from '@remotion/google-fonts/ReemKufi';
 import { loadFont as loadPlex } from '@remotion/google-fonts/IBMPlexSans';
+import { loadFont as loadPlexArabic } from '@remotion/google-fonts/IBMPlexSansArabic';
 import { useEffect, useState } from 'react';
 import {
   AbsoluteFill,
@@ -17,9 +17,9 @@ import {
 } from 'remotion';
 import { FPS, buildTimeline, type Rec, type Segment, type Voice } from './timeline';
 
-const amiri = loadAmiri('normal', { weights: ['400', '700'], subsets: ['arabic'] }).fontFamily;
 const kufi = loadKufi('normal', { weights: ['600'], subsets: ['arabic', 'latin'] }).fontFamily;
 const plex = loadPlex('normal', { weights: ['400', '500', '600'], subsets: ['latin'] }).fontFamily;
+const plexArabic = loadPlexArabic('normal', { weights: ['500'], subsets: ['arabic', 'latin'] }).fontFamily;
 
 // The app's own palette (apps/web/src/index.css, theme زمرد).
 const C = { chrome: '#0a4a2b', deep: '#063820', gold: '#d4a94a', paper: '#f1f6f2', muted: '#b9d6c4' };
@@ -32,7 +32,7 @@ export const Film = () => (
   <AbsoluteFill style={{ background: C.deep }}>
     {timeline.segments.map((seg, i) => (
       <Sequence key={i} from={f(seg.at)} durationInFrames={f(seg.dur)} premountFor={FPS}>
-        <SegmentView seg={seg} voices={timeline.voices.filter((v) => v.at >= seg.at && v.at < seg.at + seg.dur)} />
+        <SegmentView seg={seg} />
       </Sequence>
     ))}
     {timeline.voices.map((v) => (
@@ -41,17 +41,16 @@ export const Film = () => (
     {timeline.clicks.map((t, i) => (
       <Audio key={`c${i}`} from={f(t)} src={staticFile('sfx/click.wav')} volume={0.3} />
     ))}
-    <Captions voices={timeline.voices} />
+    <Captions voices={timeline.voices} segments={timeline.segments} />
   </AbsoluteFill>
 );
 
-function SegmentView({ seg, voices }: { seg: Segment; voices: Voice[] }) {
-  const local = voices.map((v) => ({ ...v, at: v.at - seg.at }));
+function SegmentView({ seg }: { seg: Segment }) {
   switch (seg.kind) {
     case 'open':
       return <Open dur={seg.dur} />;
     case 'name':
-      return <Name voices={local} />;
+      return <Name />;
     case 'title':
       return <Title ar={seg.ar} en={seg.en} dur={seg.dur} />;
     case 'rec':
@@ -136,38 +135,15 @@ function Open({ dur }: { dur: number }) {
   );
 }
 
-function Name({ voices }: { voices: Voice[] }) {
+function Name() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const nameAt = f(voices.find((v) => v.id === '1.2')!.at);
-  const hadith = ['وكثرةُ الخُطا إلى المساجد،', 'وانتظارُ الصلاةِ بعد الصلاة،', 'فذلكم الرِّباط'];
-  const hadithOut = interpolate(frame, [nameAt - 12, nameAt], [1, 0], clamp);
-  const mark = spring({ frame: frame - nameAt, fps, config: { damping: 18, mass: 0.9 } });
+  const mark = spring({ frame: frame - 6, fps, config: { damping: 18, mass: 0.9 } });
   return (
     <AbsoluteFill>
       <Field />
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
         <Shamsa size={980} rotate={frame * 0.02} opacity={0.18} />
-      </AbsoluteFill>
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', gap: 28, opacity: hadithOut, direction: 'rtl' }}>
-        <div style={{ fontFamily: amiri, fontSize: 44, color: C.muted }}>قال رسولُ الله ﷺ</div>
-        {hadith.map((line, i) => (
-          <div
-            key={line}
-            style={{
-              fontFamily: amiri,
-              fontWeight: 700,
-              fontSize: i === 2 ? 96 : 76,
-              color: i === 2 ? C.gold : C.paper,
-              opacity: interpolate(frame, [f(1.2 + i * 2.2), f(2 + i * 2.2)], [0, 1], clamp),
-            }}
-          >
-            {line}
-          </div>
-        ))}
-        <div style={{ fontFamily: amiri, fontSize: 36, color: C.muted, opacity: interpolate(frame, [f(7), f(8)], [0, 1], clamp) }}>
-          رواه مسلم
-        </div>
       </AbsoluteFill>
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity: mark, transform: `scale(${0.92 + mark * 0.08})` }}>
         <div style={{ fontFamily: kufi, fontSize: 260, color: C.gold, lineHeight: 1 }}>رباط</div>
@@ -251,7 +227,6 @@ function Close({ dur }: { dur: number }) {
       </AbsoluteFill>
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', gap: 26, opacity: enter }}>
         <div style={{ fontFamily: kufi, fontSize: 230, color: C.gold, lineHeight: 1 }}>رباط</div>
-        <div style={{ fontFamily: amiri, fontSize: 54, color: C.paper, direction: 'rtl', marginTop: 36 }}>لأنّ كلَّ آيةٍ تُحفَظ، تستحقُّ أن تُحفَظ</div>
         <div style={{ fontFamily: plex, fontSize: 32, color: C.muted, marginTop: 30 }}>github.com/Salad-man3/ribat</div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -301,7 +276,7 @@ function Desktop({ rec }: { rec: Rec }) {
 const ROLE_LABEL: Record<string, [string, string]> = {
   teacher: ['المعلّم', 'Class mode, on the teacher’s phone'],
   teacher2: ['المعلّم', 'An explanation lesson'],
-  student: ['الطالبة', 'Her own progress'],
+  student: ['الطالب', 'His own progress'],
   father: ['وليّ الأمر', 'His own children, nothing else'],
 };
 
@@ -338,31 +313,38 @@ function Phone({ rec }: { rec: Rec }) {
 }
 
 // ---------------------------------------------------------------------------
-// Captions: English, burned in, timed to each voice clip.
+// Captions: Arabic, burned in, timed to each voice clip.
 
-function Captions({ voices }: { voices: Voice[] }) {
+function Captions({ voices, segments }: { voices: Voice[]; segments: Segment[] }) {
   const frame = useCurrentFrame();
   const t = frame / FPS;
   const v = voices.find((x) => t >= x.at && t < x.at + x.dur + 0.35);
   if (!v) return null;
   const opacity = interpolate(t, [v.at, v.at + 0.2, v.at + v.dur + 0.15, v.at + v.dur + 0.35], [0, 1, 1, 0], clamp);
+  // Beside a phone the caption sits under the role title, so it never covers the screen.
+  const phone = segments.some((seg) => seg.kind === 'rec' && seg.phone && t >= seg.at && t < seg.at + seg.dur);
+  const place = phone
+    ? { justifyContent: 'flex-start', alignItems: 'flex-end', padding: '620px 180px 0 0' }
+    : { justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 54 };
   return (
-    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 54 }}>
+    <AbsoluteFill style={place}>
       <div
         style={{
           opacity,
-          maxWidth: 1360,
+          maxWidth: phone ? 760 : 1360,
           padding: '14px 30px',
           borderRadius: 16,
           background: 'rgba(6,56,32,0.86)',
           color: '#fff',
-          fontFamily: plex,
-          fontSize: 40,
-          lineHeight: 1.32,
-          textAlign: 'center',
+          fontFamily: plexArabic,
+          fontWeight: 500,
+          fontSize: 44,
+          lineHeight: 1.45,
+          textAlign: phone ? 'right' : 'center',
+          direction: 'rtl',
         }}
       >
-        {v.en}
+        {v.sub}
       </div>
     </AbsoluteFill>
   );

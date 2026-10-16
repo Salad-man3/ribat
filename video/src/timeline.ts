@@ -20,7 +20,7 @@ export type Rec = {
   clicks: number[];
   zooms: { t: number; seconds: number; scale: number; box: Box }[];
 };
-export type Voice = { id: string; at: number; dur: number; en: string };
+export type Voice = { id: string; at: number; dur: number; sub: string };
 export type Segment =
   | { kind: 'open' | 'name' | 'tech' | 'close'; at: number; dur: number }
   | { kind: 'title'; ar: string; en: string; at: number; dur: number }
@@ -37,7 +37,7 @@ export function buildTimeline() {
   const voice = (id: string, at: number) => {
     const line = byId.get(id);
     if (!line) throw new Error(`No voice line ${id}`);
-    voices.push({ id, at, dur: line.seconds, en: line.en });
+    voices.push({ id, at, dur: line.seconds, sub: line.sub });
     return line.seconds;
   };
   // Generated scenes: lines one after another with a breath between them.
@@ -64,19 +64,19 @@ export function buildTimeline() {
   };
 
   generated('open', ['0.1', '0.2', '0.3'], 2);
-  generated('name', ['1.1', '1.2', '1.3', '1.4']);
+  generated('name', ['1.1', '1.2'], 1.4, 1.4);
   title('الشيخ', 'The sheikh');
   recording(sheikh as Rec, false);
   title('المعلّم', 'The teacher · class mode');
   recording(teacher as Rec, true);
   recording(teacher2 as Rec, true);
-  title('الطالبة', 'The student');
+  title('الطالب', 'The student');
   recording(student as Rec, true);
   title('وليّ الأمر', 'The parent');
   recording(father as Rec, true);
   title('صُنع للمسجد', 'Made for the mosque');
   recording(themes as Rec, false);
-  generated('tech', ['7.1', '7.2', '7.3', '7.4'], 1.2, 1.6);
+  generated('tech', ['7.1', '7.2', '7.3', '7.4', '7.5'], 1.2, 1.6);
   generated('close', ['8.1', '8.2'], 1.2, 3.5);
 
   return { segments, voices, clicks, seconds: cursor };
