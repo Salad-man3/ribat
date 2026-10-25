@@ -77,7 +77,7 @@ flowchart TD
 
 - **Offline class mode that cannot double-count.** The teacher's phone keeps a class kit and an
   outbox in IndexedDB. Each tap gets an idempotency key once; the server replays a batch in
-  per-student lanes, authorises every mutation with the teacher's permissions *at replay time*,
+  per-student lanes, authorises every mutation with the teacher's permissions _at replay time_,
   and records it in the same transaction as the write and its audit row. Attendance conflicts
   resolve last-writer-wins by class time, with the loser kept in the audit log.
 - **Memorization as a ledger.** Logs are append-only ayah ranges; mistakes are voided with a
@@ -107,69 +107,71 @@ flowchart TD
 
 ## Stack
 
-| Layer | Choice | What it does here |
-| --- | --- | --- |
-| API | NestJS 11, TypeScript, Prisma 6, PostgreSQL 16, Redis 7, BullMQ | HTTP API, tenant-scoped persistence, background jobs and the event outbox |
-| Web | React 19, Vite 6, Tailwind CSS 4, React Router | UI, routing, and styling |
-| Web (server state) | TanStack Query | Caches and refreshes online API data after mutations; not used for offline class mode |
-| Web (i18n) | i18next | Arabic and English UI; notifications use translation keys so each reader gets their language |
-| Web (offline) | Dexie | IndexedDB store for the teacher's class kit and sync outbox on the phone |
-| Web (installable) | Workbox PWA | Service worker that caches the app shell so class mode opens without network |
-| Android | Bubblewrap TWA (`apps/android`) | Store icon or APK opens the deployed PWA in Chrome with no address bar; see [apps/android/README.md](apps/android/README.md) |
-| Shared | Zod (`packages/shared`), Quran data (`packages/quran-data`) | One schema for API and PWA; offline mushaf page lookup |
-| Prayer times | `adhan`, Aladhan city lookup, per-prayer mosque offsets | Schedule classes anchored to adhan times |
-| Monorepo | pnpm workspaces, Turborepo | One repo, shared packages, cached builds |
-| Quality | Oxlint, Prettier, `tsc --noEmit`, Jest, Vitest, Supertest e2e | Lint, format, typecheck, unit and integration tests |
-| Deploy | One Docker image (API + built PWA), worker from same image, Caddy | **Caddy** is the public entry: HTTPS and reverse proxy to the API. The API serves the built PWA too, so the browser has one origin — session cookies stay first-party and CORS is not needed |
+| Layer              | Choice                                                            | What it does here                                                                                                                                                                            |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API                | NestJS 11, TypeScript, Prisma 6, PostgreSQL 16, Redis 7, BullMQ   | HTTP API, tenant-scoped persistence, background jobs and the event outbox                                                                                                                    |
+| Web                | React 19, Vite 6, Tailwind CSS 4, React Router                    | UI, routing, and styling                                                                                                                                                                     |
+| Web (server state) | TanStack Query                                                    | Caches and refreshes online API data after mutations; not used for offline class mode                                                                                                        |
+| Web (i18n)         | i18next                                                           | Arabic and English UI; notifications use translation keys so each reader gets their language                                                                                                 |
+| Web (offline)      | Dexie                                                             | IndexedDB store for the teacher's class kit and sync outbox on the phone                                                                                                                     |
+| Web (installable)  | Workbox PWA                                                       | Service worker that caches the app shell so class mode opens without network                                                                                                                 |
+| Android            | Bubblewrap TWA (`apps/android`)                                   | Store icon or APK opens the deployed PWA in Chrome with no address bar; see [apps/android/README.md](apps/android/README.md)                                                                 |
+| Shared             | Zod (`packages/shared`), Quran data (`packages/quran-data`)       | One schema for API and PWA; offline mushaf page lookup                                                                                                                                       |
+| Prayer times       | `adhan`, Aladhan city lookup, per-prayer mosque offsets           | Schedule classes anchored to adhan times                                                                                                                                                     |
+| Monorepo           | pnpm workspaces, Turborepo                                        | One repo, shared packages, cached builds                                                                                                                                                     |
+| Quality            | Oxlint, Prettier, `tsc --noEmit`, Jest, Vitest, Supertest e2e     | Lint, format, typecheck, unit and integration tests                                                                                                                                          |
+| Deploy             | One Docker image (API + built PWA), worker from same image, Caddy | **Caddy** is the public entry: HTTPS and reverse proxy to the API. The API serves the built PWA too, so the browser has one origin — session cookies stay first-party and CORS is not needed |
 
-## Quick start
+## Getting started
 
-### Try it (Docker only)
+All commands below run from the repository root.
 
-Works on Windows, macOS, and Linux. Node and pnpm are not required.
+### Choose a setup
 
-```bash
-docker compose -f deploy/compose.demo.yml up -d --build
-docker compose -f deploy/compose.demo.yml run --rm seed
-```
+| You want to        | Use                                                                      | You need                                                      | Runs at                                                     |
+| ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| Run the demo       | [Run the demo](#run-the-demo) below                                      | Docker with Compose v2                                        | http://localhost:3000 (built app + API, one origin)         |
+| Change the code    | [Development setup](./CONTRIBUTING.md#development-setup) in CONTRIBUTING | Node 20+, pnpm, Docker for Postgres and Redis                 | http://localhost:5173 (PWA) and http://localhost:3000 (API) |
+| Put it on a server | [Production](#production) below                                          | Docker, a `SESSION_SECRET`, a domain for TLS                  | Your host                                                   |
+| Install on Android | [apps/android/README.md](apps/android/README.md)                         | A deployed HTTPS site, JDK and Android SDK to build the shell | Play Store or an APK link                                   |
 
-Open http://localhost:3000. Use the demo accounts below (`demo-ribat-2026`).
+The demo runs a **built copy** of Ribat inside Docker (API and PWA together). Development runs Ribat **from your source files** on the host; Docker only provides Postgres and Redis.
 
-### Develop (Node + Docker for Postgres and Redis)
+**Note:** Both the demo and development use port **3000** for the API. Stop the demo before you start `pnpm dev`.
 
-**Prerequisites:** Node 20+, pnpm 12.4.2 (`corepack enable`), Docker.
+### Run the demo
 
-```bash
-pnpm install
-cp .env.example .env
-cp .env.example apps/api/.env      # the Prisma CLI reads apps/api/.env
-docker compose -f deploy/compose.dev.yml up -d
-pnpm db:migrate
-pnpm db:seed                       # wipes and recreates the demo data
-pnpm dev
-```
+You need Docker with Compose v2. Node and pnpm are not required.
 
-- PWA: http://localhost:5173 — class mode at `/teach`
-- API: http://localhost:3000/api/v1/health/live
-- API docs: http://localhost:3000/api/docs (with `API_DOCS=true`)
+1. Build and start the stack (Postgres, Redis, and Ribat in one container):
 
-Postgres is on **5435** and Redis on **16379** on the host so they do not clash with other local
-services.
+   ```bash
+   docker compose -f deploy/compose.demo.yml up -d --build
+   ```
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full contributor workflow.
+2. Load fictional demo data (مسجد النور):
 
-### Android app (install and test)
+   ```bash
+   docker compose -f deploy/compose.demo.yml run --rm seed
+   ```
 
-The Play Store listing or an APK link installs a thin shell that opens your **deployed** site
-fullscreen. Local `:5173` dev is
-not the TWA target; use staging or production HTTPS.
+**Expected:** http://localhost:3000 shows the sign-in page. Log in with a [demo account](#demo-accounts) (password `demo-ribat-2026`).
 
-1. Set `host` in [`apps/android/twa-manifest.json`](apps/android/twa-manifest.json) and deploy with `SERVE_WEB=true`.
-2. Add `TWA_SHA256_CERT_FINGERPRINTS` after signing; check `https://YOUR_HOST/.well-known/assetlinks.json`.
-3. `pnpm --filter web build && pnpm android:build` → `app-release-signed.apk` or upload the `.aab` to Play.
+**Stop:** `docker compose -f deploy/compose.demo.yml down`
 
-Test on a device: `adb install -r apps/android/app-release-signed.apk`, or open an HTTPS link to
-the APK. Step-by-step checklist: [apps/android/README.md](apps/android/README.md).
+**Reset data:** `docker compose -f deploy/compose.demo.yml down -v` removes the demo database volume; run the seed command again after you bring the stack back up.
+
+**Note:** Editing the repo does not change the running demo. Rebuild with `docker compose -f deploy/compose.demo.yml up -d --build`.
+
+### Develop
+
+You run the API and Vite dev server on your machine with hot reload. Postgres listens on host port **5435** and Redis on **16379** so they do not clash with other local services.
+
+Follow [Development setup](./CONTRIBUTING.md#development-setup) in CONTRIBUTING.md for prerequisites, steps, and how to verify the stack.
+
+### Android
+
+The store shell opens your **deployed** HTTPS site, not local `:5173`. Build and test steps are in [apps/android/README.md](apps/android/README.md).
 
 ### Demo accounts
 
@@ -177,15 +179,15 @@ All demo accounts use the password `demo-ribat-2026`. The data is fictional: م�
 100 members with Arabic names, 10 circles and lessons, 10 materials, and four weeks of
 attendance, recitations and lesson pages, so every screen has something to show.
 
-| Phone | Role | Sees |
-| --- | --- | --- |
-| `+963999001001` | Sheikh | Everything in مسجد النور, including private notes |
-| `+963999001010` | Admin | Members, courses and settings |
-| `+963999001030` | Member, teacher | Their portal, the two circles they teach, and class mode at `/teach` |
-| `+963999001101`…`109` | Member, teacher | One circle or lesson each |
-| `+963999001050` | Guardian | Their own child only |
-| `+963999001201`…`224` | Guardian | Their own children only |
-| `+963999002001` | Sheikh, isolation test mosque | Nothing from مسجد النور |
+| Phone                 | Role                          | Sees                                                                 |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| `+963999001001`       | Sheikh                        | Everything in مسجد النور, including private notes                    |
+| `+963999001010`       | Admin                         | Members, courses and settings                                        |
+| `+963999001030`       | Member, teacher               | Their portal, the two circles they teach, and class mode at `/teach` |
+| `+963999001101`…`109` | Member, teacher               | One circle or lesson each                                            |
+| `+963999001050`       | Guardian                      | Their own child only                                                 |
+| `+963999001201`…`224` | Guardian                      | Their own children only                                              |
+| `+963999002001`       | Sheikh, isolation test mosque | Nothing from مسجد النور                                              |
 
 ### Import members from CSV
 
@@ -197,20 +199,22 @@ The import validates every row first and writes nothing if any row fails.
 
 ## Commands
 
-| Command | Does |
-| --- | --- |
-| `pnpm dev` | API (:3000) and PWA (:5173) with reload |
-| `pnpm build` | Production build of all packages |
-| `pnpm lint` | Oxlint across the monorepo |
-| `pnpm typecheck` | TypeScript check of all packages |
-| `pnpm test` | Unit tests (API, web, shared) |
-| `pnpm test:e2e` | API integration tests against real Postgres and Redis |
-| `pnpm db:migrate` | Apply Prisma migrations |
-| `pnpm db:seed` | Reset the demo data |
-| `pnpm db:studio` | Open Prisma Studio |
-| `pnpm --filter api projections:rebuild` | Rebuild memorization summaries from the ledger |
-| `pnpm android:update` | Regenerate the Android TWA project from `twa-manifest.json` |
-| `pnpm android:build` | Build signed APK and AAB (requires production host in manifest) |
+These apply when you use the [development setup](./CONTRIBUTING.md#development-setup) (not the Docker demo).
+
+| Command                                 | Does                                                            |
+| --------------------------------------- | --------------------------------------------------------------- |
+| `pnpm dev`                              | API (:3000) and PWA (:5173) with reload                         |
+| `pnpm build`                            | Production build of all packages                                |
+| `pnpm lint`                             | Oxlint across the monorepo                                      |
+| `pnpm typecheck`                        | TypeScript check of all packages                                |
+| `pnpm test`                             | Unit tests (API, web, shared)                                   |
+| `pnpm test:e2e`                         | API integration tests against real Postgres and Redis           |
+| `pnpm db:migrate`                       | Apply Prisma migrations                                         |
+| `pnpm db:seed`                          | Reset the demo data                                             |
+| `pnpm db:studio`                        | Open Prisma Studio                                              |
+| `pnpm --filter api projections:rebuild` | Rebuild memorization summaries from the ledger                  |
+| `pnpm android:update`                   | Regenerate the Android TWA project from `twa-manifest.json`     |
+| `pnpm android:build`                    | Build signed APK and AAB (requires production host in manifest) |
 
 CI runs lint, typecheck, unit tests, e2e tests and the build on every push.
 
