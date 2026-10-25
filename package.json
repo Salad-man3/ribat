@@ -18,7 +18,9 @@
     "db:migrate": "pnpm --filter api exec prisma migrate deploy",
     "db:seed": "pnpm --filter api exec prisma db seed",
     "db:reset": "pnpm --filter api exec prisma migrate reset",
-    "db:studio": "pnpm --filter api exec prisma studio"
+    "db:studio": "pnpm --filter api exec prisma studio",
+    "android:update": "node scripts/android-update.mjs",
+    "android:build": "node scripts/android-build.mjs"
   },
   "devDependencies": {
     "oxlint": "^1.0.0",

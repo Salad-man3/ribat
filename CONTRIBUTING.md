@@ -37,6 +37,7 @@ Requires Node 20+, pnpm 12.4.2 (from `package.json`), and Docker.
 | --- | --- |
 | `apps/api` | NestJS API, Prisma schema, migrations, e2e tests |
 | `apps/web` | React PWA (Vite), offline class mode, i18n |
+| `apps/android` | Bubblewrap TWA for Play Store / APK install ([guide](apps/android/README.md)) |
 | `packages/shared` | Zod contracts shared by API and web |
 | `packages/quran-data` | Surah and mushaf page reference data |
 | `deploy` | Dockerfile, Compose files, Caddy |
@@ -57,5 +58,6 @@ Requires Node 20+, pnpm 12.4.2 (from `package.json`), and Docker.
 - User-facing copy in **English and Arabic** when you touch UI strings.
 - No secrets, invite codes, OTPs, or real personal data in the repo or logs.
 - Offline class mode: after UI or sync changes, try `pnpm dev:pwa` and exercise `/teach`.
+- Android shell changes: follow [apps/android/README.md](apps/android/README.md); run `pnpm android:update` when `twa-manifest.json` changes.
 
 There is no DCO sign-off line required; the licence on the repo applies to merged contributions.

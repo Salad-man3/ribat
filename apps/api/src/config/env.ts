@@ -19,6 +19,18 @@ const envSchema = z.object({
   /** Swagger UI at /api/docs and the spec at /api/docs-json. On for the public demo only (06-api-outline). */
   API_DOCS: flag,
   WEB_DIST_PATH: z.string().optional(),
+  /** Android TWA package id; served in /.well-known/assetlinks.json when fingerprints are set. */
+  TWA_PACKAGE_NAME: z.string().min(1).default('app.ribat.android'),
+  /** Comma-separated SHA-256 cert fingerprints (upload keystore and Play App Signing). */
+  TWA_SHA256_CERT_FINGERPRINTS: z
+    .string()
+    .default('')
+    .transform((s) =>
+      s
+        .split(',')
+        .map((f) => f.trim())
+        .filter(Boolean),
+    ),
   /**
    * BullMQ worker (ADR-0006): `inline` runs it inside the API process (dev, single-container
    * demo), `only` boots a worker-only process, `off` runs no worker (the API with a separate

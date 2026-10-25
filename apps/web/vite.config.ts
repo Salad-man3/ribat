@@ -12,9 +12,9 @@ export default defineConfig({
       // SYNC-04: the shell is cached so class mode opens offline; /api is never cached —
       // domain data lives in Dexie, where code decides what is stale.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg}'],
+        globPatterns: ['**/*.{js,css,html,svg,png}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/\.well-known\//],
         runtimeCaching: [{ urlPattern: /\/api\//, handler: 'NetworkOnly' }],
       },
       manifest: {
@@ -28,10 +28,13 @@ export default defineConfig({
         lang: 'ar',
         dir: 'rtl',
         icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: '/vite.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml',
+            src: '/icons/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },

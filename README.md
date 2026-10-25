@@ -115,6 +115,7 @@ flowchart TD
 | Web (i18n) | i18next | Arabic and English UI; notifications use translation keys so each reader gets their language |
 | Web (offline) | Dexie | IndexedDB store for the teacher's class kit and sync outbox on the phone |
 | Web (installable) | Workbox PWA | Service worker that caches the app shell so class mode opens without network |
+| Android | Bubblewrap TWA (`apps/android`) | Store icon or APK opens the deployed PWA in Chrome with no address bar; see [apps/android/README.md](apps/android/README.md) |
 | Shared | Zod (`packages/shared`), Quran data (`packages/quran-data`) | One schema for API and PWA; offline mushaf page lookup |
 | Prayer times | `adhan`, Aladhan city lookup, per-prayer mosque offsets | Schedule classes anchored to adhan times |
 | Monorepo | pnpm workspaces, Turborepo | One repo, shared packages, cached builds |
@@ -157,6 +158,19 @@ services.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full contributor workflow.
 
+### Android app (install and test)
+
+The Play Store listing or an APK link installs a thin shell that opens your **deployed** site
+fullscreen. Local `:5173` dev is
+not the TWA target; use staging or production HTTPS.
+
+1. Set `host` in [`apps/android/twa-manifest.json`](apps/android/twa-manifest.json) and deploy with `SERVE_WEB=true`.
+2. Add `TWA_SHA256_CERT_FINGERPRINTS` after signing; check `https://YOUR_HOST/.well-known/assetlinks.json`.
+3. `pnpm --filter web build && pnpm android:build` → `app-release-signed.apk` or upload the `.aab` to Play.
+
+Test on a device: `adb install -r apps/android/app-release-signed.apk`, or open an HTTPS link to
+the APK. Step-by-step checklist: [apps/android/README.md](apps/android/README.md).
+
 ### Demo accounts
 
 All demo accounts use the password `demo-ribat-2026`. The data is fictional: مسجد النور has
@@ -195,6 +209,8 @@ The import validates every row first and writes nothing if any row fails.
 | `pnpm db:seed` | Reset the demo data |
 | `pnpm db:studio` | Open Prisma Studio |
 | `pnpm --filter api projections:rebuild` | Rebuild memorization summaries from the ledger |
+| `pnpm android:update` | Regenerate the Android TWA project from `twa-manifest.json` |
+| `pnpm android:build` | Build signed APK and AAB (requires production host in manifest) |
 
 CI runs lint, typecheck, unit tests, e2e tests and the build on every push.
 
