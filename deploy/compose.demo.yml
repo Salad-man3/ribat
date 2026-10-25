@@ -1,0 +1,68 @@
+# Local trial only: one container serves API + built PWA. Not production.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ribat
+      POSTGRES_PASSWORD: ribat
+      POSTGRES_DB: ribat
+    volumes:
+      - ribat_demo_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ribat']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_DEMO: 'true'
+    environment:
+      DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: local-demo-change-me
+      DEPLOY_MODE: self_host
+      APP_URL: http://localhost:3000
+      NODE_ENV: development
+      SERVE_WEB: 'true'
+      PORT: '3000'
+      JOBS_WORKER: inline
+      API_DOCS: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+
+  seed:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_DEMO: 'true'
+    environment:
+      DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: local-demo-change-me
+      NODE_ENV: development
+    depends_on:
+      app:
+        condition: service_started
+    entrypoint: ['pnpm', 'exec', 'prisma', 'db', 'seed']
+    working_dir: /repo/apps/api
+
+volumes:
+  ribat_demo_pg:

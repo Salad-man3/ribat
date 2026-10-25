@@ -1,6 +1,6 @@
 # Ribat promo video
 
-A 5-minute walkthrough in Arabic with English captions, built from `docs/video/script.md`.
+A 5-minute walkthrough in Arabic with English captions (script is kept locally, not in the public repo).
 The voice sets the timing: each line is a clip, the recorder waits for it in the real app, and
 Remotion places the clips where the recorder logged them.
 

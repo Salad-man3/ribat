@@ -13,6 +13,12 @@ graphify-out
 apps/api/.env
 .cursor
 docs/internal
+docs/demo
+docs/discovery
+docs/engineering
+docs/product
+docs/video
+docs/README.md
 .vscode
 .claude
 .playwright-mcp

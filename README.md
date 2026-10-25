@@ -8,35 +8,11 @@ in-app notifications, and a full audit trail. Installable PWA in Arabic (RTL) an
 [![CI](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml/badge.svg)](https://github.com/Salad-man3/ribat/actions/workflows/ci.yml)
 
 <p align="center">
-  <a href="https://salad-man3.github.io/#ribat"><img src="docs/demo/poster.jpg" alt="Ribat: a five-minute tour" width="720" /></a>
-  <br/><strong>▶ <a href="https://salad-man3.github.io/#ribat">Watch the five-minute tour</a></strong> · <a href="docs/demo/ribat-tour.mp4">MP4</a>
+  <strong>▶ <a href="https://salad-man3.github.io/#ribat">Watch the five-minute tour</a></strong>
   <br/><em>English narration, Arabic subtitles: the sheikh, a teacher whose phone goes offline mid-class, a student and his father.</em>
 </p>
 
-## Status
-
-**The beta feature set (slices S1–S4) is built and tested.** Not deployed yet; the four-week
-pilot in a real mosque comes next.
-
-| Area | State |
-| --- | --- |
-| Accounts, sessions, roles, audit log | Done |
-| Members, households, guardians, private notes, CSV import | Done |
-| Courses, teachers, enrollment, groups, materials | Done |
-| Weekly schedule anchored to prayer times, holidays, generated sessions | Done |
-| Attendance, memorization log and tests, explanation pages — **offline**, with sync | Done |
-| Family portal, excuses, homework, in-app notifications, event outbox | Done |
-| Public demo deployment, four-week pilot | Next |
-
-| Test suite | What it proves |
-| --- | --- |
-| Tenant isolation | Every tenant route — 19 reads, 12 writes — answers **404** to another mosque, never 403 |
-| Offline sync | Duplicate batches, two teachers on one student, a teacher removed mid-class, a clock a day off, an expired session, 200 mutations in one request under 2 s |
-| Event outbox | Event and change commit together; redelivery and re-dispatch double nothing; dead letters are visible and retryable; no PII in payloads |
-| Projections | Rebuilding `MemorizationSummary` from the ledger equals the incrementally kept value |
-| Logs | No phone numbers, names or request bodies in any log line |
-
-## What it does today
+## What it does
 
 ### For the mosque's staff (sheikh and admins)
 
@@ -104,21 +80,20 @@ flowchart TD
   per-student lanes, authorises every mutation with the teacher's permissions *at replay time*,
   and records it in the same transaction as the write and its audit row. Attendance conflicts
   resolve last-writer-wins by class time, with the loser kept in the audit log.
-  See [05-offline-sync.md](docs/engineering/05-offline-sync.md) and [ADR-0004](docs/engineering/adr/0004-offline-sync.md).
 - **Memorization as a ledger.** Logs are append-only ayah ranges; mistakes are voided with a
   reason, never edited. A derived summary per student is rewritten in the same transaction and
-  can be rebuilt from the ledger at any time ([ADR-0005](docs/engineering/adr/0005-memorization-model.md), [ADR-0010](docs/engineering/adr/0010-read-models.md)).
+  can be rebuilt from the ledger at any time.
 - **Transactional outbox.** Domain events commit with the change; a `SKIP LOCKED` dispatcher fans
   them out to BullMQ; handlers are idempotent per event and end as visible dead letters after
-  five failures ([ADR-0009](docs/engineering/adr/0009-events-and-outbox.md)).
+  five failures.
 
 - **Tenant isolation in one place.** Many mosques share one schema. A Prisma client
   extension injects `organizationId` into every query on a tenant table and throws if a
   query reaches one without it. The e2e suite runs against two organizations and checks that
-  the other one's records come back as 404. See [ADR-0002](docs/engineering/adr/0002-tenant-isolation.md).
+  the other one's records come back as 404.
 - **Accounts without email.** Staff create people; a one-time setup code (hashed, 7 days,
   single use) lets the person choose their own password, hashed with Argon2id. Login and
-  setup are rate-limited per IP. See [ADR-0003](docs/engineering/adr/0003-authentication.md).
+  setup are rate-limited per IP.
 - **Revocable cookie sessions.** Sessions live in the database, so signing a device out or
   changing a password ends access immediately. Every unsafe request carries a CSRF token
   bound to the session.
@@ -132,19 +107,36 @@ flowchart TD
 
 ## Stack
 
-| Layer | Choice |
-| --- | --- |
-| API | NestJS 11, TypeScript, Prisma 6, PostgreSQL 16, Redis 7, BullMQ |
-| Web | React 19, Vite 6, Tailwind CSS 4, TanStack Query, React Router, i18next, Dexie, Workbox PWA |
-| Shared | Zod contracts (`packages/shared`), Quran reference data (`packages/quran-data`) |
-| Prayer times | `adhan` for calculation, Aladhan for city lookup, per-prayer mosque offsets |
-| Monorepo | pnpm workspaces, Turborepo |
-| Quality | Oxlint, Prettier, `tsc --noEmit`, Jest, Vitest, Supertest e2e |
-| Deploy | One Docker image (API + built PWA), a worker from the same image, Caddy in front |
+| Layer | Choice | What it does here |
+| --- | --- | --- |
+| API | NestJS 11, TypeScript, Prisma 6, PostgreSQL 16, Redis 7, BullMQ | HTTP API, tenant-scoped persistence, background jobs and the event outbox |
+| Web | React 19, Vite 6, Tailwind CSS 4, React Router | UI, routing, and styling |
+| Web (server state) | TanStack Query | Caches and refreshes online API data after mutations; not used for offline class mode |
+| Web (i18n) | i18next | Arabic and English UI; notifications use translation keys so each reader gets their language |
+| Web (offline) | Dexie | IndexedDB store for the teacher's class kit and sync outbox on the phone |
+| Web (installable) | Workbox PWA | Service worker that caches the app shell so class mode opens without network |
+| Shared | Zod (`packages/shared`), Quran data (`packages/quran-data`) | One schema for API and PWA; offline mushaf page lookup |
+| Prayer times | `adhan`, Aladhan city lookup, per-prayer mosque offsets | Schedule classes anchored to adhan times |
+| Monorepo | pnpm workspaces, Turborepo | One repo, shared packages, cached builds |
+| Quality | Oxlint, Prettier, `tsc --noEmit`, Jest, Vitest, Supertest e2e | Lint, format, typecheck, unit and integration tests |
+| Deploy | One Docker image (API + built PWA), worker from same image, Caddy | **Caddy** is the public entry: HTTPS and reverse proxy to the API. The API serves the built PWA too, so the browser has one origin — session cookies stay first-party and CORS is not needed |
 
 ## Quick start
 
-**Prerequisites:** Node 22+, pnpm 12, Docker.
+### Try it (Docker only)
+
+Works on Windows, macOS, and Linux. Node and pnpm are not required.
+
+```bash
+docker compose -f deploy/compose.demo.yml up -d --build
+docker compose -f deploy/compose.demo.yml run --rm seed
+```
+
+Open http://localhost:3000. Use the demo accounts below (`demo-ribat-2026`).
+
+### Develop (Node + Docker for Postgres and Redis)
+
+**Prerequisites:** Node 20+, pnpm 12.4.2 (`corepack enable`), Docker.
 
 ```bash
 pnpm install
@@ -160,8 +152,10 @@ pnpm dev
 - API: http://localhost:3000/api/v1/health/live
 - API docs: http://localhost:3000/api/docs (with `API_DOCS=true`)
 
-Postgres listens on **5435** and Redis on **16379** so they don't clash with other local
+Postgres is on **5435** and Redis on **16379** on the host so they do not clash with other local
 services.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full contributor workflow.
 
 ### Demo accounts
 
@@ -214,11 +208,10 @@ One image serves the API and the built PWA and runs migrations on boot; a second
 from the same image consumes the job queue; Caddy sits in front on port 80. Put a domain in
 `deploy/Caddyfile` instead of `:80` and Caddy fetches the HTTPS certificate itself.
 
-## Documentation
+## Contributing
 
-Start at [docs/README.md](./docs/README.md). Architecture decisions are in
-[docs/engineering/adr/](./docs/engineering/adr/).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Licence
 
-AGPL-3.0 — see [LICENSE](./LICENSE) and [ADR-0007](./docs/engineering/adr/0007-licence-and-visibility.md).
+AGPL-3.0 — see [LICENSE](./LICENSE).
