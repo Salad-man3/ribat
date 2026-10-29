@@ -1,7 +1,7 @@
 import type { MemberResponse } from '@ribat/shared';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { NavButton } from './ui/nav-button';
 import { Badge } from './ui/form';
 
 export function fullName(
@@ -64,9 +64,9 @@ export function MemberCard({
     <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <header className="flex items-start justify-between gap-2">
         {to ? (
-          <Link to={to} className="hover:text-accent">
+          <NavButton to={to} className="text-start hover:text-accent">
             {title}
-          </Link>
+          </NavButton>
         ) : (
           title
         )}

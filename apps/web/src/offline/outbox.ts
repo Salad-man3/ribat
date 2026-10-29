@@ -23,17 +23,36 @@ export function localIso(date = new Date()): string {
 
 type Draft = Pick<SyncMutationInput, 'type' | 'payload'>;
 
+/** SYNC-06 id on every origin; plain HTTP has no randomUUID but getRandomValues works. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 /**
  * Queues one write. The idempotency key is made here, once, at the tap (SYNC-06), and the
  * payload is checked with the API's own schema before it waits in a queue (SYNC-07).
  * Throws a ZodError for an invalid payload.
  */
+/** Drop a queued mutation before it syncs (void a mistaken tap). */
+export async function dropQueued(
+  idempotencyKey: string,
+  store: OfflineDb = db,
+): Promise<void> {
+  await store.outbox.delete(idempotencyKey);
+}
+
 export async function enqueue(draft: Draft, store: OfflineDb = db): Promise<OutboxEntry> {
   const row = await store.kit.get('current');
   if (!row) throw new Error('No class kit on this device');
   const mutation = SyncMutationSchema.parse({
     ...draft,
-    idempotencyKey: crypto.randomUUID(),
+    idempotencyKey: newIdempotencyKey(),
     capturedAt: localIso(),
   });
   const entry: OutboxEntry = { ...mutation, queuedAt: Date.now(), ownerMemberId: row.kit.memberId };

@@ -7,8 +7,10 @@ import {
   type CreateMemberInput,
   type EducationLevel,
   type MemberResponse,
+  type CustomValues,
   type StudyStatus,
 } from '@ribat/shared';
+import { CustomFieldsSection } from './CustomFieldsSection';
 import { Button } from './ui/button';
 import { Field, inputClass } from './ui/form';
 
@@ -23,7 +25,10 @@ const EDUCATION_KEYS = [
   'highestEducation',
 ] as const;
 type Values = Record<
-  Exclude<keyof CreateMemberInput, 'householdId' | (typeof EDUCATION_KEYS)[number]> | (typeof EDUCATION_KEYS)[number],
+  Exclude<
+    keyof CreateMemberInput,
+    'householdId' | 'customValues' | 'tagIds' | (typeof EDUCATION_KEYS)[number]
+  > | (typeof EDUCATION_KEYS)[number],
   string
 >;
 
@@ -60,6 +65,9 @@ export function MemberForm({
     highestEducation: initial?.highestEducation ?? '',
     notes: initial?.notes ?? '',
   });
+  const [customValues, setCustomValues] = useState<CustomValues>(
+    initial?.customValues ?? {},
+  );
   const status = values.studyStatus as StudyStatus | '';
   const level = values.highestEducation as EducationLevel | '';
   const showFaculty =
@@ -99,6 +107,7 @@ export function MemberForm({
               : null,
           highestEducation: status === 'NOT_STUDYING' ? level || null : null,
           faculty: text('faculty', showFaculty),
+          customValues,
         } as CreateMemberInput);
       }}
     >
@@ -207,6 +216,11 @@ export function MemberForm({
           {...bind('notes')}
         />
       </Field>
+      <CustomFieldsSection
+        entityType="MEMBER"
+        values={customValues}
+        onChange={setCustomValues}
+      />
       <div>
         <Button type="submit" disabled={pending}>
           {submitLabel}

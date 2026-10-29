@@ -8,11 +8,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "prepare": "node scripts/install-git-hooks.mjs",
+    "dev": "turbo run dev --filter=api --filter=web",
+    "dev:lan": "turbo run dev:lan --filter=api --filter=web",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "node --test scripts/monorepo-tooling.test.mjs && turbo run test",
     "test:e2e": "pnpm --filter @ribat/shared --filter @ribat/quran-data build && pnpm --filter api test:e2e",
     "fmt": "turbo run fmt",
     "db:migrate": "pnpm --filter api exec prisma migrate deploy",

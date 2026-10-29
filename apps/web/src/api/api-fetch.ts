@@ -24,6 +24,10 @@ export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
+  if (import.meta.env.VITE_DEMO_BROWSER === 'true') {
+    const { demoApiFetch } = await import('@demo/client');
+    return demoApiFetch<T>(path, init);
+  }
   const headers = new Headers(init.headers);
   if (!headers.has('Content-Type') && init.body) {
     headers.set('Content-Type', 'application/json');

@@ -8,6 +8,7 @@ import type {
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
 import { conflict, notFound } from '../common/errors';
+import { CustomFieldsService } from '../custom-fields/custom-fields.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { toMaterialResponse } from './material.mapper';
 
@@ -24,6 +25,7 @@ export class MaterialsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly customFields: CustomFieldsService,
   ) {}
 
   async list(organizationId: string): Promise<MaterialResponse[]> {
@@ -72,10 +74,19 @@ export class MaterialsService {
     input: CreateMaterialInput,
     auditCtx: AuditContext,
   ): Promise<MaterialResponse> {
+    const { customValues: customPatch, ...rest } = input;
+    const customValues =
+      customPatch === undefined
+        ? {}
+        : await this.customFields.sanitizeForCreate(
+            organizationId,
+            'MATERIAL',
+            customPatch,
+          );
     const row = await this.prisma
       .forOrganization(organizationId)
       .material.create({
-        data: { organizationId, ...input },
+        data: { organizationId, ...rest, customValues },
       });
     await this.audit.record(auditCtx, {
       action: 'material.created',
@@ -95,9 +106,23 @@ export class MaterialsService {
     const before = await this.findActive(organizationId, id);
     if (before.kind === 'QURAN')
       throw conflict('The Quran entry is managed by the system');
-    await this.prisma
-      .forOrganization(organizationId)
-      .material.updateMany({ where: { id }, data: input });
+    const { customValues: customPatch, ...rest } = input;
+    const customValues =
+      customPatch === undefined
+        ? undefined
+        : await this.customFields.sanitizeForUpdate(
+            organizationId,
+            'MATERIAL',
+            before.customValues,
+            customPatch,
+          );
+    await this.prisma.forOrganization(organizationId).material.updateMany({
+      where: { id },
+      data: {
+        ...rest,
+        ...(customValues !== undefined ? { customValues } : {}),
+      },
+    });
     const after = await this.findActive(organizationId, id);
     await this.audit.record(auditCtx, {
       action: 'material.updated',

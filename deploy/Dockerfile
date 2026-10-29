@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /repo
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
@@ -6,14 +6,15 @@ COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 COPY packages/quran-data/package.json packages/quran-data/
-RUN pnpm install --frozen-lockfile
+# Lifecycle scripts (root `prepare` installs git hooks) need the full tree; skip until after COPY.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
 # Demo builds list the fictional seed logins on the sign-in page.
 ARG VITE_DEMO=false
 RUN pnpm --filter @ribat/shared build \
   && pnpm --filter @ribat/quran-data build \
   && pnpm --filter web build \
-  && pnpm --filter api exec prisma generate \
+  && pnpm --filter api exec prisma generate --generator client \
   && pnpm --filter api build
 ENV NODE_ENV=production
 ENV SERVE_WEB=true

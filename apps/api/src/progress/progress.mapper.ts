@@ -56,6 +56,7 @@ export function toLogResponse(row: MemorizationLog): MemorizationLogResponse {
     ayahCount: row.ayahCount,
     grade: row.grade,
     mistakes: row.mistakes,
+    countsProgress: row.countsProgress,
     note: row.note,
     loggedByMemberId: row.loggedByMemberId,
     loggedAt: row.loggedAt.toISOString(),

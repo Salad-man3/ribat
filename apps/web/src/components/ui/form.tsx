@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NavButton, ScrollButton } from './nav-button';
 import { ApiError } from '../../api/api-fetch';
 import { cn } from '../../lib/utils';
 
 export const inputClass =
-  'min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/70 focus:border-accent focus:outline-none';
+  'min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base text-ink placeholder:text-muted/70 focus:border-accent focus:outline-none md:text-sm';
 
 export function Field({
   label,
@@ -62,22 +63,133 @@ export function PageHeader({
   title,
   subtitle,
   actions,
+  /** Phone top bar already shows the section name — hide the duplicate title. */
+  chrome,
 }: {
   title: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  chrome?: boolean;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-3xl font-bold">{title}</h1>
+    <header className="grid gap-3 md:flex md:flex-wrap md:items-end md:justify-between">
+      <div className={cn(chrome && 'max-md:sr-only')}>
+        <h1 className="text-2xl font-bold md:text-3xl">{title}</h1>
         <TitleRule />
         {subtitle ? (
           <p className="mt-1 text-sm text-muted">{subtitle}</p>
         ) : null}
       </div>
-      {actions}
+      {actions ? (
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center md:justify-end">
+          {actions}
+        </div>
+      ) : null}
     </header>
+  );
+}
+
+export function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  'aria-label': ariaLabel,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+  'aria-label'?: string;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      className="-mx-1 overflow-x-auto px-1 pb-0.5"
+    >
+      <div className="inline-flex min-w-min shrink-0 rounded-lg border border-line p-0.5">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            role="tab"
+            aria-selected={value === opt.value}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              'min-h-11 shrink-0 rounded-md px-4 text-sm font-medium whitespace-nowrap',
+              value === opt.value
+                ? 'bg-accent text-accent-ink'
+                : 'text-muted hover:bg-paper hover:text-ink',
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function RecordRow({
+  to,
+  title,
+  meta,
+  badge,
+  trailing,
+  className,
+}: {
+  to: string;
+  title: ReactNode;
+  meta?: ReactNode;
+  badge?: ReactNode;
+  trailing?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <NavButton
+      to={to}
+      className={cn(
+        'flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 hover:bg-paper',
+        className,
+      )}
+    >
+      <span className="min-w-0 flex-1 text-start">
+        <span className="block font-medium">{title}</span>
+        {meta ? (
+          <span className="block truncate text-xs text-muted">{meta}</span>
+        ) : null}
+      </span>
+      {badge}
+      {trailing ?? (
+        <span className="shrink-0 text-lg text-muted leading-none" aria-hidden>
+          ›
+        </span>
+      )}
+    </NavButton>
+  );
+}
+
+/** Sticky in-page section jumps for long record screens. */
+export function SectionNav({
+  items,
+}: {
+  items: { id: string; label: string }[];
+}) {
+  if (items.length < 2) return null;
+  return (
+    <nav
+      aria-label="Sections"
+      className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none"
+    >
+      {items.map((item) => (
+        <ScrollButton
+          key={item.id}
+          targetId={item.id}
+          className="shrink-0 rounded-full border border-line bg-surface px-3 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
+        >
+          {item.label}
+        </ScrollButton>
+      ))}
+    </nav>
   );
 }
 
@@ -111,7 +223,11 @@ export function ErrorText({ error }: { error: unknown }) {
       role="alert"
       className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
     >
-      <p>{t(`errors.${code}`)}</p>
+      <p>
+        {t(`errors.${code}`, {
+          defaultValue: body?.message ?? t('errors.INTERNAL_ERROR'),
+        })}
+      </p>
       {details.length ? (
         <ul className="mt-1 list-disc ps-5 text-xs">
           {details.map(([key, value]) => (

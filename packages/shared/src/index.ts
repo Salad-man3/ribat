@@ -20,6 +20,7 @@ export {
   LEVELS_WITH_FACULTY,
   ListMembersQuerySchema,
   MemberResponseSchema,
+  MemberCourseSummarySchema,
   MemberStatusSchema,
   StudyStatusSchema,
   UpdateMemberSchema,
@@ -27,10 +28,19 @@ export {
   type EducationLevel,
   type ListMembersQuery,
   type MemberResponse,
+  type MemberCourseSummary,
   type MemberStatus,
   type StudyStatus,
   type UpdateMemberInput,
 } from './members.js';
+export {
+  ASSIGNABLE_STAFF_PERMISSIONS,
+  AssignableStaffPermissionsSchema,
+  canUseAdminView,
+  permissionsFor,
+  STAFF_ADMIN_PERMISSIONS,
+  type PermissionGrantOptions,
+} from './permissions.js';
 export {
   ActiveViewSchema,
   type ActiveView,
@@ -53,6 +63,41 @@ export {
   type RevokeDeviceQuery,
   type SwitchViewInput,
 } from './auth.js';
+export {
+  defaultWhatsappSetupTemplate,
+  interpolateWhatsappSetupMessage,
+  resolveWhatsappSetupTemplate,
+  WHATSAPP_SETUP_PLACEHOLDERS,
+  WhatsappSetupTemplateSchema,
+  whatsappDigitsFromE164,
+  whatsappSetupChatUrl,
+  type WhatsappSetupMessageContext,
+} from './whatsapp-setup.js';
+export {
+  ApproveJoinApplicationResponseSchema,
+  CreateGuardianJoinApplicationSchema,
+  CreateJoinApplicationSchema,
+  CreateStudentJoinApplicationSchema,
+  JoinApplicationKindSchema,
+  JoinApplicationResponseSchema,
+  JoinApplicationStatusSchema,
+  JoinApplicationWardSchema,
+  ListJoinApplicationsQuerySchema,
+  MemberAccessGapReasonSchema,
+  MemberAccessGapSchema,
+  PublicJoinApplicationCreatedSchema,
+  PublicOrganizationJoinInfoSchema,
+  type ApproveJoinApplicationResponse,
+  type CreateJoinApplicationInput,
+  type JoinApplicationKind,
+  type JoinApplicationResponse,
+  type JoinApplicationStatus,
+  type ListJoinApplicationsQuery,
+  type MemberAccessGap,
+  type MemberAccessGapReason,
+  type PublicJoinApplicationCreated,
+  type PublicOrganizationJoinInfo,
+} from './join-applications.js';
 export {
   LocaleSchema,
   OrganizationResponseSchema,
@@ -78,6 +123,8 @@ export {
   CreateMembershipSchema,
   GrantMemberAccessSchema,
   GuardianLinkResponseSchema,
+  StaffGuardianLinkRowSchema,
+  ListGuardianLinksQuerySchema,
   GuardianRelationSchema,
   HouseholdResponseSchema,
   LinkSiblingSchema,
@@ -95,6 +142,8 @@ export {
   type CreateMembershipInput,
   type GrantMemberAccessInput,
   type GuardianLinkResponse,
+  type StaffGuardianLinkRow,
+  type ListGuardianLinksQuery,
   type GuardianRelation,
   type HouseholdResponse,
   type LinkSiblingInput,
@@ -107,6 +156,56 @@ export {
   type SetupCodeResponse,
   type UpdateMembershipInput,
 } from './people.js';
-export { setupCode } from './fields.js';export * from './courses.js';
+export { setupCode } from './fields.js';
+export {
+  CreateCustomFieldSchema,
+  CustomFieldDefinitionResponseSchema,
+  CustomFieldEntityTypeSchema,
+  CustomFieldTypeSchema,
+  CustomValuesInputSchema,
+  CustomValuesSchema,
+  ListCustomFieldsQuerySchema,
+  UpdateCustomFieldSchema,
+  customFieldKeyFromLabel,
+  mergeCustomValues,
+  sanitizeCustomValues,
+  type CreateCustomFieldInput,
+  type CustomFieldDefinitionResponse,
+  type CustomFieldEntityType,
+  type CustomFieldType,
+  type CustomValues,
+  type CustomValuesInput,
+  type ListCustomFieldsQuery,
+  type UpdateCustomFieldInput,
+} from './custom-fields.js';
+export * from './programs.js';
+export * from './courses.js';
 export * from './progress.js';
+export * from './hifz.js';
 export * from './families.js';
+export {
+  CreateTagSchema,
+  TagResponseSchema,
+  UpdateTagSchema,
+  type CreateTagInput,
+  type TagResponse,
+  type UpdateTagInput,
+} from './tags.js';
+export {
+  NOTIFICATION_CATEGORIES,
+  NotificationCategoryCountsSchema,
+  NotificationCategorySchema,
+  notificationCategory,
+  type NotificationCategory,
+  type NotificationCategoryCounts,
+} from './notifications.js';
+export {
+  AnnouncementResponseSchema,
+  AnnouncementTargetTypeSchema,
+  CreateAnnouncementSchema,
+  type AnnouncementResponse,
+  type AnnouncementTargetType,
+  type CreateAnnouncementInput,
+} from './announcements.js';
+export * from './stats.js';
+export * from './report-cards.js';

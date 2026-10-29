@@ -1,10 +1,10 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import type { ActiveView, LoginResponse, RedeemSetupCodeInput } from '@ribat/shared';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateSetupCode, hashSecret, verifySecret } from './credentials';
-import { isStaff, permissionsFor } from './permissions';
+import { permissionsForMembershipContext } from './membership-permissions';
 
 const SETUP_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -199,7 +199,9 @@ export class IdentitiesService {
         });
         const memberships = await this.prisma.platform.membership.findMany({
             where: { identityId },
-            include: { organization: { select: { name: true, status: true } } },
+            include: {
+                organization: { select: { name: true, status: true, settings: true } },
+            },
             orderBy: { createdAt: 'asc' },
         });
         const active = memberships.filter(
@@ -208,21 +210,55 @@ export class IdentitiesService {
         );
 
         const sole = active.length === 1 ? active[0] : null;
-        const staff = sole ? isStaff(sole.role) : false;
+        let tagPermissionsJson: unknown[] = [];
+        if (sole?.memberId) {
+            const tagRows = await this.prisma.platform.memberTag.findMany({
+                where: {
+                    memberId: sole.memberId,
+                    organizationId: sole.organizationId,
+                },
+                select: { tag: { select: { permissions: true } } },
+            });
+            tagPermissionsJson = tagRows.map((row) => row.tag.permissions);
+        }
+        const canUseAdminView = sole
+            ? permissionsForMembershipContext({
+                  role: sole.role,
+                  activeView: 'ADMIN',
+                  organizationSettings: sole.organization.settings,
+                  tagPermissionsJson,
+              }).length > 0
+            : false;
 
         return {
             identity,
-            memberships: memberships.map((membership) => ({
-                id: membership.id,
-                organizationId: membership.organizationId,
-                organizationName: membership.organization.name,
-                role: membership.role,
-                memberId: membership.memberId,
-                status: membership.status,
-            })),
+            memberships: memberships.map((membership) => {
+                const settings =
+                    typeof membership.organization.settings === 'object' &&
+                    membership.organization.settings !== null &&
+                    !Array.isArray(membership.organization.settings)
+                        ? (membership.organization.settings as { locale?: 'ar' | 'en' })
+                        : {};
+                return {
+                    id: membership.id,
+                    organizationId: membership.organizationId,
+                    organizationName: membership.organization.name,
+                    organizationLocale: settings.locale ?? 'ar',
+                    role: membership.role,
+                    memberId: membership.memberId,
+                    status: membership.status,
+                };
+            }),
             activeOrganizationId: sole?.organizationId ?? null,
-            activeView: staff ? sessionActiveView : null,
-            permissions: sole ? permissionsFor(sole.role, sessionActiveView) : [],
+            activeView: canUseAdminView ? sessionActiveView : null,
+            permissions: sole
+                ? permissionsForMembershipContext({
+                      role: sole.role,
+                      activeView: sessionActiveView,
+                      organizationSettings: sole.organization.settings,
+                      tagPermissionsJson,
+                  })
+                : [],
         };
     }
 

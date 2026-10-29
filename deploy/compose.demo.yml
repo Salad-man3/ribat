@@ -22,12 +22,25 @@ services:
       timeout: 5s
       retries: 10
 
-  app:
+  migrate:
+    image: ribat-demo:${RIBAT_IMAGE_TAG:-local}
     build:
       context: ..
       dockerfile: deploy/Dockerfile
       args:
         VITE_DEMO: 'true'
+    environment:
+      DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: local-demo-change-me
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ['sh', '-c', 'cd /repo/apps/api && pnpm exec prisma migrate deploy']
+    restart: 'no'
+
+  app:
+    image: ribat-demo:${RIBAT_IMAGE_TAG:-local}
     environment:
       DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
       REDIS_URL: redis://redis:6379
@@ -39,7 +52,10 @@ services:
       PORT: '3000'
       JOBS_WORKER: inline
       API_DOCS: 'true'
+      SKIP_DB_MIGRATE: 'true'
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -48,19 +64,15 @@ services:
       - '3000:3000'
 
   seed:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      args:
-        VITE_DEMO: 'true'
+    image: ribat-demo:${RIBAT_IMAGE_TAG:-local}
     environment:
       DATABASE_URL: postgresql://ribat:ribat@postgres:5432/ribat
       REDIS_URL: redis://redis:6379
       SESSION_SECRET: local-demo-change-me
       NODE_ENV: development
     depends_on:
-      app:
-        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     entrypoint: ['pnpm', 'exec', 'prisma', 'db', 'seed']
     working_dir: /repo/apps/api
 

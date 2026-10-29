@@ -1,11 +1,13 @@
 import type { Course, Member } from '@prisma/client';
 import type { CourseResponse } from '@ribat/shared';
+import { storedCustomValues } from '../custom-fields/stored-custom-values';
 import { toDateString } from '../common/zoned-time';
 
 export function toCourseResponse(row: Course): CourseResponse {
   return {
     id: row.id,
     organizationId: row.organizationId,
+    programId: row.programId,
     name: row.name,
     description: row.description,
     type: row.type,
@@ -21,6 +23,7 @@ export function toCourseResponse(row: Course): CourseResponse {
     testPassMark: row.testPassMark,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    customValues: storedCustomValues(row.customValues),
   };
 }
 

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import type {
   AssignableRole,
   CreateGuardianLinkInput,
@@ -12,6 +13,7 @@ import type {
   MemberNoteVisibility,
   MemberResponse,
   MembershipResponse,
+  OrganizationResponse,
   SetupCodeResponse,
 } from '@ribat/shared';
 import { ApiError, apiFetch } from '../api/api-fetch';
@@ -26,8 +28,12 @@ import {
   ErrorText,
   Field,
   inputClass,
+  SectionNav,
 } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
+import { setupWhatsappChatUrl } from '../lib/whatsapp-setup';
+import { MemberTagsSection } from '../components/MemberTagsSection';
+import { MemberHifzSection } from '../components/MemberHifzSection';
 import { NotFoundPage } from './NotFoundPage';
 import { formatDateTime } from '../lib/domain';
 
@@ -93,12 +99,27 @@ export function MemberDetailPage() {
   if (!member.data) return <p className="text-sm text-muted">…</p>;
   const data = member.data;
 
+  const sectionItems = [
+    ...(can('members.manage')
+      ? [{ id: 'member-tags', label: t('members.tags.title') }]
+      : []),
+    ...(can('members.manage')
+      ? [{ id: 'member-hifz', label: t('hifz.mapTitle') }]
+      : []),
+    { id: 'member-guardians', label: t('guardians.title') },
+    { id: 'member-household', label: t('household.title') },
+    { id: 'member-notes', label: t('notes.title') },
+    ...(can('memberships.manage')
+      ? [{ id: 'member-access', label: t('access.title') }]
+      : []),
+  ];
+
   return (
     <section className="grid gap-6">
-      <Link to="/staff/members" className="text-sm text-accent">
+      <NavButton to="/staff/members" className="text-sm text-accent">
         <span className="inline-block rtl:rotate-180">←</span>{' '}
         {t('members.title')}
-      </Link>
+      </NavButton>
 
       {editing ? (
         <Card
@@ -124,7 +145,7 @@ export function MemberDetailPage() {
       ) : (
         <div className="grid gap-3">
           <MemberCard member={data} />
-          {data.status === 'ACTIVE' ? (
+          {data.status === 'ACTIVE' && can('members.manage') ? (
             <div className="flex flex-wrap gap-2">
               <Button variant="ghost" onClick={() => setEditing(true)}>
                 {t('common.edit')}
@@ -136,7 +157,7 @@ export function MemberDetailPage() {
                     onClick={() => archive.mutate()}
                     disabled={archive.isPending}
                   >
-                    {t('members.confirmArchive')}
+                    {t('members.confirmDelete')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -150,7 +171,7 @@ export function MemberDetailPage() {
                   variant="danger"
                   onClick={() => setConfirmArchive(true)}
                 >
-                  {t('members.archive')}
+                  {t('members.delete')}
                 </Button>
               )}
             </div>
@@ -159,24 +180,47 @@ export function MemberDetailPage() {
         </div>
       )}
 
+      <SectionNav items={sectionItems} />
+
+      {can('members.manage') ? (
+        <div id="member-tags" className="record-section">
+          <MemberTagsSection member={data} />
+        </div>
+      ) : null}
+      {can('members.manage') ? (
+        <div id="member-hifz" className="record-section">
+          <MemberHifzSection memberId={id} />
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-2">
-        <GuardiansSection
-          memberId={id}
-          nameOf={nameOf}
-          candidates={everyone.data ?? []}
-        />
-        <HouseholdSection
-          member={data}
-          nameOf={nameOf}
-          candidates={everyone.data ?? []}
-          onLinked={refresh}
-        />
-        <NotesSection
-          memberId={id}
-          nameOf={nameOf}
-          canWrite={can('notes.write')}
-        />
-        {can('memberships.manage') ? <AccessSection member={data} /> : null}
+        <div id="member-guardians" className="record-section">
+          <GuardiansSection
+            memberId={id}
+            nameOf={nameOf}
+            candidates={everyone.data ?? []}
+          />
+        </div>
+        <div id="member-household" className="record-section">
+          <HouseholdSection
+            member={data}
+            nameOf={nameOf}
+            candidates={everyone.data ?? []}
+            onLinked={refresh}
+          />
+        </div>
+        <div id="member-notes" className="record-section">
+          <NotesSection
+            memberId={id}
+            nameOf={nameOf}
+            canWrite={can('notes.write')}
+          />
+        </div>
+        {can('memberships.manage') ? (
+          <div id="member-access" className="record-section">
+            <AccessSection member={data} />
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -287,12 +331,12 @@ function GuardiansSection({
             key={link.id}
             className="flex items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-sm"
           >
-            <Link
+            <NavButton
               to={`/staff/members/${link.guardianMemberId}`}
               className="font-medium hover:text-accent"
             >
               {nameOf(link.guardianMemberId)}
-            </Link>
+            </NavButton>
             <span className="flex items-center gap-2">
               <Badge>{t(`guardians.relation.${link.relation}`)}</Badge>
               {link.isPrimary ? (
@@ -424,12 +468,12 @@ function HouseholdSection({
       <ul className="flex flex-wrap gap-2">
         {siblings.map((sid) => (
           <li key={sid}>
-            <Link
+            <NavButton
               to={`/staff/members/${sid}`}
               className="inline-block rounded-full bg-accent-soft px-3 py-1 text-sm text-accent"
             >
               {nameOf(sid)}
-            </Link>
+            </NavButton>
           </li>
         ))}
       </ul>
@@ -558,6 +602,12 @@ function NotesSection({
 function AccessSection({ member }: { member: MemberResponse }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const { membership, can } = useActiveMembership();
+  const orgSettings = useQuery({
+    queryKey: ['organization'],
+    queryFn: () => apiFetch<OrganizationResponse>('/api/v1/organization'),
+    enabled: can('organization.manage'),
+  });
   const memberships = useQuery({
     queryKey: ['memberships'],
     queryFn: () =>
@@ -583,6 +633,19 @@ function AccessSection({ member }: { member: MemberResponse }) {
       await queryClient.invalidateQueries({ queryKey: ['memberships'] });
     },
   });
+
+  const whatsappHref =
+    issued && member.phone && membership
+      ? setupWhatsappChatUrl({
+          locale: membership.organizationLocale,
+          override: orgSettings.data?.whatsappSetupTemplate,
+          phone: member.phone,
+          mosqueName: membership.organizationName,
+          setupUrl: `${window.location.origin}/setup`,
+          code: issued.setupCode,
+          expires: formatDateTime(issued.expiresAt, membership.organizationLocale),
+        })
+      : null;
 
   return (
     <Card title={t('access.title')}>
@@ -613,6 +676,19 @@ function AccessSection({ member }: { member: MemberResponse }) {
             {t('access.expires')}:{' '}
             {formatDateTime(issued.expiresAt, i18n.language)}
           </p>
+          {whatsappHref ? (
+            <div className="mt-4 grid gap-2">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-paper"
+              >
+                {t('access.sendWhatsApp')}
+              </a>
+              <p className="text-xs opacity-80">{t('access.whatsappHint')}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

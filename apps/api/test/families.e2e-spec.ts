@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Logger } from 'nestjs-pino';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -19,7 +19,7 @@ import { organizationScopeExtension } from '../src/prisma/organization-scope';
 import { loginAs, removeAuthFixtures, type AuthenticatedSession } from './fixtures/auth-session';
 import { removeTwoOrganizations, twoOrganizations, type TwoOrganizations } from './fixtures/organizations';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const TZ = 'Asia/Damascus';
 
 describe('Families, homework, notifications and the event outbox (S4, e2e)', () => {
@@ -134,6 +134,11 @@ describe('Families, homework, notifications and the event outbox (S4, e2e)', () 
       await mark(teacher, wardEnrollmentId, 'LATE');
       const res = await api(guardian).get(`/members/${wardMemberId}/progress`).expect(200);
       expect(res.body.courses[0].attendance).toMatchObject({ LATE: 1, total: 1, rate: 1 });
+      expect(res.body.hifz).toMatchObject({
+        juzMemorized: expect.any(Array),
+        juzTests: expect.any(Array),
+        awqafByJuz: expect.any(Array),
+      });
       await api(ward).get(`/members/${wardMemberId}/progress`).expect(200);
       await api(guardian).get(`/members/${strangerMemberId}/progress`).expect(403);
       await api(teacher).get(`/members/${wardMemberId}/progress`).expect(403);
@@ -251,6 +256,44 @@ describe('Families, homework, notifications and the event outbox (S4, e2e)', () 
       await api(teacher).patch(`/sessions/${later}`, { status: 'CANCELLED' }).expect(200);
       await drain();
       expect((await inbox(guardian)).items.map((n: { type: string }) => n.type)).toContain('SCHEDULE_CHANGE');
+    });
+
+    it('staff announcements reach students and guardians; teachers cannot message everyone', async () => {
+      await api(sheikh).patch('/organization', { tagsEnabled: true }).expect(200);
+      const tag = (await api(sheikh).post('/tags', { name: 'Scholarship' }).expect(201)).body;
+      await api(sheikh).patch(`/members/${wardMemberId}`, { tagIds: [tag.id] }).expect(200);
+
+      await api(teacher)
+        .post('/announcements', {
+          title: 'No',
+          body: 'Scope',
+          targetType: 'EVERYONE',
+          targetIds: [],
+        })
+        .expect(403);
+
+      await api(sheikh)
+        .post('/announcements', {
+          title: 'Halaqa note',
+          body: 'Bring your mushaf.',
+          targetType: 'COURSES',
+          targetIds: [courseId],
+        })
+        .expect(201);
+      await drain();
+
+      const wardNote = (await inbox(ward)).items.find((n: { type: string }) => n.type === 'ANNOUNCEMENT');
+      expect(wardNote?.params).toMatchObject({ title: 'Halaqa note', body: 'Bring your mushaf.' });
+      expect((await inbox(guardian)).items.some((n: { type: string }) => n.type === 'ANNOUNCEMENT')).toBe(true);
+
+      const filtered = (await api(guardian).get('/notifications?category=announcements').expect(200)).body;
+      expect(filtered.items.every((n: { type: string }) => n.type === 'ANNOUNCEMENT')).toBe(true);
+      expect(filtered.unreadByCategory.announcements).toBeGreaterThanOrEqual(1);
+    });
+
+    it('rejects tag writes when tags are disabled', async () => {
+      await api(sheikh).patch('/organization', { tagsEnabled: false }).expect(200);
+      await api(sheikh).post('/tags', { name: 'Blocked' }).expect(409);
     });
   });
 

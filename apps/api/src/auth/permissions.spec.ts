@@ -36,4 +36,41 @@ describe('permissionsFor', () => {
             'memberships.manage_org_admin',
         );
     });
+
+    it('ORG_ADMIN uses orgAdminPermissions when provided', () => {
+        expect(
+            permissionsFor('ORG_ADMIN', 'ADMIN', {
+                orgAdminPermissions: ['members.manage', 'audit.read'],
+            }),
+        ).toEqual(['members.manage', 'audit.read']);
+    });
+
+    it('MEMBER receives tag keys when tags are enabled', () => {
+        expect(
+            permissionsFor('MEMBER', 'ADMIN', {
+                tagsEnabled: true,
+                tagPermissionKeys: ['notes.write'],
+            }),
+        ).toEqual(['notes.write']);
+    });
+
+    it('tag keys are ignored when tags are disabled', () => {
+        expect(
+            permissionsFor('MEMBER', 'ADMIN', {
+                tagsEnabled: false,
+                tagPermissionKeys: ['notes.write'],
+            }),
+        ).toEqual([]);
+    });
+
+    it('org admin permissions cannot grant memberships.manage_org_admin', () => {
+        expect(
+            permissionsFor('ORG_ADMIN', 'ADMIN', {
+                orgAdminPermissions: [
+                    'members.manage',
+                    'memberships.manage_org_admin',
+                ],
+            }),
+        ).toEqual(['members.manage']);
+    });
 });

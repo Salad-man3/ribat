@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import { apiFetch } from '../api/api-fetch';
 import { login } from '../api/auth';
 import { Button } from '../components/ui/button';
@@ -78,12 +79,12 @@ export function LoginPage() {
         <Button type="submit" disabled={signIn.isPending}>
           {t('auth.signIn')}
         </Button>
-        <Link
-          className="text-center text-sm text-accent underline underline-offset-4"
+        <NavButton
+          className="w-full text-center text-sm text-accent underline underline-offset-4"
           to="/setup/password"
         >
           {t('auth.haveSetupCode')}
-        </Link>
+        </NavButton>
       </form>
 
       {import.meta.env.VITE_DEMO === 'true' ? (

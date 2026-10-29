@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import type { MyCourseResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
-import { ProgressPanel, WeekTimetable } from '../components/family';
+import { ProgressPanel, TodayTeachingCard, WeekTimetable } from '../components/family';
+import { PublishedReportCards } from '../components/PublishedReportCards';
 import { Badge, Card, PageHeader } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 
@@ -12,10 +13,10 @@ export function MemberHomePage() {
   const { me, membership } = useActiveMembership();
   return (
     <section className="grid gap-6">
-      <PageHeader
-        title={t('member.homeTitle')}
-        subtitle={membership?.organizationName}
-      />
+      <PageHeader chrome title={t('member.homeTitle')} />
+      <TodayTeachingCard />
+      <WeekTimetable />
+      <TeachingCard />
       <Card title={t('member.account')}>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -30,9 +31,12 @@ export function MemberHomePage() {
           </div>
         </dl>
       </Card>
-      <TeachingCard />
-      <WeekTimetable />
-      {membership?.memberId ? <ProgressPanel memberId={membership.memberId} /> : null}
+      {membership?.memberId ? (
+        <>
+          <PublishedReportCards memberId={membership.memberId} basePath="/member" />
+          <ProgressPanel memberId={membership.memberId} />
+        </>
+      ) : null}
     </section>
   );
 }
@@ -50,9 +54,9 @@ function TeachingCard() {
       <ul className="grid gap-2">
         {courses.data.map((course) => (
           <li key={course.id}>
-            <Link
+            <NavButton
               to={`/member/courses/${course.id}`}
-              className="flex items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-sm hover:text-accent"
+              className="flex w-full items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-start text-sm hover:text-accent"
             >
               <span className="font-medium">{course.name}</span>
               <span className="flex gap-2">
@@ -61,7 +65,7 @@ function TeachingCard() {
                 </Badge>
                 <Badge>{t(`courses.status.${course.status}`)}</Badge>
               </span>
-            </Link>
+            </NavButton>
           </li>
         ))}
       </ul>

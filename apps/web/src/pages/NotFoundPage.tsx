@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 
 export function NotFoundPage() {
   const { t } = useTranslation();
@@ -8,12 +8,12 @@ export function NotFoundPage() {
       <p className="text-5xl font-semibold text-accent">404</p>
       <h1 className="text-xl font-semibold">{t('notFound.title')}</h1>
       <p className="max-w-sm text-sm text-muted">{t('notFound.body')}</p>
-      <Link
+      <NavButton
         to="/"
         className="text-sm font-medium text-accent underline underline-offset-4"
       >
         {t('notFound.home')}
-      </Link>
+      </NavButton>
     </section>
   );
 }

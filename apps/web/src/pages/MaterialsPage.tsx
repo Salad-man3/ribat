@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   CreateMaterialInput,
+  CustomValues,
   MaterialResponse,
   UpdateMaterialInput,
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
+import { CustomFieldsSection } from '../components/CustomFieldsSection';
 import { useMaterials } from '../api/courses';
 import { Button } from '../components/ui/button';
 import {
@@ -86,6 +88,7 @@ export function MaterialsPage() {
   const materials = useMaterials();
   const [form, setForm] = useState<Form>(formFrom());
   const [kind, setKind] = useState<'TEXT' | 'BOOK'>('TEXT');
+  const [customValues, setCustomValues] = useState<CustomValues>({});
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ['materials'] });
   const create = useMutation({
@@ -95,10 +98,12 @@ export function MaterialsPage() {
         body: JSON.stringify({
           kind,
           ...payload(form),
+          ...(Object.keys(customValues).length ? { customValues } : {}),
         } satisfies CreateMaterialInput),
       }),
     onSuccess: async () => {
       setForm(formFrom());
+      setCustomValues({});
       await refresh();
     },
   });
@@ -106,6 +111,7 @@ export function MaterialsPage() {
   return (
     <section className="grid gap-6">
       <PageHeader
+        chrome
         title={t('materials.title')}
         subtitle={t('materials.subtitle')}
       />
@@ -134,6 +140,11 @@ export function MaterialsPage() {
             ))}
           </div>
           <MaterialFields form={form} setForm={setForm} />
+          <CustomFieldsSection
+            entityType="MATERIAL"
+            values={customValues}
+            onChange={setCustomValues}
+          />
           {create.isError ? <ErrorText error={create.error} /> : null}
           <div>
             <Button type="submit" disabled={create.isPending}>
@@ -162,12 +173,18 @@ function MaterialRow({
 }) {
   const { t } = useTranslation();
   const [form, setForm] = useState<Form>(formFrom(material));
+  const [customValues, setCustomValues] = useState<CustomValues>(
+    () => material.customValues ?? {},
+  );
   const [editing, setEditing] = useState(false);
   const save = useMutation({
     mutationFn: () =>
       apiFetch(`/api/v1/materials/${material.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(payload(form) satisfies UpdateMaterialInput),
+        body: JSON.stringify({
+          ...payload(form),
+          customValues,
+        } satisfies UpdateMaterialInput),
       }),
     onSuccess: async () => {
       setEditing(false);
@@ -230,6 +247,11 @@ function MaterialRow({
           }}
         >
           <MaterialFields form={form} setForm={setForm} />
+          <CustomFieldsSection
+            entityType="MATERIAL"
+            values={customValues}
+            onChange={setCustomValues}
+          />
           <div>
             <Button type="submit" disabled={save.isPending}>
               {t('common.save')}

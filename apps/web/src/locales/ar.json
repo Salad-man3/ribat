@@ -4,27 +4,91 @@
   "switchToArabic": "العربية",
   "switchToEnglish": "English",
   "nav": {
-    "staff": "نظرة عامة",
+    "staff": "ردهة",
     "members": "الأعضاء",
+    "membersDirectory": "السجل",
+    "accountMgmt": "إدارة الحسابات",
     "roles": "الأدوار والصلاحيات",
-    "audit": "سجل التغييرات",
-    "organization": "إعدادات المسجد",
+    "audit": "النشاط",
+    "organization": "إعدادات",
     "devices": "الأجهزة",
     "member": "بوابتي",
     "guardian": "بوابة الأسرة",
-    "courses": "الحلقات",
+    "courses": "الحلقات والدورات",
     "materials": "المواد",
     "teach": "وضع الحلقة",
     "notifications": "الإشعارات",
     "excuses": "الأعذار",
-    "events": "أحداث متعثّرة"
+    "events": "أحداث متعثّرة",
+    "reports": "التقارير والإحصائيات",
+    "more": "المزيد",
+    "tab": {
+      "courses": "الحلقات",
+      "reports": "التقارير",
+      "teach": "الحلقة"
+    }
+  },
+  "stats": {
+    "title": "التقارير والإحصائيات",
+    "staleHint": "تُحدَّث الأرقام ليلاً وقد يكون عمرها حتى 24 ساعة.",
+    "asOf": "اعتباراً من {{date}} · الأسبوع {{from}} – {{to}}",
+    "activeMembers": "الأعضاء النشطون",
+    "activeCourses": "الحلقات النشطة",
+    "activeTeachers": "المعلّمون النشطون",
+    "pendingApplications": "طلبات انضمام معلّقة",
+    "attendanceRate": "نسبة الحضور",
+    "pagesThisWeek": "صفحات هذا الأسبوع",
+    "pagesShort": "{{count}} صفحة",
+    "testsPassed": "اختبارات ناجحة",
+    "byHalaqa": "حسب الحلقة",
+    "noProgram": "حلقات أخرى",
+    "noCourseData": "لا إحصائيات للحلقات بعد.",
+    "missingAttendance": "{{count}} جلسات بلا حضور",
+    "attention": "يحتاج متابعة",
+    "teachersNotLogging": "معلّمون لم يسجّلوا هذا الأسبوع",
+    "allTeachersLogged": "الجميع سجّل هذا الأسبوع.",
+    "fallingBehind": "طلاب دون 50% حضور",
+    "noFallingBehind": "لا أحد مُعلَّم هذا الأسبوع.",
+    "topMemorizers": "أكثر حفظاً هذا الأسبوع",
+    "noTeacherData": "لا تكليفات تدريس لعرضها.",
+    "loggedDays": "أيام التسجيل",
+    "myHalaqas": "حلقاتك"
+  },
+  "reportCards": {
+    "title": "بطاقات التقرير",
+    "member": "الطالب",
+    "periodStart": "بداية الفترة",
+    "periodEnd": "نهاية الفترة",
+    "draft": "إنشاء مسودة",
+    "drafts": "مسودات",
+    "published": "بطاقات منشورة",
+    "empty": "لا بطاقات بعد.",
+    "statusDraft": "مسودة",
+    "viewTitle": "بطاقة تقرير — {{name}}",
+    "allCourses": "كل الحلقات",
+    "attendance": "الحضور",
+    "homework": "إنجاز الواجبات",
+    "tests": "الاختبارات",
+    "passed": "ناجح",
+    "notPassed": "غير ناجح",
+    "teacherComment": "تعليق المعلّم",
+    "commentLabel": "تعليق للأسرة",
+    "saveComment": "حفظ التعليق",
+    "publish": "نشر",
+    "shareWhatsapp": "مشاركة عبر واتساب",
+    "shareMessage": "اطّلع على بطاقة التقرير في رباط: {{url}}",
+    "notFound": "بطاقة التقرير غير موجودة."
   },
   "shell": {
     "switchToMember": "التبديل إلى عرض العضو",
     "switchToAdmin": "التبديل إلى عرض الإدارة",
     "memberViewShort": "عرض العضو",
     "adminViewShort": "عرض الإدارة",
-    "signOut": "خروج"
+    "signOut": "خروج",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "mainTabs": "الأقسام الرئيسية",
+    "accountMenu": "الحساب"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول",
@@ -42,6 +106,12 @@
     "demoHint": "حسابات وهمية، يرى كل منها جزءاً مختلفاً من المسجد نفسه.",
     "demoOtherOrg": "شيخ مسجد آخر"
   },
+  "demo": {
+    "banner": "نسخة تجريبية — تختفي تغييراتك عند تحديث الصفحة.",
+    "reset": "إعادة التجربة",
+    "loginTitle": "جرّب رباط",
+    "loginHint": "اختر دوراً. كل ما تفعله يبقى في هذا المتصفح حتى تحدّث الصفحة."
+  },
   "setup": {
     "title": "إعداد المسجد لأول مرة",
     "mosqueName": "اسم المسجد",
@@ -53,23 +123,45 @@
     "continue": "متابعة إلى إعداد كلمة المرور"
   },
   "staff": {
-    "homeTitle": "نظرة عامة",
+    "homeTitle": "ردهة",
     "activeMembers": "الأعضاء النشطون",
+    "activeTeachers": "المعلّمون النشطون",
+    "activeCourses": "الحلقات النشطة",
+    "sessionsThisWeek": "حلقات هذا الأسبوع",
+    "weekSchedule": "جدول دروس هذا الأسبوع",
+    "weekScheduleEmpty": "لا دروس مجدولة هذا الأسبوع.",
+    "weekDayEmpty": "لا دروس",
+    "openClass": "فتح الحلقة",
+    "quickAccess": "وصول سريع",
     "membersHint": "أضف الطلاب وسجّل أولياء الأمور والإخوة والملاحظات.",
     "rolesHint": "من يستطيع الدخول وبأي دور.",
-    "auditHint": "كل تغيير، ومن قام به، ومتى.",
-    "organizationHint": "الاسم واللغة وإعدادات مواقيت الصلاة.",
+    "auditHint": "من أنشأ حلقة أو أضاف طالباً أو عيّن معلّماً — ومتى.",
+    "organizationHint": "إعدادات المسجد والحقول الإضافية.",
     "coursesHint": "الحلقات والمعلمون والطلاب والمجموعات والجدول الأسبوعي.",
-    "materialsHint": "المتون والكتب التي تُدرَّس."
+    "materialsHint": "المتون والكتب التي تُدرَّس.",
+    "todayTitle": "اليوم في المسجد",
+    "todayAbsences": "{{count}} غائب اليوم",
+    "todayAbsencesEmpty": "لم يُسجَّل غياب لحلقات اليوم بعد.",
+    "todayMemorization": "{{count}} تسميع اليوم",
+    "todayMemorizationEmpty": "لم يُسجَّل تسميع اليوم بعد.",
+    "todayMemorizationLine": "{{name}} · {{course}} · ص {{from}}–{{to}}",
+    "todayAbsenceLine": "{{name}} · {{course}}",
+    "reviewJoinApplications": "مراجعة {{count}} طلب انضمام"
   },
   "member": {
     "homeTitle": "بوابتي",
     "account": "حسابي",
-    "teaching": "حلقات أدرّسها"
+    "teaching": "حلقات أدرّسها",
+    "todayHalaqa": "حلقة اليوم"
   },
   "guardian": {
     "homeTitle": "أبناؤك",
-    "empty": "لا يوجد أبناء مرتبطون بحسابك بعد. راجع إدارة المسجد."
+    "empty": "لا يوجد أبناء مرتبطون بحسابك بعد. راجع إدارة المسجد.",
+    "quickActions": "إجراءات سريعة",
+    "openNotifications": "الإشعارات",
+    "unreadNotifications": "{{count}} غير مقروء",
+    "submitExcuse": "تقديم عذر",
+    "excuseFor": "الابن"
   },
   "members": {
     "title": "الأعضاء",
@@ -82,6 +174,8 @@
     "noPhone": "بلا هاتف",
     "archive": "أرشفة",
     "confirmArchive": "نعم، أرشف",
+    "delete": "حذف",
+    "confirmDelete": "نعم، احذف",
     "firstName": "الاسم",
     "fatherName": "اسم الأب",
     "familyName": "الكنية",
@@ -122,7 +216,31 @@
     "statusValue": {
       "ACTIVE": "نشط",
       "ARCHIVED": "مؤرشف"
-    }
+    },
+    "tab": {
+      "members": "الأعضاء",
+      "teachers": "المعلّمون",
+      "admins": "الإدارة",
+      "guardians": "أولياء الأمور"
+    },
+    "tags": {
+      "title": "الوسوم",
+      "empty": "لا وسوم."
+    },
+    "filter": {
+      "all": "الكل",
+      "students": "الطلاب",
+      "teachers": "المعلّمون"
+    },
+    "studying": "يدرس",
+    "teaching": "يدرّس",
+    "taughtBefore": "درّس سابقاً",
+    "teachersEmpty": "لا معلّمين.",
+    "adminsHint": "من يدير المسجد في عرض الإدارة.",
+    "manageRoles": "الأدوار والصلاحيات",
+    "guardianSearch": "ابحث باسم الطالب أو ولي الأمر",
+    "guardiansEmpty": "لا روابط أولياء أمور.",
+    "guardianOf": "ولي أمر"
   },
   "guardians": {
     "title": "أولياء الأمور",
@@ -154,6 +272,42 @@
       "STAFF": "لكل الإدارة"
     }
   },
+  "accountMgmt": {
+    "title": "إدارة الحسابات",
+    "subtitle": "طلبات الانضمام المعلّقة والأعضاء الذين لم يتمكّنوا من تسجيل الدخول بعد",
+    "joinLinkTitle": "رابط الانضمام العام",
+    "joinLinkHint": "شارك هذا الرابط ليتقدّم الطلاب وأولياء الأمور. توافق على كل طلب من هنا.",
+    "pendingTitle": "طلبات قيد المراجعة",
+    "pendingEmpty": "لا أحد بانتظار الموافقة.",
+    "gapsTitle": "أعضاء بلا وصول كامل",
+    "gapsHint": "أعضاء نشطون لديهم رقم هاتف وما زالوا يحتاجون عضوية أو إكمال إعداد كلمة المرور.",
+    "gapsEmpty": "كل من لديه هاتف يمكنه تسجيل الدخول.",
+    "reject": "رفض",
+    "approve": "موافقة وإصدار رمز",
+    "needGrantPerm": "يتطلّب صلاحية الأدوار والوصول للموافقة",
+    "wards": "الأبناء",
+    "kind": {
+      "STUDENT": "طالب",
+      "GUARDIAN": "ولي أمر"
+    },
+    "gapReason": {
+      "NO_MEMBERSHIP": "لا تسجيل بعد",
+      "SETUP_PENDING": "لم يُستخدم رمز الإعداد"
+    },
+    "justApproved": "تمت الموافقة للتو",
+    "whatsappBlocked": "لم يُفتح واتساب. استخدم الزر أدناه."
+  },
+  "join": {
+    "title": "الانضمام إلى {{mosque}}",
+    "subtitle": "قدّم طلب حساب. مكتب المسجد يراجع طلبك.",
+    "student": "أنا طالب",
+    "guardian": "أنا ولي أمر",
+    "wardSection": "ابنك/ابنتك",
+    "wardRelation": "صلة قرابتك بالطفل",
+    "submit": "إرسال الطلب",
+    "submittedTitle": "تم استلام الطلب",
+    "submittedHint": "سيراجع {{mosque}} طلبك ويتواصل معك على رقم الهاتف الذي أدخلته."
+  },
   "access": {
     "title": "الدخول إلى التطبيق",
     "hasAccess": "يستطيع الدخول بصفة",
@@ -162,7 +316,9 @@
     "codeHint": "أعطِ هذا الرمز للعضو مرة واحدة، فلن يظهر مجدداً.",
     "expires": "ينتهي",
     "resetCode": "إصدار رمز إعداد جديد",
-    "grant": "منح الصلاحية"
+    "grant": "منح الصلاحية",
+    "sendWhatsApp": "إرسال عبر واتساب",
+    "whatsappHint": "يفتح واتساب (التطبيق على الهاتف، واتساب ويب على الحاسوب). ما زلت تضغط إرسال. إن لم يكن ويب مسجّلاً، انسخ الرمز أعلاه."
   },
   "roles": {
     "title": "الأدوار والصلاحيات",
@@ -179,14 +335,81 @@
     "statusValue": {
       "ACTIVE": "نشط",
       "SUSPENDED": "موقوف"
+    },
+    "filterAll": "الكل",
+    "filterByTag": "الوسم",
+    "orgAdminPrivileges": "صلاحيات المشرف",
+    "orgAdminPrivilegesHint": "صلاحيات كل من يحمل دور المشرف. الشيخ يملك دائماً كامل الصلاحيات.",
+    "tagPrivileges": "صلاحيات الوسوم",
+    "tagPrivilegesHint": "من يحمل هذه الوسوم يحصل أيضاً على الصلاحيات المذكورة (إضافةً إلى دوره).",
+    "noPrivileges": "لا صلاحيات إضافية",
+    "tags": {
+      "title": "وسوم الأعضاء",
+      "hint": "تجمّع الأعضاء للإعلانات والتصفية والصلاحيات الإضافية أدناه.",
+      "new": "اسم الوسم",
+      "add": "إضافة وسم",
+      "archive": "أرشفة"
+    }
+  },
+  "permissions": {
+    "members.manage": "إدارة الأعضاء",
+    "memberships.manage": "إدارة العضويات",
+    "memberships.manage_org_admin": "إدارة المشرفين",
+    "organization.manage": "إعدادات المسجد",
+    "notes.write": "كتابة الملاحظات",
+    "notes.read_all": "قراءة كل الملاحظات",
+    "audit.read": "قراءة النشاط",
+    "courses.manage": "إدارة الحلقات",
+    "materials.manage": "إدارة المواد"
+  },
+  "settings": {
+    "title": "إعدادات",
+    "hub": {
+      "mosque": "إعدادات المسجد",
+      "extraFields": "حقول إضافية"
+    },
+    "extraFields": {
+      "title": "حقول إضافية",
+      "hint": "حقول اختيارية تظهر عند إضافة أو تعديل سجل في المسجد.",
+      "entity": "نوع السجل",
+      "entities": {
+        "MEMBER": "الأعضاء",
+        "COURSE": "الحلقات",
+        "PROGRAM": "الدورات",
+        "MATERIAL": "المواد"
+      },
+      "label": "اسم الحقل",
+      "type": "نوع الحقل",
+      "types": {
+        "TEXT": "نص",
+        "NUMBER": "رقم",
+        "DATE": "تاريخ",
+        "BOOLEAN": "نعم / لا"
+      },
+      "add": "إضافة حقل",
+      "empty": "لا حقول إضافية لهذا النوع بعد.",
+      "archive": "إزالة",
+      "sectionTitle": "حقول إضافية"
     }
   },
   "organization": {
     "title": "إعدادات المسجد",
+    "tabs": {
+      "general": "عام",
+      "messages": "الرسائل"
+    },
+    "messages": {
+      "whatsappTitle": "رسالة واتساب لرمز الإعداد",
+      "whatsappHint": "تُستخدم عند إرسال رمز الإعداد. اللغة حسب اللغة الافتراضية للمسجد. يجب أن تتضمن {{code}}.",
+      "placeholders": "العناصر النائبة",
+      "resetDefault": "العودة للنص الافتراضي"
+    },
     "general": "عام",
     "name": "اسم المسجد",
     "locale": "اللغة الافتراضية",
     "pointsEnabled": "تفعيل النقاط",
+    "tagsEnabled": "تفعيل وسوم الأعضاء",
+    "tagsEnabledHint": "إنشاء الوسوم وربطها بالأعضاء من صفحة الأدوار والصلاحيات.",
     "prayer": "مواقيت الصلاة",
     "timezone": "المنطقة الزمنية",
     "prayerMethod": "طريقة الحساب",
@@ -204,10 +427,132 @@
     }
   },
   "audit": {
-    "title": "سجل التغييرات",
-    "subtitle": "الأحدث أولاً. افتح صفاً لرؤية ما تغيّر.",
+    "title": "ماذا تم في المسجد؟",
+    "subtitle": "من قام بماذا — الأحدث أولاً.",
     "empty": "لا شيء مسجل بعد.",
-    "loadMore": "عرض المزيد"
+    "loadMore": "عرض المزيد",
+    "unknownActor": "حساب غير معروف",
+    "unknownTarget": "—",
+    "actions": {
+      "_fallback": "{{actor}} — {{action}}",
+      "course": {
+        "created": "{{actor}} أنشأ حلقة «{{target}}»",
+        "updated": "{{actor}} عدّل حلقة «{{target}}»",
+        "status_changed": "{{actor}} غيّر حالة حلقة «{{target}}» إلى «{{status}}»"
+      },
+      "program": {
+        "created": "{{actor}} أنشأ دورة «{{target}}»",
+        "updated": "{{actor}} عدّل دورة «{{target}}»",
+        "archived": "{{actor}} أرشف دورة «{{target}}»"
+      },
+      "teacher": {
+        "assigned": "{{actor}} عيّن {{target}} معلّماً",
+        "assigned_ctx": "{{actor}} عيّن {{target}} معلّماً في «{{context}}»",
+        "removed": "{{actor}} أزال {{target}} من المعلّمين",
+        "removed_ctx": "{{actor}} أزال {{target}} من معلّمي «{{context}}»"
+      },
+      "enrollment": {
+        "created": "{{actor}} أضاف {{target}} طالباً",
+        "created_ctx": "{{actor}} أضاف {{target}} طالباً في «{{context}}»",
+        "withdrawn": "{{actor}} سحب {{target}}",
+        "withdrawn_ctx": "{{actor}} سحب {{target}} من «{{context}}»"
+      },
+      "member": {
+        "created": "{{actor}} أضاف عضواً جديداً: {{target}}",
+        "updated": "{{actor}} عدّل بيانات {{target}}",
+        "archived": "{{actor}} أزال {{target}} من السجل النشط"
+      },
+      "material": {
+        "created": "{{actor}} أضاف مادة «{{target}}»",
+        "updated": "{{actor}} عدّل مادة «{{target}}»",
+        "archived": "{{actor}} أرشف مادة «{{target}}»"
+      },
+      "group": {
+        "created": "{{actor}} أنشأ مجموعة «{{target}}»",
+        "created_ctx": "{{actor}} أنشأ مجموعة «{{target}}» في «{{context}}»",
+        "updated": "{{actor}} عدّل مجموعة «{{target}}»",
+        "updated_ctx": "{{actor}} عدّل مجموعة «{{target}}» في «{{context}}»",
+        "deleted": "{{actor}} حذف مجموعة «{{target}}»",
+        "deleted_ctx": "{{actor}} حذف مجموعة «{{target}}» من «{{context}}»"
+      },
+      "group_member": {
+        "added": "{{actor}} أضاف طالباً إلى مجموعة «{{target}}»",
+        "added_ctx": "{{actor}} أضاف طالباً إلى مجموعة «{{target}}» في «{{context}}»",
+        "removed": "{{actor}} أزال طالباً من مجموعة «{{target}}»",
+        "removed_ctx": "{{actor}} أزال طالباً من مجموعة «{{target}}» في «{{context}}»"
+      },
+      "schedule": {
+        "replaced": "{{actor}} غيّر جدول حلقة «{{target}}»"
+      },
+      "pause": {
+        "created": "{{actor}} أوقف حلقة «{{target}}» مؤقتاً",
+        "deleted": "{{actor}} ألغى إيقافاً مؤقتاً لحلقة «{{target}}»"
+      },
+      "course_material": {
+        "added": "{{actor}} أضاف مادة إلى «{{target}}»",
+        "removed": "{{actor}} أزال مادة من «{{target}}»"
+      },
+      "homework": {
+        "assigned": "{{actor}} أعطى واجباً في «{{target}}»",
+        "marked": "{{actor}} سجّل إنجاز واجب في «{{target}}»"
+      },
+      "auth": {
+        "login": "{{actor}} سجّل دخولاً",
+        "view_switched": "{{actor}} غيّر واجهة العرض (إدارة / عضو)"
+      },
+      "membership": {
+        "created": "{{actor}} أنشأ حساب دخول لـ {{target}}",
+        "updated": "{{actor}} عدّل صلاحيات {{target}}",
+        "access_granted": "{{actor}} منح {{target}} صلاحية دخول",
+        "setup_code_reset": "{{actor}} أعاد رمز إعداد لـ {{target}}"
+      },
+      "guardian": {
+        "linked": "{{actor}} ربط ولي أمر {{target}}",
+        "unlinked": "{{actor}} فك ربط ولي أمر {{target}}"
+      },
+      "household": {
+        "linked": "{{actor}} ربط أفراد أسرة واحدة"
+      },
+      "excuse": {
+        "submitted": "{{actor}} قدّم عذراً عن {{target}}",
+        "decided": "{{actor}} راجع عذر {{target}}"
+      },
+      "member_note": {
+        "created": "{{actor}} أضاف ملاحظة عن {{target}}"
+      },
+      "organization": {
+        "setup": "{{actor}} أنشأ إعداد المسجد لأول مرة"
+      },
+      "staff_role": {
+        "created": "{{actor}} أضاف دوراً: {{target}}",
+        "updated": "{{actor}} عدّل دور «{{target}}»",
+        "archived": "{{actor}} أزال دور «{{target}}»"
+      },
+      "session": {
+        "created": "{{actor}} أضاف حلقة يدوية في «{{target}}»",
+        "updated": "{{actor}} عدّل موعد حلقة في «{{target}}»",
+        "cancelled": "{{actor}} ألغى حلقة في «{{target}}»"
+      },
+      "attendance": {
+        "marked": "{{actor}} سجّل حضوراً في «{{target}}»",
+        "corrected": "{{actor}} صحّح حضوراً في «{{target}}»",
+        "superseded": "{{actor}} حدّث حضوراً في «{{target}}»"
+      },
+      "memorization": {
+        "logged": "{{actor}} سجّل تسميعاً في «{{target}}»",
+        "voided": "{{actor}} ألغى تسميعاً في «{{target}}»"
+      },
+      "material_log": {
+        "created": "{{actor}} سجّل درساً في «{{target}}»"
+      },
+      "test": {
+        "recorded": "{{actor}} سجّل اختباراً في «{{target}}»"
+      },
+      "requirement": {
+        "added": "{{actor}} أضاف شرطاً للالتحاق بـ «{{target}}»",
+        "removed": "{{actor}} أزال شرطاً من «{{target}}»"
+      }
+    }
   },
   "devices": {
     "title": "الأجهزة المتصلة",
@@ -237,9 +582,16 @@
     "CSRF_INVALID": "انتهت الجلسة. أعد تحميل الصفحة.",
     "NOT_FOUND": "غير موجود.",
     "CONFLICT": "يتعارض هذا مع بيانات موجودة.",
+    "COURSE_TEACHERS_BEFORE_HIERARCHY_OFF": "لا يمكن إيقاف «عدة معلّمين» ما دام أكثر من معلّم مفعّل على هذه الحلقة. من قسم المعلّمين، أزِل المعلّمين الإضافيين واترك معلّماً واحداً، ثم أعد المحاولة.",
+    "COURSE_GROUPS_BEFORE_TOGGLE_OFF": "لا يمكن إيقاف المجموعات أو «عدة معلّمين» ما دامت هناك مجموعات على الحلقة. احذف المجموعات أولاً، ثم أعد المحاولة.",
+    "COURSE_GROUPS_NEED_HIERARCHY": "المجموعات تتطلّب تفعيل «عدة معلّمين» أولاً.",
     "RATE_LIMITED": "محاولات كثيرة. انتظر دقيقة ثم حاول مجدداً.",
     "INTERNAL_ERROR": "حدث خطأ. حاول مجدداً.",
-    "UNAVAILABLE": "لم تستجب خدمة خارجية. حاول بعد دقيقة."
+    "UNAVAILABLE": "لم تستجب خدمة خارجية. حاول بعد دقيقة.",
+    "unexpectedTitle": "حدث خطأ",
+    "unexpectedBody": "أعد تحميل الصفحة أو عد إلى الردهة. إن تكرر ذلك، أخبر مكتب المسجد.",
+    "reload": "إعادة التحميل",
+    "devDetails": "تفاصيل للمطوّر (وضع التطوير فقط)"
   },
   "prayer": {
     "city": "المدينة",
@@ -275,8 +627,39 @@
     "empty": "لا توجد حلقات هنا بعد.",
     "create": "حلقة جديدة",
     "createHint": "تبدأ الحلقة مسودة. أضف المعلمين والطلاب والجدول ثم فعّلها.",
+    "todaySession": "حلقة اليوم",
     "name": "الاسم",
-    "typeLabel": "النوع",
+    "typeLabel": "نوع الحلقة",
+    "typeCard": {
+      "MEMORIZATION": {
+        "title": "حلقة تحفيظ",
+        "hint": "حضور وتسميع ونقاط"
+      },
+      "EXPLANATION": {
+        "title": "حلقة علمية",
+        "hint": "حضور ودروس منهج بمرفقاته — فقه، سيرة، عقيدة…"
+      },
+      "BOTH": {
+        "title": "تحفيظ + علمية",
+        "hint": "تسميع حر ودروس منهج معاً — بنفس سجل الحضور"
+      }
+    },
+    "program": "الدورة",
+    "programNone": "بدون دورة",
+    "programName": "اسم الدورة",
+    "programCreate": "إضافة دورة",
+    "programsTitle": "الدورات",
+    "programDatesUnset": "بدون تواريخ",
+    "programEmpty": "لا توجد حلقات في هذه الدورة بعد.",
+    "programSave": "حفظ الدورة",
+    "programHalaqat": "حلقات الدورة",
+    "leadTeacher": "المعلّم",
+    "teacherOptional": "بدون معلّم بعد",
+    "moreDetails": "تفاصيل إضافية",
+    "tab": {
+      "courses": "الحلقات",
+      "programs": "الدورات"
+    },
     "location": "المكان",
     "startDate": "تاريخ البدء",
     "endDate": "تاريخ الانتهاء",
@@ -407,6 +790,7 @@
     "offset": "دقائق بعد الأذان",
     "todayAt": "اليوم الساعة",
     "weekday": "اليوم",
+    "daysLabel": "أيام الحلقة",
     "weekdays": {
       "0": "الأحد",
       "1": "الاثنين",
@@ -440,6 +824,31 @@
     "students": "{{count}} طالب",
     "markAllPresent": "تحضير الجميع",
     "log": "تسجيل",
+    "hifz": "تسميع",
+    "quickLog": "تسميع سريع",
+    "logRecitation": "تعديل التسميع",
+    "hifzTitle": "تسجيل التسميع",
+    "attendance": "حضور",
+    "backToAttendance": "العودة للحضور",
+    "pickStudent": "اختر طالباً من القائمة.",
+    "noMemorizationMaterial": "لا مادة تحفيظ لهذه الحلقة.",
+    "rangeSummary": "من {{fromSurah}} {{fromAyah}} · ص {{fromPage}} إلى {{toSurah}} {{toAyah}} · ص {{toPage}}",
+    "logMode": {
+      "AYAHS": "آيات",
+      "PAGE": "صفحة",
+      "SURAH": "سورة"
+    },
+    "continueFrom": "من {{surah}} · آية {{ayah}}",
+    "editStart": "تعديل البداية",
+    "endAyah": "إلى آية",
+    "untilAnotherSurah": "حتى سورة أخرى",
+    "shortcut": {
+      "endOfPage": "نهاية الصفحة",
+      "endOfSurah": "نهاية السورة",
+      "thisPage": "هذه الصفحة",
+      "wholeSurah": "السورة",
+      "toSurah": "إلى سورة…"
+    },
     "save": "حفظ",
     "cancel": "إلغاء",
     "last": "آخر موضع: صفحة {{page}}، {{surah}} {{ayah}}",
@@ -456,8 +865,29 @@
     "type": {
       "NEW": "حفظ جديد",
       "REVISION": "مراجعة",
+      "INITIAL": "مستوى ابتدائي",
       "TEST": "اختبار"
     },
+    "rangeMode": {
+      "AYAH": "آية",
+      "PAGE": "صفحة",
+      "SURAH_PAGE": "صفحات في سورة"
+    },
+    "loggedToday": "سُجّل اليوم",
+    "juzTest": "اختبار جزء",
+    "juz": "الجزء",
+    "score": "الدرجة",
+    "saveTest": "حفظ الاختبار",
+    "passMarkHint": "درجة النجاح في هذه الحلقة: {{mark}}",
+    "testFailed": "تعذّر حفظ الاختبار.",
+    "bookProgress": "الحلقة عند صفحة {{page}} من {{total}}",
+    "todayEntries": "سجلات اليوم",
+    "pendingEntry": "بانتظار المزامنة",
+    "undoPending": "إزالة",
+    "voidLog": "إبطال",
+    "voidReason": "تصحيح في الحلقة",
+    "voidFailed": "تعذّر إبطال هذا السجل.",
+    "voidNeedsOnline": "سجّل الدخول متصلاً لإبطال سجل مُزامَن.",
     "grade": {
       "EXCELLENT": "ممتاز",
       "VERY_GOOD": "جيد جداً",
@@ -471,9 +901,26 @@
     "toAyah": "إلى آية",
     "fromPage": "من صفحة",
     "toPage": "إلى صفحة",
+    "from": "من",
+    "to": "إلى",
+    "rangeSection": "نطاق التسميع",
+    "pickUnit": {
+      "PAGE": "صفحة",
+      "SURAH": "سورة",
+      "JUZ": "جزء"
+    },
+    "pickStartSurah": "ابدأ من سورة",
+    "stepPage": "صفحة",
+    "stepSurah": "سورة",
+    "rangeStats": "{{pages}} صفحات · {{ayahs}} آية",
+    "didntPass": "لم يوفّق (يُحفظ ولا يُحسب)",
+    "didntPassShort": "لم يُحسب",
     "mistakes": "الأخطاء",
     "note": "ملاحظة",
     "invalidRange": "هذا المقطع غير موجود في المصحف.",
+    "saveFailed": "تعذّر حفظ هذا السجل. حدّث قائمة الحلقة ثم أعد المحاولة.",
+    "lastPositionHeading": "آخر موضع",
+    "continueFromHere": "تابع من هنا",
     "explanation": "الصفحات المشروحة في هذا الدرس",
     "fewerMistakes": "أقل خطأ",
     "moreMistakes": "أضف خطأ",
@@ -601,10 +1048,41 @@
     "attempts_many": "{{count}} محاولة",
     "attempts_other": "{{count}} محاولة"
   },
+  "announcements": {
+    "composeTitle": "إرسال رسالة",
+    "targetType": "الجمهور",
+    "title": "العنوان",
+    "body": "النص",
+    "send": "إرسال",
+    "pickCourses": "حلقات",
+    "pickCourseForGroups": "حلقة",
+    "pickGroups": "مجموعات",
+    "pickMembers": "أعضاء",
+    "pickTags": "وسوم",
+    "pickPrograms": "دورات",
+    "pickRoles": "أدوار",
+    "targets": {
+      "EVERYONE": "الجميع في المسجد",
+      "PROGRAMS": "دورة أو أكثر",
+      "COURSES": "حلقة أو أكثر",
+      "GROUPS": "مجموعات في حلقة",
+      "MEMBERS": "أعضاء محدّدون",
+      "ROLES": "من يحمل دورًا",
+      "TAGS": "من يحمل وسمًا"
+    }
+  },
   "notifications": {
     "title": "الإشعارات",
     "empty": "لا جديد.",
     "markAll": "تعليم الكل كمقروء",
+    "categories": {
+      "all": "الكل",
+      "attendance": "الحضور",
+      "homework": "الواجبات",
+      "progress": "التقدّم",
+      "schedule": "الجدول",
+      "announcements": "الرسائل"
+    },
     "passed": "ناجح",
     "failed": "لم ينجح",
     "ABSENCE_SUMMARY": {
@@ -638,6 +1116,49 @@
     "SESSION_NOT_TAKEN": {
       "title": "لم يُسجَّل الحضور",
       "body": "انتهت {{course}} بتاريخ {{date}} دون تسجيل حضور."
+    },
+    "ANNOUNCEMENT": {
+      "title": "{{title}}",
+      "body": "{{body}}"
+    },
+    "REPORT_CARD": {
+      "title": "نُشرت بطاقة تقرير",
+      "body": "{{student}} · {{course}} · {{periodStart}} – {{periodEnd}}"
+    }
+  },
+  "hifz": {
+    "mapTitle": "خريطة حفظ القرآن",
+    "mapHint": "الأجزاء الملوّنة محفوظة بالكامل (حفظ جديد + مستوى ابتدائي). الحلقة تبيّن آخر اختبار جزء في الحلقة.",
+    "juzMemorized": "الجزء {{juz}} محفوظ",
+    "juzEmpty": "الجزء {{juz}} غير مكتمل",
+    "juzTestTooltip": "الجزء {{juz}}: {{score}}، {{passed, select, true {ناجح} other {راسب}}}",
+    "awqafTooltip": "اختبار أوقاف للجزء {{juz}} ({{level}}): {{passed, select, true {ناجح} other {راسب}}}",
+    "legendMemorized": "محفوظ",
+    "legendTestPass": "آخر اختبار",
+    "legendAwqaf": "اختبار أوقاف",
+    "initialTitle": "المستوى الابتدائي",
+    "initialHint": "ما كان الطالب يحفظه قبل انضمامه (للإدارة فقط).",
+    "addInitial": "إضافة مستوى ابتدائي",
+    "awqafTitle": "اختبارات الأوقاف الرسمية",
+    "awqafHint": "منفصلة عن اختبار الجزء في الحلقة. كل جلسة تحفظ نتيجة كل جزء.",
+    "awqafLevel": "مستوى الاختبار",
+    "passed": "نجاح",
+    "yes": "نعم",
+    "no": "لا",
+    "recordAwqaf": "تسجيل الاختبار",
+    "recentLogs": "آخر سجلات الحفظ",
+    "noLogs": "لا سجلات بعد.",
+    "halaqaWallTitle": "حلقة اليوم",
+    "kindsTitle": "أنواع تسميع مخصصة",
+    "kindsHint": "أزرار إضافية في وضع الحلقة؛ كل نوع يُسجّل كحفظ جديد ويظهر على الخريطة.",
+    "kindName": "اسم النوع",
+    "noKinds": "لا أنواع مخصصة بعد.",
+    "level": {
+      "AJZA_3": "3 أجزاء",
+      "AJZA_5": "5 أجزاء",
+      "AJZA_10": "10 أجزاء",
+      "AJZA_15": "15 جزءاً",
+      "KHATMAH": "ختمة"
     }
   },
   "theme": {

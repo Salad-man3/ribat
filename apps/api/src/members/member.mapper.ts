@@ -1,5 +1,6 @@
 import type { Member } from '@prisma/client';
 import type { MemberResponse } from '@ribat/shared';
+import { storedCustomValues } from '../custom-fields/stored-custom-values';
 
 function toDateString(value: Date): string {
     return value.toISOString().slice(0, 10);
@@ -34,5 +35,6 @@ export function toMemberResponse(member: Member): MemberResponse {
         createdAt: toIsoString(member.createdAt),
         updatedAt: toIsoString(member.updatedAt),
         archivedAt: member.archivedAt ? toIsoString(member.archivedAt) : null,
+        customValues: storedCustomValues(member.customValues),
     };
 }

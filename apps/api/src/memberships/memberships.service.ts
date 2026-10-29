@@ -17,7 +17,8 @@ import type { OrgContext } from '../auth/org-context.guard';
 import { IdentitiesService } from '../auth/identities.service';
 import { SessionsService } from '../auth/sessions.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { toMembershipResponse } from './membership.mapper';
+import { TagsService } from '../tags/tags.service';
+import { membershipInclude, toMembershipResponse } from './membership.mapper';
 
 function notFound(): NotFoundException {
   return new NotFoundException({
@@ -38,6 +39,7 @@ export class MembershipsService {
     private readonly identities: IdentitiesService,
     private readonly sessions: SessionsService,
     private readonly audit: AuditService,
+    private readonly tags: TagsService,
   ) {}
 
   async list(organizationId: string, query: ListMembershipsQuery): Promise<MembershipResponse[]> {
@@ -46,11 +48,23 @@ export class MembershipsService {
         role: query.role,
         status: query.status,
       },
+      include: membershipInclude,
       orderBy: { createdAt: 'desc' },
       take: query.limit,
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     });
-    return rows.map(toMembershipResponse);
+    const memberIds = rows
+      .map((row) => row.memberId)
+      .filter((id): id is string => id !== null);
+    const tagsEnabled = await this.tags.tagsEnabled(organizationId);
+    const tagMap = tagsEnabled
+      ? await this.tags.tagIdsByMember(organizationId, memberIds)
+      : null;
+    return rows.map((row) => {
+      const memberTagIds =
+        tagMap && row.memberId ? (tagMap.get(row.memberId) ?? []) : undefined;
+      return toMembershipResponse(row, undefined, memberTagIds);
+    });
   }
 
   async create(
@@ -89,6 +103,7 @@ export class MembershipsService {
         role: input.role,
         status: 'ACTIVE',
       },
+      include: membershipInclude,
     });
 
     await this.audit.record(auditCtx, {
@@ -139,6 +154,7 @@ export class MembershipsService {
 
     const after = await this.prisma.forOrganization(organizationId).membership.findFirst({
       where: { id },
+      include: membershipInclude,
     });
     if (!after) throw notFound();
 

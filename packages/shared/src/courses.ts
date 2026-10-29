@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CustomValuesInputSchema, CustomValuesSchema } from './custom-fields.js';
 import { isoDate, isoDateTime, requiredName, uuid } from './fields.js';
 import { PrayerMethodSchema } from './organization.js';
 
@@ -74,6 +75,7 @@ export const CreateMaterialSchema = z.object({
   author: z.string().trim().min(1).optional(),
   totalPages: z.number().int().positive().max(100_000).optional(),
   url: z.string().trim().url().optional(),
+  customValues: CustomValuesInputSchema,
 });
 export type CreateMaterialInput = z.infer<typeof CreateMaterialSchema>;
 
@@ -94,6 +96,7 @@ export const MaterialResponseSchema = z.object({
   url: z.string().nullable(),
   createdAt: isoDateTime,
   archivedAt: isoDateTime.nullable(),
+  customValues: CustomValuesSchema,
 });
 export type MaterialResponse = z.infer<typeof MaterialResponseSchema>;
 
@@ -128,6 +131,7 @@ const courseFields = z.object({
   name: requiredName,
   description: z.string().trim().min(1).optional(),
   type: CourseTypeSchema,
+  programId: uuid.optional(),
   startDate: isoDate.optional(),
   endDate: isoDate.optional(),
   location: z.string().trim().min(1).optional(),
@@ -135,6 +139,7 @@ const courseFields = z.object({
   maxAge: age.optional(),
   capacity: z.number().int().positive().max(10_000).optional(),
   testPassMark: z.number().int().min(0).max(100).optional(),
+  customValues: CustomValuesInputSchema,
 });
 
 const datesInOrder = (value: { startDate?: string; endDate?: string }) =>
@@ -149,6 +154,7 @@ export type CreateCourseInput = z.infer<typeof CreateCourseSchema>;
 export const UpdateCourseSchema = courseFields
   .partial()
   .extend({
+    programId: uuid.nullable().optional(),
     isHierarchical: z.boolean().optional(),
     hasGroups: z.boolean().optional(),
   })
@@ -175,6 +181,7 @@ export type ListCoursesQuery = z.infer<typeof ListCoursesQuerySchema>;
 export const CourseResponseSchema = z.object({
   id: uuid,
   organizationId: uuid,
+  programId: uuid.nullable(),
   name: z.string(),
   description: z.string().nullable(),
   type: CourseTypeSchema,
@@ -190,6 +197,7 @@ export const CourseResponseSchema = z.object({
   testPassMark: z.number().int(),
   createdAt: isoDateTime,
   updatedAt: isoDateTime,
+  customValues: CustomValuesSchema,
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
 
@@ -457,3 +465,38 @@ export const SessionResponseSchema = z.object({
   topic: z.string().nullable(),
 });
 export type SessionResponse = z.infer<typeof SessionResponseSchema>;
+
+/** Staff org-wide session list (lobby timetable). */
+export const StaffSessionListItemSchema = SessionResponseSchema.extend({
+  courseName: z.string(),
+  leadTeacherName: z.string().nullable(),
+});
+export type StaffSessionListItem = z.infer<typeof StaffSessionListItemSchema>;
+
+export const StaffSessionsResponseSchema = z.object({
+  sessions: z.array(StaffSessionListItemSchema),
+  activeTeacherCount: z.number().int(),
+});
+export type StaffSessionsResponse = z.infer<typeof StaffSessionsResponseSchema>;
+
+/** Same-day snapshot for the staff lobby (SC-DOD-2), not nightly stats. */
+export const StaffTodayOverviewSchema = z.object({
+  date: isoDate,
+  absenceCount: z.number().int(),
+  absences: z.array(
+    z.object({
+      memberName: z.string(),
+      courseName: z.string(),
+    }),
+  ),
+  memorizationLogCount: z.number().int(),
+  memorizationLogs: z.array(
+    z.object({
+      memberName: z.string(),
+      courseName: z.string(),
+      pageFrom: z.number().int(),
+      pageTo: z.number().int(),
+    }),
+  ),
+});
+export type StaffTodayOverview = z.infer<typeof StaffTodayOverviewSchema>;

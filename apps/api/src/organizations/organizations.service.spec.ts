@@ -2,6 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { IdentitiesService } from '../auth/identities.service';
 import { SessionsQueue } from '../jobs/sessions-queue';
+import { StatsRollupService } from '../stats/stats-rollup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrganizationsService } from './organizations.service';
 
@@ -17,6 +18,7 @@ describe('OrganizationsService', () => {
       {} as IdentitiesService,
       {} as AuditService,
       {} as SessionsQueue,
+      {} as StatsRollupService,
     );
 
     await expect(

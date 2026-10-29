@@ -1,0 +1,37 @@
+# Host installs must not overwrite the image's Alpine node_modules.
+**/node_modules
+.git
+**/.git
+
+# Build outputs and caches (rebuilt inside the image).
+**/dist
+**/.turbo
+**/coverage
+**/dev-dist
+apps/api/src/generated
+
+# Local env and secrets.
+.env
+.env.*
+**/.env
+**/.env.local
+
+# Not part of the API + web production image.
+video
+apps/android
+abrar
+docs
+.cursor
+.claude
+.vscode
+.playwright-mcp
+graphify-out
+
+# Android build artifacts.
+apps/android/app/build
+apps/android/build
+apps/android/.gradle
+apps/android/android.keystore
+apps/android/local.properties
+
+*.log

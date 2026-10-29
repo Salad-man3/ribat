@@ -1,16 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type {
-  OrgPrayerTimesResponse,
-  OrganizationResponse,
-  UpdateOrganizationInput,
+import {
+  type OrgPrayerTimesResponse,
+  type OrganizationResponse,
+  type UpdateOrganizationInput,
 } from '@ribat/shared';
+import {
+  WHATSAPP_SETUP_PLACEHOLDERS,
+  defaultWhatsappSetupTemplate,
+} from '../lib/whatsapp-setup';
 import { apiFetch } from '../api/api-fetch';
 import {
   baseFromOrg,
   PrayerTimesEditor,
 } from '../components/PrayerTimesEditor';
+import { CustomFieldsDefinitionsPanel } from '../components/CustomFieldsDefinitionsPanel';
+import { RecitationKindsPanel } from '../components/RecitationKindsPanel';
 import { Button } from '../components/ui/button';
 import {
   Card,
@@ -19,11 +25,17 @@ import {
   inputClass,
   PageHeader,
 } from '../components/ui/form';
+import { cn } from '../lib/utils';
 
 import { PRAYER_METHODS, PRAYERS } from '../lib/domain';
 
+type HubSection = 'mosque' | 'extraFields';
+type MosqueTab = 'general' | 'messages';
+
 export function OrganizationPage() {
   const { t } = useTranslation();
+  const [section, setSection] = useState<HubSection>('mosque');
+  const [mosqueTab, setMosqueTab] = useState<MosqueTab>('general');
   const org = useQuery({
     queryKey: ['organization'],
     queryFn: () => apiFetch<OrganizationResponse>('/api/v1/organization'),
@@ -37,13 +49,69 @@ export function OrganizationPage() {
   if (!org.data || !times.data) return <p className="text-sm text-muted">…</p>;
   return (
     <section className="grid gap-6">
-      <PageHeader title={t('organization.title')} subtitle={org.data.slug} />
-      <OrganizationForm org={org.data} times={times.data} />
+      <PageHeader
+        chrome
+        title={t('settings.title')}
+        subtitle={org.data.slug}
+      />
+      <div className="flex flex-wrap gap-2 border-b border-line pb-2">
+        {(
+          [
+            ['mosque', 'settings.hub.mosque'],
+            ['extraFields', 'settings.hub.extraFields'],
+          ] as const
+        ).map(([key, labelKey]) => (
+          <button
+            key={key}
+            type="button"
+            className={cn(
+              'rounded-lg px-3 py-2 text-sm font-medium',
+              section === key
+                ? 'bg-accent/10 text-accent'
+                : 'text-muted hover:text-ink',
+            )}
+            onClick={() => setSection(key)}
+          >
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
+      {section === 'extraFields' ? (
+        <div className="grid gap-6">
+          <CustomFieldsDefinitionsPanel />
+          <RecitationKindsPanel />
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {(['general', 'messages'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={cn(
+                  'rounded-lg border px-3 py-1.5 text-sm',
+                  mosqueTab === key
+                    ? 'border-accent bg-accent text-accent-ink'
+                    : 'border-line text-muted hover:text-ink',
+                )}
+                onClick={() => setMosqueTab(key)}
+              >
+                {t(`organization.tabs.${key}`)}
+              </button>
+            ))}
+          </div>
+          {mosqueTab === 'general' ? (
+            <GeneralOrganizationForm org={org.data} times={times.data} />
+          ) : (
+            <MessagesOrganizationForm org={org.data} />
+          )}
+        </>
+      )}
     </section>
   );
 }
 
-function OrganizationForm({
+function GeneralOrganizationForm({
   org,
   times,
 }: {
@@ -61,7 +129,26 @@ function OrganizationForm({
     prayerOffsets: org.prayerOffsets,
     locale: org.locale,
     pointsEnabled: org.pointsEnabled,
+    tagsEnabled: org.tagsEnabled,
   } satisfies UpdateOrganizationInput);
+  const persistTagsEnabled = useMutation({
+    mutationFn: (tagsEnabled: boolean) =>
+      apiFetch<OrganizationResponse>('/api/v1/organization', {
+        method: 'PATCH',
+        body: JSON.stringify({ tagsEnabled }),
+      }),
+    onSuccess: async (data) => {
+      queryClient.setQueryData(['organization'], data);
+      setForm((current) => ({ ...current, tagsEnabled: data.tagsEnabled }));
+      if (data.tagsEnabled) {
+        await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      }
+    },
+    onError: () => {
+      setForm((current) => ({ ...current, tagsEnabled: org.tagsEnabled }));
+    },
+  });
+
   const save = useMutation({
     mutationFn: () =>
       apiFetch<OrganizationResponse>('/api/v1/organization', {
@@ -74,6 +161,9 @@ function OrganizationForm({
       await queryClient.invalidateQueries({
         queryKey: ['organization', 'prayer-times'],
       });
+      if (data.tagsEnabled) {
+        await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      }
     },
   });
 
@@ -118,7 +208,29 @@ function OrganizationForm({
             />
             {t('organization.pointsEnabled')}
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-accent"
+              checked={form.tagsEnabled}
+              disabled={persistTagsEnabled.isPending}
+              onChange={(e) => {
+                const tagsEnabled = e.target.checked;
+                setForm({ ...form, tagsEnabled });
+                persistTagsEnabled.mutate(tagsEnabled);
+              }}
+            />
+            {t('organization.tagsEnabled')}
+          </label>
+          <p className="col-span-full text-xs text-muted">
+            {t('organization.tagsEnabledHint')}
+          </p>
         </div>
+        {persistTagsEnabled.isError ? (
+          <div className="mt-2">
+            <ErrorText error={persistTagsEnabled.error} />
+          </div>
+        ) : null}
       </Card>
 
       <Card title={t('organization.prayer')}>
@@ -205,6 +317,75 @@ function OrganizationForm({
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={save.isPending}>
           {t('common.save')}
+        </Button>
+        {save.isSuccess ? (
+          <span className="text-sm text-accent">{t('common.saved')}</span>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
+function MessagesOrganizationForm({ org }: { org: OrganizationResponse }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [template, setTemplate] = useState(
+    org.whatsappSetupTemplate ??
+      defaultWhatsappSetupTemplate(org.locale),
+  );
+
+  const save = useMutation({
+    mutationFn: (body: UpdateOrganizationInput) =>
+      apiFetch<OrganizationResponse>('/api/v1/organization', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: async (data) => {
+      queryClient.setQueryData(['organization'], data);
+      setTemplate(
+        data.whatsappSetupTemplate ??
+          defaultWhatsappSetupTemplate(data.locale),
+      );
+    },
+  });
+
+  return (
+    <form
+      className="grid gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate({ whatsappSetupTemplate: template });
+      }}
+    >
+      <Card title={t('organization.messages.whatsappTitle')}>
+        <p className="mb-3 text-sm text-muted">
+          {t('organization.messages.whatsappHint')}
+        </p>
+        <p className="mb-2 text-xs text-muted">
+          {t('organization.messages.placeholders')}:{' '}
+          <span dir="ltr">{WHATSAPP_SETUP_PLACEHOLDERS.join(' ')}</span>
+        </p>
+        <textarea
+          className={`${inputClass} min-h-48 font-mono text-sm`}
+          value={template}
+          onChange={(e) => setTemplate(e.target.value)}
+          dir={org.locale === 'ar' ? 'rtl' : 'ltr'}
+        />
+      </Card>
+      {save.isError ? <ErrorText error={save.error} /> : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={save.isPending}>
+          {t('common.save')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={save.isPending}
+          onClick={() =>
+            save.mutate({ whatsappSetupTemplate: null })
+          }
+        >
+          {t('organization.messages.resetDefault')}
         </Button>
         {save.isSuccess ? (
           <span className="text-sm text-accent">{t('common.saved')}</span>

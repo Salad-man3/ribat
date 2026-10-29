@@ -1,4 +1,5 @@
 import { HttpException, Injectable } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client.js';
 import type { MaterialKind, WriteSource } from '@prisma/client';
 import { ayahsInRange, pagesForRange, validateRange } from '@ribat/quran-data';
 import type {
@@ -7,6 +8,7 @@ import type {
   CreateTestInput,
   MaterialLogPayload,
   MemorizationLogPayload,
+  MemorizationTestPayload,
   MemorizationTestResponse,
   SyncMutationInput,
   SyncResult,
@@ -181,7 +183,7 @@ export class ProgressWriterService {
             idempotencyKey: mutation.idempotencyKey,
             type: mutation.type,
             status: result.status === 'superseded' ? 'SUPERSEDED' : 'APPLIED',
-            result,
+            result: result as Prisma.InputJsonValue,
           },
         });
         return result;
@@ -210,6 +212,8 @@ export class ProgressWriterService {
         return this.attendance(w, m.payload, at, skewed, key);
       case 'memorization.log':
         return this.memorization(w, m.payload, at, skewed, key);
+      case 'memorization.test':
+        return this.memorizationTest(w, m.payload, at, key);
       case 'material.log':
         return this.materialLog(w, m.payload, at, skewed, key);
     }
@@ -420,6 +424,106 @@ export class ProgressWriterService {
   }
 
   // -------------------------------------------------------------------------
+  // memorization.test — WF-07, offline replay (SC-B-11)
+  // -------------------------------------------------------------------------
+
+  private async memorizationTest(
+    w: Write,
+    p: MemorizationTestPayload,
+    at: Date,
+    key: string,
+  ): Promise<(tx: OrgTx) => Promise<Applied>> {
+    const examiner = this.teacherMemberId(w.org);
+    const db = this.prisma.forOrganization(w.org.organizationId);
+    const existing = await db.memorizationTest.findFirst({
+      where: { idempotencyKey: key },
+    });
+    if (existing) {
+      return async () => ({ status: 'duplicate', entityId: existing.id });
+    }
+
+    const material = await this.material(w, p.materialId);
+    if (material.kind !== 'QURAN')
+      throw badRequest('materialId', 'Juz tests apply to the Quran material');
+
+    const scope = await this.courseScope(w, p.courseId);
+    await this.assertCourseMaterial(w, p.courseId, p.materialId);
+    const enrollment = await this.row(
+      w,
+      `enrollment:${p.courseId}:${p.memberId}`,
+      () =>
+        db.enrollment.findFirst({
+          where: { courseId: p.courseId, memberId: p.memberId, status: 'ACTIVE' },
+        }),
+      'Enrollment',
+    );
+    await this.student(w, scope, enrollment.id, p.materialId);
+    const passMark = scope.course.testPassMark;
+    const scopeKey = {
+      memberId: p.memberId,
+      materialId: p.materialId,
+      scopeType: p.scopeType,
+      juz: p.juz,
+      surahStart: null,
+      ayahStart: null,
+      surahEnd: null,
+      ayahEnd: null,
+      pageFrom: null,
+      pageTo: null,
+    };
+
+    return async (tx) => {
+      const attemptNo =
+        (await tx.memorizationTest.count({ where: scopeKey })) + 1;
+      const created = await tx.memorizationTest.create({
+        data: {
+          organizationId: w.org.organizationId,
+          ...scopeKey,
+          courseId: p.courseId,
+          score: p.score,
+          passMark,
+          passed: p.score >= passMark,
+          attemptNo,
+          examinerMemberId: examiner,
+          takenAt: at,
+          notes: p.notes ?? null,
+          idempotencyKey: key,
+        },
+      });
+      await this.audit.record(
+        w.audit,
+        {
+          action: 'test.recorded',
+          entityType: 'memorization_test',
+          entityId: created.id,
+          after: {
+            memberId: created.memberId,
+            score: created.score,
+            passed: created.passed,
+            attemptNo,
+            source: w.source,
+          },
+        },
+        tx,
+      );
+      await emit(tx, w.audit, {
+        type: 'test.recorded',
+        aggregateType: 'member',
+        aggregateId: created.memberId,
+        payload: {
+          testId: created.id,
+          memberId: created.memberId,
+          materialId: created.materialId,
+          scope: created.scopeType,
+          score: created.score,
+          passed: created.passed,
+        },
+      });
+      return { status: 'applied', entityId: created.id };
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // memorization.log — append-only, ranges → pages (ADR-0005)
   // -------------------------------------------------------------------------
 
@@ -458,6 +562,16 @@ export class ProgressWriterService {
       throw forbidden('Only staff record a starting level');
     }
 
+    let recitationKindId: string | null = null;
+    if (p.recitationKindId) {
+      const kind = await db.recitationKind.findFirst({
+        where: { id: p.recitationKindId, active: true, archivedAt: null },
+      });
+      if (!kind) throw notFound('Recitation kind');
+      recitationKindId = kind.id;
+      if (p.type !== 'NEW') throw badRequest('type', 'Custom kinds log as new memorization');
+    }
+
     const span = resolveSpan(material.kind, material.totalPages, p);
 
     return async (tx) => {
@@ -468,9 +582,11 @@ export class ProgressWriterService {
           materialId: p.materialId,
           courseId: p.courseId,
           type: p.type,
+          recitationKindId,
           ...span,
           grade: p.grade ?? null,
           mistakes: p.mistakes,
+          countsProgress: p.countsProgress ?? true,
           note: p.note ?? null,
           loggedByMemberId: loggedBy,
           loggedAt: at,
@@ -825,6 +941,8 @@ function laneOf(m: SyncMutationInput): string {
       return `attendance:${m.payload.sessionId}:${m.payload.enrollmentId}`;
     case 'memorization.log':
       return `summary:${m.payload.memberId}:${m.payload.materialId}`;
+    case 'memorization.test':
+      return `test:${m.payload.memberId}:${m.payload.materialId}:${m.payload.juz}`;
     case 'material.log':
       return `material:${m.idempotencyKey}`;
   }

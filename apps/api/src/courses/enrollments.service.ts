@@ -13,6 +13,7 @@ import { dateIn, fromDateString, toDateString } from '../common/zoned-time';
 import { PrismaService } from '../prisma/prisma.service';
 import { CourseAccessService } from './course-access.service';
 import { memberName } from './course.mapper';
+import { courseSessionWindow } from './course-window';
 import { checkRequirements, type RequirementRow } from './requirements';
 
 function toEnrollmentResponse(
@@ -194,7 +195,10 @@ export class EnrollmentsService {
           select: { id: true, name: true },
         })
       : [];
-    const startDate = course.startDate ? toDateString(course.startDate) : null;
+    const program = course.programId
+      ? await db.program.findFirst({ where: { id: course.programId } })
+      : null;
+    const { startDate } = courseSessionWindow(course, program);
 
     const warnings = checkRequirements({
       birthDate: toDateString(member.birthDate),

@@ -15,7 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --import tsx --test src/members.test.ts src/auth.test.ts src/organization.test.ts src/people.test.ts",
+    "test": "node --import tsx --test src/members.test.ts src/auth.test.ts src/organization.test.ts src/people.test.ts src/permissions.test.ts src/whatsapp-setup.test.ts src/join-applications.test.ts src/programs.test.ts src/custom-fields.test.ts src/notifications.test.ts src/announcements.test.ts",
     "fmt": "prettier --check ."
   },
   "dependencies": {

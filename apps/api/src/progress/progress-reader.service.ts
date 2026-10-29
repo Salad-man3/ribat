@@ -4,19 +4,25 @@ import type {
   ClassKit,
   CreateSessionInput,
   ListProgressQuery,
+  ListSessionsQuery,
   MaterialLogResponse,
   MemorizationLogResponse,
   MemorizationTestResponse,
+  CourseHalaqaWall,
   SessionAttendanceResponse,
   SessionResponse,
+  StaffSessionsResponse,
+  StaffTodayOverview,
   UpdateSessionInput,
 } from '@ribat/shared';
+import { hifzMapFromData } from './hifz-map';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
 import type { OrgContext } from '../auth/org-context.guard';
 import {
   badRequest,
   conflict,
+  forbidden,
   isUniqueViolation,
   notFound,
 } from '../common/errors';
@@ -88,6 +94,130 @@ export class ProgressReaderService {
       .courseSession.findFirst({ where: { id: sessionId } });
     if (!row) throw notFound('Session');
     return row;
+  }
+
+  /** Staff lobby: org-wide sessions in a date range with course and lead teacher. */
+  async listStaffSessions(
+    org: OrgContext,
+    query: ListSessionsQuery,
+  ): Promise<StaffSessionsResponse> {
+    if (!org.permissions.includes('courses.manage')) throw forbidden();
+    const timezone = await this.timezone(org.organizationId);
+    const today = dateIn(new Date(), timezone);
+    const from = query.from ?? today;
+    const to = query.to ?? addDays(from, 6);
+    if (to > addDays(from, 92)) {
+      throw badRequest('to', 'Ask for at most 92 days at a time');
+    }
+    const db = this.prisma.forOrganization(org.organizationId);
+    const [rows, activeTeachers] = await Promise.all([
+      db.courseSession.findMany({
+        where: {
+          date: { gte: fromDateString(from), lte: fromDateString(to) },
+          status: { not: 'CANCELLED' },
+        },
+        include: { course: true },
+        orderBy: [{ date: 'asc' }, { startsAt: 'asc' }],
+      }),
+      db.teachingAssignment.groupBy({
+        by: ['teacherMemberId'],
+        where: { endedAt: null },
+      }),
+    ]);
+    const courseIds = [...new Set(rows.map((r) => r.courseId))];
+    const assignments = courseIds.length
+      ? await db.teachingAssignment.findMany({
+          where: { courseId: { in: courseIds }, endedAt: null },
+          include: { teacher: true },
+          orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+        })
+      : [];
+    const leadByCourse = new Map<string, string>();
+    for (const row of assignments) {
+      const name = memberName(row.teacher);
+      const prev = leadByCourse.get(row.courseId);
+      if (!prev || row.role === 'LEAD') leadByCourse.set(row.courseId, name);
+    }
+    return {
+      activeTeacherCount: activeTeachers.length,
+      sessions: rows.map((row) => ({
+        id: row.id,
+        courseId: row.courseId,
+        courseName: row.course.name,
+        date: toDateString(row.date),
+        startsAt: row.startsAt.toISOString(),
+        endsAt: row.endsAt.toISOString(),
+        status: row.status,
+        topic: row.topic,
+        leadTeacherName: leadByCourse.get(row.courseId) ?? null,
+      })),
+    };
+  }
+
+  /** Live same-day attendance and memorization for the staff lobby (SC-DOD-2). */
+  async staffTodayOverview(org: OrgContext): Promise<StaffTodayOverview> {
+    if (!org.permissions.includes('courses.manage')) throw forbidden();
+    const timezone = await this.timezone(org.organizationId);
+    const date = dateIn(new Date(), timezone);
+    const dayStart = zonedToUtc(date, '00:00', timezone);
+    const dayEnd = zonedToUtc(addDays(date, 1), '00:00', timezone);
+    const db = this.prisma.forOrganization(org.organizationId);
+
+    const sessions = await db.courseSession.findMany({
+      where: {
+        date: fromDateString(date),
+        status: { not: 'CANCELLED' },
+      },
+      include: { course: true },
+    });
+    const sessionIds = sessions.map((s) => s.id);
+    const courseNameById = new Map(sessions.map((s) => [s.courseId, s.course.name]));
+
+    const [absenceRows, logRows] = await Promise.all([
+      sessionIds.length
+        ? db.attendance.findMany({
+            where: { sessionId: { in: sessionIds }, status: 'ABSENT' },
+            include: {
+              enrollment: { include: { member: true } },
+              session: { include: { course: true } },
+            },
+            orderBy: [{ markedAt: 'desc' }],
+            take: 30,
+          })
+        : Promise.resolve([]),
+      db.memorizationLog.findMany({
+        where: {
+          loggedAt: { gte: dayStart, lt: dayEnd },
+          voidedAt: null,
+          countsProgress: true,
+        },
+        include: { member: true, course: true },
+        orderBy: { loggedAt: 'desc' },
+        take: 20,
+      }),
+    ]);
+
+    return {
+      date,
+      absenceCount: absenceRows.length,
+      absences: absenceRows.map((row) => ({
+        memberName: memberName(row.enrollment.member),
+        courseName: row.session.course.name,
+      })),
+      memorizationLogCount: await db.memorizationLog.count({
+        where: {
+          loggedAt: { gte: dayStart, lt: dayEnd },
+          voidedAt: null,
+          countsProgress: true,
+        },
+      }),
+      memorizationLogs: logRows.map((row) => ({
+        memberName: memberName(row.member),
+        courseName: row.course?.name ?? courseNameById.get(row.courseId ?? '') ?? '',
+        pageFrom: row.pageFrom,
+        pageTo: row.pageTo,
+      })),
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -352,6 +482,10 @@ export class ProgressReaderService {
       sessions: [],
       materials: [],
       positions: [],
+      todayLogs: [],
+      explanationProgress: [],
+      recitationKinds: [],
+      memberHifzMaps: [],
     };
     if (!org.memberId) return kit;
 
@@ -365,7 +499,10 @@ export class ProgressReaderService {
       select: { courseId: true },
     });
     const courseIds = assignments.map((a) => a.courseId);
-    if (courseIds.length === 0) return kit;
+    if (courseIds.length === 0) {
+      kit.recitationKinds = await this.recitationKindsFor(db);
+      return kit;
+    }
 
     const sessions = await db.courseSession.findMany({
       where: {
@@ -396,6 +533,7 @@ export class ProgressReaderService {
         courseId: s.courseId,
         courseName: s.course.name,
         courseType: s.course.type,
+        testPassMark: s.course.testPassMark,
         date: toDateString(s.date),
         startsAt: s.startsAt.toISOString(),
         endsAt: s.endsAt.toISOString(),
@@ -439,7 +577,246 @@ export class ProgressReaderService {
         },
       });
       kit.positions = summaries.map(toSummaryResponse);
+
+      const dayStart = fromDateString(date);
+      const dayEnd = fromDateString(addDays(date, 1));
+      const logs = await db.memorizationLog.findMany({
+        where: {
+          memberId: { in: [...rosterMembers] },
+          materialId: { in: memorizationMaterials },
+          voidedAt: null,
+          loggedAt: { gte: dayStart, lt: dayEnd },
+        },
+        orderBy: { loggedAt: 'asc' },
+      });
+      kit.todayLogs = logs.map((l) => ({
+        id: l.id,
+        memberId: l.memberId,
+        materialId: l.materialId,
+        type: l.type,
+        pageFrom: l.pageFrom,
+        pageTo: l.pageTo,
+        countsProgress: l.countsProgress,
+        loggedAt: l.loggedAt.toISOString(),
+      }));
+
+      const quranMaterialIds = links
+        .filter((l) => l.track === 'MEMORIZATION' && l.material.kind === 'QURAN')
+        .map((l) => l.materialId);
+      if (quranMaterialIds.length) {
+        const lifetimeLogs = await db.memorizationLog.findMany({
+          where: {
+            memberId: { in: [...rosterMembers] },
+            materialId: { in: quranMaterialIds },
+            voidedAt: null,
+          },
+          select: {
+            memberId: true,
+            materialId: true,
+            type: true,
+            voidedAt: true,
+            surahStart: true,
+            ayahStart: true,
+            surahEnd: true,
+            ayahEnd: true,
+            pageFrom: true,
+            pageTo: true,
+            countsProgress: true,
+          },
+        });
+        for (const materialId of quranMaterialIds) {
+          for (const memberId of rosterMembers) {
+            const slice = lifetimeLogs.filter(
+              (l) => l.memberId === memberId && l.materialId === materialId,
+            );
+            kit.memberHifzMaps.push({
+              memberId,
+              materialId,
+              juzMemorized: hifzMapFromData(slice, []).juzMemorized,
+            });
+          }
+        }
+      }
     }
+
+    const sessionIds = kit.sessions.map((s) => s.id);
+    if (sessionIds.length) {
+      const materialLogs = await db.materialLog.findMany({
+        where: { sessionId: { in: sessionIds } },
+        orderBy: { loggedAt: 'asc' },
+      });
+      const furthest = new Map<string, { sessionId: string; materialId: string; groupId: string | null; pageTo: number }>();
+      for (const row of materialLogs) {
+        const key = `${row.sessionId}:${row.materialId}:${row.groupId ?? ''}`;
+        const prev = furthest.get(key);
+        if (!prev || row.pageTo > prev.pageTo) {
+          furthest.set(key, {
+            sessionId: row.sessionId,
+            materialId: row.materialId,
+            groupId: row.groupId,
+            pageTo: row.pageTo,
+          });
+        }
+      }
+      kit.explanationProgress = [...furthest.values()];
+    }
+
+    kit.recitationKinds = await this.recitationKindsFor(db);
+
     return kit;
+  }
+
+  /** Course page halaqa wall (SC-DOD-2): positions and today's logs, online only. */
+  async courseHalaqaWall(
+    org: OrgContext,
+    courseId: string,
+    now = new Date(),
+  ): Promise<CourseHalaqaWall> {
+    const scope = await this.scope.forCourse(org, courseId, 'read');
+    const db = this.prisma.forOrganization(org.organizationId);
+    const timezone = await this.timezone(org.organizationId);
+    const date = dateIn(now, timezone);
+    const dayStart = fromDateString(date);
+    const dayEnd = fromDateString(addDays(date, 1));
+
+    const enrollments = await db.enrollment.findMany({
+      where: this.scope.enrollmentFilter(scope),
+      include: { member: true },
+    });
+    const memberIds = enrollments.map((e) => e.memberId);
+
+    const links = await db.courseMaterial.findMany({
+      where: { courseId },
+      include: { material: true },
+      orderBy: { order: 'asc' },
+    });
+    const memorizationIds = links
+      .filter((l) => l.track === 'MEMORIZATION')
+      .map((l) => l.materialId);
+    const quranLink = links.find(
+      (l) => l.track === 'MEMORIZATION' && l.material.kind === 'QURAN',
+    );
+
+    const summaries =
+      memberIds.length && memorizationIds.length
+        ? await db.memorizationSummary.findMany({
+            where: {
+              memberId: { in: memberIds },
+              materialId: { in: memorizationIds },
+            },
+          })
+        : [];
+    const summaryOf = (memberId: string) => {
+      const materialId = quranLink?.materialId ?? memorizationIds[0];
+      if (!materialId) return null;
+      const row = summaries.find(
+        (s) => s.memberId === memberId && s.materialId === materialId,
+      );
+      return row ? toSummaryResponse(row) : null;
+    };
+
+    const todayLogs =
+      memberIds.length && memorizationIds.length
+        ? await db.memorizationLog.findMany({
+            where: {
+              courseId,
+              memberId: { in: memberIds },
+              materialId: { in: memorizationIds },
+              voidedAt: null,
+              loggedAt: { gte: dayStart, lt: dayEnd },
+            },
+          })
+        : [];
+    const logCount = new Map<string, number>();
+    for (const log of todayLogs) {
+      logCount.set(log.memberId, (logCount.get(log.memberId) ?? 0) + 1);
+    }
+
+    const juzByMember = new Map<string, number[]>();
+    if (memberIds.length && quranLink) {
+      const lifetimeLogs = await db.memorizationLog.findMany({
+        where: {
+          memberId: { in: memberIds },
+          materialId: quranLink.materialId,
+          voidedAt: null,
+        },
+        select: {
+          memberId: true,
+          type: true,
+          voidedAt: true,
+          surahStart: true,
+          ayahStart: true,
+          surahEnd: true,
+          ayahEnd: true,
+          pageFrom: true,
+          pageTo: true,
+          countsProgress: true,
+        },
+      });
+      for (const memberId of memberIds) {
+        const slice = lifetimeLogs.filter((l) => l.memberId === memberId);
+        juzByMember.set(
+          memberId,
+          hifzMapFromData(slice, []).juzMemorized,
+        );
+      }
+    }
+
+    const explanationLinks = links.filter((l) => l.track === 'EXPLANATION');
+    let explanation: CourseHalaqaWall['explanation'] = null;
+    if (explanationLinks.length) {
+      const sessionRows = await db.courseSession.findMany({
+        where: { courseId, status: { not: 'CANCELLED' } },
+        select: { id: true },
+      });
+      if (sessionRows.length) {
+        const materialLogs = await db.materialLog.findMany({
+          where: {
+            sessionId: { in: sessionRows.map((s) => s.id) },
+            materialId: { in: explanationLinks.map((l) => l.materialId) },
+          },
+        });
+        let best: { materialId: string; pageTo: number } | null = null;
+        for (const row of materialLogs) {
+          if (!best || row.pageTo > best.pageTo)
+            best = { materialId: row.materialId, pageTo: row.pageTo };
+        }
+        if (best) {
+          const link = explanationLinks.find(
+            (l) => l.materialId === best!.materialId,
+          )!;
+          explanation = {
+            materialId: link.materialId,
+            title: link.material.title,
+            pageTo: best.pageTo,
+            totalPages: link.material.totalPages,
+          };
+        }
+      }
+    }
+
+    return {
+      date,
+      testPassMark: scope.course.testPassMark,
+      explanation,
+      students: enrollments.sort(byName).map((e) => ({
+        memberId: e.memberId,
+        name: memberName(e.member),
+        position: summaryOf(e.memberId),
+        loggedToday: (logCount.get(e.memberId) ?? 0) > 0,
+        todayLogCount: logCount.get(e.memberId) ?? 0,
+        juzMemorized: juzByMember.get(e.memberId),
+      })),
+    };
+  }
+
+  private async recitationKindsFor(
+    db: ReturnType<PrismaService['forOrganization']>,
+  ) {
+    const kinds = await db.recitationKind.findMany({
+      where: { active: true, archivedAt: null },
+      orderBy: { name: 'asc' },
+    });
+    return kinds.map((k) => ({ id: k.id, name: k.name, active: k.active }));
   }
 }

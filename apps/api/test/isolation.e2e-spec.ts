@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Logger } from 'nestjs-pino';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -14,7 +14,7 @@ import { drainCapturedLogs } from '../src/logging/logging.module';
 import { loginAs, removeAuthFixtures, type AuthenticatedSession } from './fixtures/auth-session';
 import { removeTwoOrganizations, twoOrganizations, type TwoOrganizations } from './fixtures/organizations';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const PHONE = '+963933123456';
 
 /**

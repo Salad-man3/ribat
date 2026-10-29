@@ -22,7 +22,11 @@ export function ExcusesPage() {
 
   return (
     <section className="grid gap-6">
-      <PageHeader title={t('excuses.title')} subtitle={t('excuses.subtitle')} />
+      <PageHeader
+        chrome
+        title={t('excuses.title')}
+        subtitle={t('excuses.subtitle')}
+      />
       {excuses.isError ? <ErrorText error={excuses.error} /> : null}
       {decide.isError ? <ErrorText error={decide.error} /> : null}
       {excuses.data?.length === 0 ? <Empty>{t('excuses.empty')}</Empty> : null}

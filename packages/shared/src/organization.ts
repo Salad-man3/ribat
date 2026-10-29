@@ -9,6 +9,8 @@ import {
   setupCode,
   uuid,
 } from './fields.js';
+import { AssignableStaffPermissionsSchema } from './permissions.js';
+import { S1PermissionSchema } from './s1-permission.js';
 
 /** Named presets in the `adhan` JavaScript `CalculationMethod`. */
 export const PrayerMethodSchema = z.enum([
@@ -102,11 +104,23 @@ export const OrganizationResponseSchema = z.object({
   prayerOffsets: PrayerOffsetsSchema,
   locale: LocaleSchema,
   pointsEnabled: z.boolean(),
+  tagsEnabled: z.boolean(),
+  orgAdminPermissions: z.array(S1PermissionSchema),
   memberLimit: z.number().int().positive().nullable(),
+  whatsappSetupTemplate: z.string().nullable(),
   createdAt: isoDateTime,
   updatedAt: isoDateTime,
 });
 export type OrganizationResponse = z.infer<typeof OrganizationResponseSchema>;
+
+const whatsappSetupTemplateField = z
+  .union([z.string().trim().max(1000), z.literal(''), z.null()])
+  .optional()
+  .transform((value) => {
+    if (value === undefined) return undefined;
+    if (value === '' || value === null) return null;
+    return value;
+  });
 
 export const UpdateOrganizationSchema = z
   .object({
@@ -118,8 +132,22 @@ export const UpdateOrganizationSchema = z
     prayerOffsets: PrayerOffsetsSchema.optional(),
     locale: LocaleSchema.optional(),
     pointsEnabled: z.boolean().optional(),
+    tagsEnabled: z.boolean().optional(),
+    orgAdminPermissions: AssignableStaffPermissionsSchema.optional(),
+    whatsappSetupTemplate: whatsappSetupTemplateField,
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required',
+  })
+  .superRefine((value, ctx) => {
+    const template = value.whatsappSetupTemplate;
+    if (template === undefined || template === null) return;
+    if (!template.includes('{{code}}')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Template must include {{code}}',
+        path: ['whatsappSetupTemplate'],
+      });
+    }
   });
 export type UpdateOrganizationInput = z.infer<typeof UpdateOrganizationSchema>;

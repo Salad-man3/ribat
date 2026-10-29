@@ -1,9 +1,23 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const root = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(root, '../..');
+const quranDataEntry = path.resolve(repoRoot, 'packages/quran-data/src/index.ts');
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      // tsc only sees the ambient module. Demo builds override this with the real client.
+      '@demo/client': path.resolve(root, 'src/api/demo-client-stub.ts'),
+      // CJS dist breaks named exports in optimizeDeps; compile workspace source as ESM.
+      '@ribat/quran-data': quranDataEntry,
+    },
+  },
   plugins: [
     tailwindcss(),
     react(),
@@ -42,16 +56,32 @@ export default defineConfig({
   ],
   // @ribat/shared and @ribat/quran-data build to CommonJS. Pre-bundling converts them so
   // class mode can run the same Zod schemas and Quran maths offline (SYNC-07).
-  optimizeDeps: { include: ['@ribat/shared', '@ribat/quran-data'] },
+  optimizeDeps: { include: ['@ribat/shared'], exclude: ['@ribat/quran-data'] },
   build: {
     commonjsOptions: { include: [/packages\/(shared|quran-data)\//, /node_modules/] },
   },
   server: {
+    fs: { allow: [repoRoot] },
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res) => {
+            if (res.writeHead && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' });
+              res.end(
+                JSON.stringify({
+                  error: {
+                    code: 'SERVICE_UNAVAILABLE',
+                    message: 'API is not reachable yet',
+                  },
+                }),
+              );
+            }
+          });
+        },
       },
     },
   },

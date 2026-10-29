@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 
 const TENANT_MODELS = new Set([
     'Membership',
@@ -29,6 +29,17 @@ const TENANT_MODELS = new Set([
     'HomeworkTask',
     'Notification',
     'DomainEvent',
+    'JoinApplication',
+    'Program',
+    'CustomFieldDefinition',
+    'Tag',
+    'MemberTag',
+    'Announcement',
+    'StatsDaily',
+    'ReportCard',
+    'RecitationKind',
+    'AwqafExam',
+    'AwqafExamJuz',
 ]);
 
 const UNIQUE_WHERE_OPERATIONS = new Set([

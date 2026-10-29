@@ -13,8 +13,7 @@ import type {
 } from '@ribat/shared';
 import { apiFetch } from '../../api/api-fetch';
 import { courseKey } from '../../api/courses';
-import { useMembers } from '../../api/members';
-import { fullName } from '../../components/MemberCard';
+import { MemberCombobox } from '../../components/MemberCombobox';
 import { Button } from '../../components/ui/button';
 import {
   Badge,
@@ -56,40 +55,22 @@ function MemberPicker({
   pending: boolean;
 }) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
   const [memberId, setMemberId] = useState('');
-  const members = useMembers('ACTIVE', search);
   return (
     <form
-      className="mt-4 grid gap-2 border-t border-line pt-4 sm:grid-cols-[1fr_1fr_auto]"
+      className="mt-4 grid gap-2 border-t border-line pt-4 sm:grid-cols-[1fr_auto]"
       onSubmit={(e) => {
         e.preventDefault();
         if (memberId) onPick(memberId);
         setMemberId('');
       }}
     >
-      <input
-        type="search"
-        className={inputClass}
-        placeholder={t('members.search')}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      <select
-        className={inputClass}
+      <MemberCombobox
         value={memberId}
-        onChange={(e) => setMemberId(e.target.value)}
-        required
-      >
-        <option value="">{t('common.choose')}</option>
-        {(members.data ?? [])
-          .filter((m) => !exclude.has(m.id))
-          .map((m) => (
-            <option key={m.id} value={m.id}>
-              {fullName(m)} · {m.birthDate}
-            </option>
-          ))}
-      </select>
+        onChange={setMemberId}
+        exclude={exclude}
+        placeholder={t('members.search')}
+      />
       <Button type="submit" disabled={pending || !memberId}>
         {label}
       </Button>

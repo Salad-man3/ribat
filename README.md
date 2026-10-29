@@ -132,7 +132,7 @@ All commands below run from the repository root.
 | ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------- |
 | Run the demo       | [Run the demo](#run-the-demo) below                                      | Docker with Compose v2                                        | http://localhost:3000 (built app + API, one origin)         |
 | Change the code    | [Development setup](./CONTRIBUTING.md#development-setup) in CONTRIBUTING | Node 20+, pnpm, Docker for Postgres and Redis                 | http://localhost:5173 (PWA) and http://localhost:3000 (API) |
-| Put it on a server | [Production](#production) below                                          | Docker, a `SESSION_SECRET`, a domain for TLS                  | Your host                                                   |
+| Put it on a server | [Production](#production) below                                          | Docker, `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `APP_URL`    | Your host (Caddy on port 80)                                |
 | Install on Android | [apps/android/README.md](apps/android/README.md)                         | A deployed HTTPS site, JDK and Android SDK to build the shell | Play Store or an APK link                                   |
 
 The demo runs a **built copy** of Ribat inside Docker (API and PWA together). Development runs Ribat **from your source files** on the host; Docker only provides Postgres and Redis.
@@ -216,16 +216,19 @@ These apply when you use the [development setup](./CONTRIBUTING.md#development-s
 | `pnpm android:update`                   | Regenerate the Android TWA project from `twa-manifest.json`     |
 | `pnpm android:build`                    | Build signed APK and AAB (requires production host in manifest) |
 
-CI runs lint, typecheck, unit tests, e2e tests and the build on every push.
+CI runs the format check, lint, typecheck, unit tests, e2e tests, the build, and a Docker image build on every push and pull request.
 
 ## Production
 
 ```bash
-SESSION_SECRET=$(openssl rand -hex 32) docker compose -f deploy/compose.prod.yml up -d --build
+POSTGRES_PASSWORD=$(openssl rand -hex 16) \
+SESSION_SECRET=$(openssl rand -hex 32) \
+APP_URL=https://your.domain \
+docker compose -f deploy/compose.prod.yml up -d --build
 ```
 
-One image serves the API and the built PWA and runs migrations on boot; a second container
-from the same image consumes the job queue; Caddy sits in front on port 80. Put a domain in
+One image serves the API and the built PWA. A one-shot `migrate` service applies migrations
+before the API and the worker start; Caddy is the only published port (80). Put a domain in
 `deploy/Caddyfile` instead of `:80` and Caddy fetches the HTTPS certificate itself.
 
 ## Contributing

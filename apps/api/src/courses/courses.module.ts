@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
 import { MaterialsModule } from '../materials/materials.module';
 import { CourseAccessService } from './course-access.service';
 import { CoursesController } from './courses.controller';
@@ -13,7 +14,7 @@ import { ScheduleService } from './schedule.service';
 import { SessionGeneratorService } from './session-generator.service';
 
 @Module({
-  imports: [AuthModule, MaterialsModule],
+  imports: [AuthModule, MaterialsModule, CustomFieldsModule],
   controllers: [
     CoursesController,
     EnrollmentsController,

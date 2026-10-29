@@ -4,15 +4,17 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "scripts": {
+    "prisma:generate": "prisma generate --generator client",
     "build": "nest build",
-    "dev": "nest start --watch",
+    "dev": "node ../../scripts/kill-stale-api-dev.mjs && nest start --watch",
+    "dev:lan": "node ../../scripts/kill-stale-api-dev.mjs && nest start --watch",
     "start": "nest start",
     "start:prod": "node dist/main",
     "lint": "oxlint .",
-    "typecheck": "prisma generate --generator client && tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
     "fmt": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.prisma\"",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json",
     "import:members": "tsx scripts/import-members.ts",
     "projections:rebuild": "tsx scripts/rebuild-projections.ts"
   },
@@ -23,7 +25,9 @@
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.7.1",
-    "@prisma/client": "^6.8.2",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "pg": "^8.16.0",
     "@ribat/quran-data": "workspace:*",
     "@ribat/shared": "workspace:*",
     "adhan": "^4.4.6",
@@ -48,7 +52,8 @@
     "@types/supertest": "^7.0.0",
     "jest": "^30.0.0",
     "prettier": "^3.5.3",
-    "prisma": "^6.8.2",
+    "@types/pg": "^8.15.4",
+    "prisma": "^7.0.0",
     "prisma-erd-generator": "^3.2.1",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
@@ -75,7 +80,12 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@prisma/client/runtime/client$": "@prisma/client/runtime/client",
+      "^@prisma/client$": "<rootDir>/src/generated/prisma/client.ts",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

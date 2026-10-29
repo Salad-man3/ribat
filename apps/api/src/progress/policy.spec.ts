@@ -100,6 +100,7 @@ describe('summarize', () => {
     ayahEnd: a2,
     pageFrom: p1,
     pageTo: p2,
+    countsProgress: true,
     loggedAt: new Date(at),
   });
 
@@ -148,6 +149,19 @@ describe('summarize', () => {
     expect(s.ayahsMemorized).toBe(16);
   });
 
+  it('ignores failed attempts for coverage and last position', () => {
+    const s = summarize([
+      quran('NEW', [78, 1, 78, 20], [582, 582], '2026-10-01T10:00:00Z'),
+      {
+        ...quran('NEW', [79, 1, 79, 10], [583, 583], '2026-10-02T10:00:00Z'),
+        countsProgress: false,
+      },
+    ]);
+    expect(s.lastPageReached).toBe(582);
+    expect(s.pagesMemorized).toBe(1);
+    expect(s.lastLoggedAt).toEqual(new Date('2026-10-02T10:00:00Z'));
+  });
+
   it('counts pages for texts with no ayah ranges', () => {
     const text: LedgerRow = {
       type: 'NEW',
@@ -157,6 +171,7 @@ describe('summarize', () => {
       ayahEnd: null,
       pageFrom: 3,
       pageTo: 5,
+      countsProgress: true,
       loggedAt: new Date('2026-10-01T10:00:00Z'),
     };
     const s = summarize([text, { ...text, pageFrom: 5, pageTo: 6 }]);

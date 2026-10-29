@@ -4,27 +4,91 @@
   "switchToArabic": "العربية",
   "switchToEnglish": "English",
   "nav": {
-    "staff": "Overview",
+    "staff": "Lobby",
     "members": "Members",
+    "membersDirectory": "Directory",
+    "accountMgmt": "Account management",
     "roles": "Roles & access",
-    "audit": "Audit log",
-    "organization": "Mosque settings",
+    "audit": "Activity",
+    "organization": "Settings",
     "devices": "Devices",
     "member": "My portal",
     "guardian": "Family portal",
-    "courses": "Courses",
+    "courses": "Halaqas & programs",
     "materials": "Materials",
     "teach": "Class mode",
     "notifications": "Notifications",
     "excuses": "Excuses",
-    "events": "Failed events"
+    "events": "Failed events",
+    "reports": "Reports & stats",
+    "more": "More",
+    "tab": {
+      "courses": "Halaqas",
+      "reports": "Reports",
+      "teach": "Class"
+    }
+  },
+  "stats": {
+    "title": "Reports & stats",
+    "staleHint": "Numbers refresh overnight and may be up to 24 hours old.",
+    "asOf": "As of {{date}} · week {{from}} – {{to}}",
+    "activeMembers": "Active members",
+    "activeCourses": "Active halaqas",
+    "activeTeachers": "Active teachers",
+    "pendingApplications": "Pending applications",
+    "attendanceRate": "Attendance rate",
+    "pagesThisWeek": "Pages this week",
+    "pagesShort": "{{count}} pages",
+    "testsPassed": "Tests passed",
+    "byHalaqa": "By halaqa",
+    "noProgram": "Other halaqas",
+    "noCourseData": "No halaqa statistics yet.",
+    "missingAttendance": "{{count}} sessions without attendance",
+    "attention": "Needs attention",
+    "teachersNotLogging": "Teachers who have not logged this week",
+    "allTeachersLogged": "Everyone has logged this week.",
+    "fallingBehind": "Students below 50% attendance",
+    "noFallingBehind": "No one flagged this week.",
+    "topMemorizers": "Top memorizers this week",
+    "noTeacherData": "No teaching assignments to report on.",
+    "loggedDays": "Days logged",
+    "myHalaqas": "Your halaqas"
+  },
+  "reportCards": {
+    "title": "Report cards",
+    "member": "Student",
+    "periodStart": "Period start",
+    "periodEnd": "Period end",
+    "draft": "Draft report card",
+    "drafts": "Drafts",
+    "published": "Published report cards",
+    "empty": "No report cards yet.",
+    "statusDraft": "Draft",
+    "viewTitle": "Report card — {{name}}",
+    "allCourses": "All courses",
+    "attendance": "Attendance",
+    "homework": "Homework completed",
+    "tests": "Tests",
+    "passed": "Passed",
+    "notPassed": "Not passed",
+    "teacherComment": "Teacher comment",
+    "commentLabel": "Comment for the family",
+    "saveComment": "Save comment",
+    "publish": "Publish",
+    "shareWhatsapp": "Share on WhatsApp",
+    "shareMessage": "View the report card in Ribat: {{url}}",
+    "notFound": "Report card not found."
   },
   "shell": {
     "switchToMember": "Switch to member view",
     "switchToAdmin": "Switch to admin view",
     "memberViewShort": "Member view",
     "adminViewShort": "Admin view",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mainTabs": "Main sections",
+    "accountMenu": "Account"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -42,6 +106,12 @@
     "demoHint": "Fictional accounts. Each one sees a different slice of the same mosque.",
     "demoOtherOrg": "Sheikh, other mosque"
   },
+  "demo": {
+    "banner": "Demo — your changes disappear when you refresh the page.",
+    "reset": "Reset demo",
+    "loginTitle": "Try Ribat",
+    "loginHint": "Pick a role. Everything you do stays in this browser tab until you refresh."
+  },
   "setup": {
     "title": "First-run mosque setup",
     "mosqueName": "Mosque name",
@@ -53,23 +123,45 @@
     "continue": "Continue to password setup"
   },
   "staff": {
-    "homeTitle": "Overview",
+    "homeTitle": "Lobby",
     "activeMembers": "Active members",
+    "activeTeachers": "Active teachers",
+    "activeCourses": "Active courses",
+    "sessionsThisWeek": "Sessions this week",
+    "weekSchedule": "This week's lessons",
+    "weekScheduleEmpty": "No scheduled sessions this week.",
+    "weekDayEmpty": "No sessions",
+    "openClass": "Open class",
+    "quickAccess": "Quick access",
     "membersHint": "Add students, record guardians, siblings and notes.",
     "rolesHint": "Who can sign in, and with which role.",
-    "auditHint": "Every change, who made it and when.",
-    "organizationHint": "Name, language and prayer-time settings.",
+    "auditHint": "Who created a halaqa, added a student, assigned a teacher — and when.",
+    "organizationHint": "Mosque settings and extra fields.",
     "coursesHint": "Courses, teachers, students, groups and the weekly schedule.",
-    "materialsHint": "The texts and books your courses teach."
+    "materialsHint": "The texts and books your courses teach.",
+    "todayTitle": "Today at the mosque",
+    "todayAbsences": "{{count}} absent today",
+    "todayAbsencesEmpty": "No absences recorded for today's classes yet.",
+    "todayMemorization": "{{count}} recitations logged today",
+    "todayMemorizationEmpty": "No recitation logged yet today.",
+    "todayMemorizationLine": "{{name}} · {{course}} · p. {{from}}–{{to}}",
+    "todayAbsenceLine": "{{name}} · {{course}}",
+    "reviewJoinApplications": "Review {{count}} join requests"
   },
   "member": {
     "homeTitle": "My portal",
     "account": "My account",
-    "teaching": "Courses I teach"
+    "teaching": "Courses I teach",
+    "todayHalaqa": "Today's halaqa"
   },
   "guardian": {
     "homeTitle": "Your children",
-    "empty": "No children are linked to your account yet. Ask the mosque office."
+    "empty": "No children are linked to your account yet. Ask the mosque office.",
+    "quickActions": "Quick actions",
+    "openNotifications": "Notifications",
+    "unreadNotifications": "{{count}} unread",
+    "submitExcuse": "Submit an excuse",
+    "excuseFor": "Child"
   },
   "members": {
     "title": "Members",
@@ -82,6 +174,8 @@
     "noPhone": "no phone",
     "archive": "Archive",
     "confirmArchive": "Yes, archive",
+    "delete": "Delete",
+    "confirmDelete": "Yes, delete",
     "firstName": "First name",
     "fatherName": "Father name",
     "familyName": "Family name",
@@ -122,7 +216,31 @@
     "statusValue": {
       "ACTIVE": "Active",
       "ARCHIVED": "Archived"
-    }
+    },
+    "tab": {
+      "members": "Members",
+      "teachers": "Teachers",
+      "admins": "Admins",
+      "guardians": "Guardians"
+    },
+    "tags": {
+      "title": "Tags",
+      "empty": "No tags assigned."
+    },
+    "filter": {
+      "all": "All",
+      "students": "Students",
+      "teachers": "Teachers"
+    },
+    "studying": "Studying",
+    "teaching": "Teaching",
+    "taughtBefore": "Taught before",
+    "teachersEmpty": "No teachers found.",
+    "adminsHint": "Who can run the mosque in admin view.",
+    "manageRoles": "Roles and access",
+    "guardianSearch": "Search student or guardian name",
+    "guardiansEmpty": "No guardian links.",
+    "guardianOf": "Guardian"
   },
   "guardians": {
     "title": "Guardians",
@@ -154,6 +272,42 @@
       "STAFF": "All staff"
     }
   },
+  "accountMgmt": {
+    "title": "Account management",
+    "subtitle": "Pending join requests and members who still cannot sign in",
+    "joinLinkTitle": "Public join link",
+    "joinLinkHint": "Share this link so students and guardians can apply. You approve each request here.",
+    "pendingTitle": "Pending applications",
+    "pendingEmpty": "No one is waiting for approval.",
+    "gapsTitle": "Members without full access",
+    "gapsHint": "Active members with a phone who still need a membership or password setup.",
+    "gapsEmpty": "Everyone with a phone can sign in.",
+    "reject": "Reject",
+    "approve": "Approve & issue code",
+    "needGrantPerm": "Needs roles & access permission to approve",
+    "wards": "Children",
+    "kind": {
+      "STUDENT": "Student",
+      "GUARDIAN": "Guardian"
+    },
+    "gapReason": {
+      "NO_MEMBERSHIP": "No login yet",
+      "SETUP_PENDING": "Setup code not used"
+    },
+    "justApproved": "Just approved",
+    "whatsappBlocked": "WhatsApp did not open. Use the button below."
+  },
+  "join": {
+    "title": "Join {{mosque}}",
+    "subtitle": "Apply for an account. The mosque office will review your request.",
+    "student": "I am a student",
+    "guardian": "I am a guardian",
+    "wardSection": "Your child",
+    "wardRelation": "Your relation to the child",
+    "submit": "Submit application",
+    "submittedTitle": "Application received",
+    "submittedHint": "{{mosque}} will review your request and contact you on the phone number you gave."
+  },
   "access": {
     "title": "App access",
     "hasAccess": "Can sign in as",
@@ -162,7 +316,9 @@
     "codeHint": "Give this code to the member once. It is not shown again.",
     "expires": "Expires",
     "resetCode": "Issue a new setup code",
-    "grant": "Grant access"
+    "grant": "Grant access",
+    "sendWhatsApp": "Send on WhatsApp",
+    "whatsappHint": "Opens WhatsApp (app on your phone, WhatsApp Web on a computer). You still press Send. If Web is not signed in, copy the code above."
   },
   "roles": {
     "title": "Roles & access",
@@ -179,14 +335,81 @@
     "statusValue": {
       "ACTIVE": "Active",
       "SUSPENDED": "Suspended"
+    },
+    "filterAll": "All",
+    "filterByTag": "Tag",
+    "orgAdminPrivileges": "Admin privileges",
+    "orgAdminPrivilegesHint": "Permissions for everyone with the Admin role. The sheikh always has full access.",
+    "tagPrivileges": "Tag privileges",
+    "tagPrivilegesHint": "Members with these tags also receive the listed permissions (added to their role).",
+    "noPrivileges": "No extra permissions",
+    "tags": {
+      "title": "Member tags",
+      "hint": "Tags group members for announcements, filters, and extra permissions below.",
+      "new": "Tag name",
+      "add": "Add tag",
+      "archive": "Archive"
+    }
+  },
+  "permissions": {
+    "members.manage": "Manage members",
+    "memberships.manage": "Manage memberships",
+    "memberships.manage_org_admin": "Manage org admins",
+    "organization.manage": "Organization settings",
+    "notes.write": "Write notes",
+    "notes.read_all": "Read all notes",
+    "audit.read": "Read activity",
+    "courses.manage": "Manage courses",
+    "materials.manage": "Manage materials"
+  },
+  "settings": {
+    "title": "Settings",
+    "hub": {
+      "mosque": "Mosque settings",
+      "extraFields": "Extra fields"
+    },
+    "extraFields": {
+      "title": "Extra fields",
+      "hint": "Optional fields shown when adding or editing records.",
+      "entity": "Record type",
+      "entities": {
+        "MEMBER": "Members",
+        "COURSE": "Halaqas",
+        "PROGRAM": "Programs",
+        "MATERIAL": "Materials"
+      },
+      "label": "Field label",
+      "type": "Field type",
+      "types": {
+        "TEXT": "Text",
+        "NUMBER": "Number",
+        "DATE": "Date",
+        "BOOLEAN": "Yes / no"
+      },
+      "add": "Add field",
+      "empty": "No extra fields for this type yet.",
+      "archive": "Remove",
+      "sectionTitle": "Extra fields"
     }
   },
   "organization": {
     "title": "Mosque settings",
+    "tabs": {
+      "general": "General",
+      "messages": "Messages"
+    },
+    "messages": {
+      "whatsappTitle": "WhatsApp setup message",
+      "whatsappHint": "Used when staff send a setup code. Language follows the mosque default locale above. Must include {{code}}.",
+      "placeholders": "Placeholders",
+      "resetDefault": "Reset to default"
+    },
     "general": "General",
     "name": "Mosque name",
     "locale": "Default language",
     "pointsEnabled": "Enable points",
+    "tagsEnabled": "Enable member tags",
+    "tagsEnabledHint": "Create and assign tags under Roles & access.",
     "prayer": "Prayer times",
     "timezone": "Time zone",
     "prayerMethod": "Calculation method",
@@ -204,10 +427,132 @@
     }
   },
   "audit": {
-    "title": "Audit log",
-    "subtitle": "Newest first. Open a row to see what changed.",
+    "title": "What happened at the mosque",
+    "subtitle": "Who did what — newest first.",
     "empty": "Nothing recorded yet.",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "unknownActor": "Unknown account",
+    "unknownTarget": "—",
+    "actions": {
+      "_fallback": "{{actor}} — {{action}}",
+      "course": {
+        "created": "{{actor}} created halaqa «{{target}}»",
+        "updated": "{{actor}} updated halaqa «{{target}}»",
+        "status_changed": "{{actor}} changed «{{target}}» to {{status}}"
+      },
+      "program": {
+        "created": "{{actor}} created program «{{target}}»",
+        "updated": "{{actor}} updated program «{{target}}»",
+        "archived": "{{actor}} archived program «{{target}}»"
+      },
+      "teacher": {
+        "assigned": "{{actor}} assigned {{target}} as a teacher",
+        "assigned_ctx": "{{actor}} assigned {{target}} to teach «{{context}}»",
+        "removed": "{{actor}} removed teacher {{target}}",
+        "removed_ctx": "{{actor}} removed {{target}} from «{{context}}»"
+      },
+      "enrollment": {
+        "created": "{{actor}} added student {{target}}",
+        "created_ctx": "{{actor}} added student {{target}} to «{{context}}»",
+        "withdrawn": "{{actor}} withdrew {{target}}",
+        "withdrawn_ctx": "{{actor}} withdrew {{target}} from «{{context}}»"
+      },
+      "member": {
+        "created": "{{actor}} added member {{target}}",
+        "updated": "{{actor}} updated {{target}}",
+        "archived": "{{actor}} archived {{target}}"
+      },
+      "material": {
+        "created": "{{actor}} added material «{{target}}»",
+        "updated": "{{actor}} updated material «{{target}}»",
+        "archived": "{{actor}} archived material «{{target}}»"
+      },
+      "group": {
+        "created": "{{actor}} created group «{{target}}»",
+        "created_ctx": "{{actor}} created group «{{target}}» in «{{context}}»",
+        "updated": "{{actor}} updated group «{{target}}»",
+        "updated_ctx": "{{actor}} updated group «{{target}}» in «{{context}}»",
+        "deleted": "{{actor}} deleted group «{{target}}»",
+        "deleted_ctx": "{{actor}} deleted group «{{target}}» from «{{context}}»"
+      },
+      "group_member": {
+        "added": "{{actor}} added a student to group «{{target}}»",
+        "added_ctx": "{{actor}} added a student to group «{{target}}» in «{{context}}»",
+        "removed": "{{actor}} removed a student from group «{{target}}»",
+        "removed_ctx": "{{actor}} removed a student from group «{{target}}» in «{{context}}»"
+      },
+      "schedule": {
+        "replaced": "{{actor}} changed the schedule for «{{target}}»"
+      },
+      "pause": {
+        "created": "{{actor}} paused «{{target}}»",
+        "deleted": "{{actor}} removed a pause on «{{target}}»"
+      },
+      "course_material": {
+        "added": "{{actor}} linked material to «{{target}}»",
+        "removed": "{{actor}} unlinked material from «{{target}}»"
+      },
+      "homework": {
+        "assigned": "{{actor}} assigned homework in «{{target}}»",
+        "marked": "{{actor}} marked homework in «{{target}}»"
+      },
+      "auth": {
+        "login": "{{actor}} signed in",
+        "view_switched": "{{actor}} switched admin / member view"
+      },
+      "membership": {
+        "created": "{{actor}} created login for {{target}}",
+        "updated": "{{actor}} updated access for {{target}}",
+        "access_granted": "{{actor}} granted login access to {{target}}",
+        "setup_code_reset": "{{actor}} reset setup code for {{target}}"
+      },
+      "guardian": {
+        "linked": "{{actor}} linked guardian {{target}}",
+        "unlinked": "{{actor}} unlinked guardian {{target}}"
+      },
+      "household": {
+        "linked": "{{actor}} linked household members"
+      },
+      "excuse": {
+        "submitted": "{{actor}} submitted an excuse for {{target}}",
+        "decided": "{{actor}} decided an excuse for {{target}}"
+      },
+      "member_note": {
+        "created": "{{actor}} added a note about {{target}}"
+      },
+      "organization": {
+        "setup": "{{actor}} completed first-time mosque setup"
+      },
+      "staff_role": {
+        "created": "{{actor}} added role {{target}}",
+        "updated": "{{actor}} updated role «{{target}}»",
+        "archived": "{{actor}} removed role «{{target}}»"
+      },
+      "session": {
+        "created": "{{actor}} added a manual session in «{{target}}»",
+        "updated": "{{actor}} updated a session in «{{target}}»",
+        "cancelled": "{{actor}} cancelled a session in «{{target}}»"
+      },
+      "attendance": {
+        "marked": "{{actor}} marked attendance in «{{target}}»",
+        "corrected": "{{actor}} corrected attendance in «{{target}}»",
+        "superseded": "{{actor}} updated attendance in «{{target}}»"
+      },
+      "memorization": {
+        "logged": "{{actor}} logged memorization in «{{target}}»",
+        "voided": "{{actor}} voided memorization in «{{target}}»"
+      },
+      "material_log": {
+        "created": "{{actor}} logged a lesson in «{{target}}»"
+      },
+      "test": {
+        "recorded": "{{actor}} recorded a test in «{{target}}»"
+      },
+      "requirement": {
+        "added": "{{actor}} added an enrollment rule for «{{target}}»",
+        "removed": "{{actor}} removed an enrollment rule from «{{target}}»"
+      }
+    }
   },
   "devices": {
     "title": "Signed-in devices",
@@ -237,9 +582,16 @@
     "CSRF_INVALID": "Your session expired. Reload the page.",
     "NOT_FOUND": "Not found.",
     "CONFLICT": "This conflicts with existing data.",
+    "COURSE_TEACHERS_BEFORE_HIERARCHY_OFF": "Turn off \"Several teachers\" only when this halaqa has one active teacher. Remove the extra teachers in the Teachers section, then try again.",
+    "COURSE_GROUPS_BEFORE_TOGGLE_OFF": "Turn this off only after deleting all groups on this halaqa.",
+    "COURSE_GROUPS_NEED_HIERARCHY": "Turn on \"Several teachers\" before enabling groups.",
     "RATE_LIMITED": "Too many attempts. Wait a minute and try again.",
     "INTERNAL_ERROR": "Something went wrong. Try again.",
-    "UNAVAILABLE": "An outside service did not answer. Try again in a minute."
+    "UNAVAILABLE": "An outside service did not answer. Try again in a minute.",
+    "unexpectedTitle": "Something went wrong",
+    "unexpectedBody": "Reload the page or go back to the lobby. If this keeps happening, tell the mosque office.",
+    "reload": "Reload",
+    "devDetails": "Developer details (dev only)"
   },
   "prayer": {
     "city": "City",
@@ -275,8 +627,39 @@
     "empty": "No courses here yet.",
     "create": "New course",
     "createHint": "New courses start as drafts. Add teachers, students and a schedule, then make it active.",
+    "todaySession": "Today's session",
     "name": "Name",
     "typeLabel": "Type",
+    "typeCard": {
+      "MEMORIZATION": {
+        "title": "Memorization halaqa",
+        "hint": "Attendance, recitation and points"
+      },
+      "EXPLANATION": {
+        "title": "Knowledge halaqa",
+        "hint": "Attendance and curriculum lessons with materials"
+      },
+      "BOTH": {
+        "title": "Memorization + knowledge",
+        "hint": "Free recitation and curriculum lessons in one attendance record"
+      }
+    },
+    "program": "Program (dawra)",
+    "programNone": "No program",
+    "programName": "Program name",
+    "programCreate": "Add program",
+    "programsTitle": "Programs (dawra)",
+    "programDatesUnset": "No dates set",
+    "programEmpty": "No halaqas in this program yet.",
+    "programSave": "Save program",
+    "programHalaqat": "Halaqas in this program",
+    "leadTeacher": "Teacher",
+    "teacherOptional": "None yet",
+    "moreDetails": "More details",
+    "tab": {
+      "courses": "Halaqas",
+      "programs": "Programs"
+    },
     "location": "Location",
     "startDate": "Start date",
     "endDate": "End date",
@@ -407,6 +790,7 @@
     "offset": "Minutes after the adhan",
     "todayAt": "today at",
     "weekday": "Day",
+    "daysLabel": "Class days",
     "weekdays": {
       "0": "Sunday",
       "1": "Monday",
@@ -440,6 +824,31 @@
     "students": "{{count}} students",
     "markAllPresent": "Mark all present",
     "log": "Log",
+    "hifz": "Recitation",
+    "quickLog": "Quick log",
+    "logRecitation": "Adjust recitation",
+    "hifzTitle": "Recitation log",
+    "attendance": "Attendance",
+    "backToAttendance": "Back to attendance",
+    "pickStudent": "Choose a student from the list.",
+    "noMemorizationMaterial": "This course has no memorization material.",
+    "rangeSummary": "From {{fromSurah}} {{fromAyah}} (p. {{fromPage}}) to {{toSurah}} {{toAyah}} (p. {{toPage}})",
+    "logMode": {
+      "AYAHS": "Ayahs",
+      "PAGE": "Page",
+      "SURAH": "Surah"
+    },
+    "continueFrom": "From {{surah}} · ayah {{ayah}}",
+    "editStart": "Change start",
+    "endAyah": "To ayah",
+    "untilAnotherSurah": "Through another surah",
+    "shortcut": {
+      "endOfPage": "End of page",
+      "endOfSurah": "End of surah",
+      "thisPage": "This page",
+      "wholeSurah": "Whole surah",
+      "toSurah": "To surah…"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "last": "Last: page {{page}}, {{surah}} {{ayah}}",
@@ -456,8 +865,29 @@
     "type": {
       "NEW": "New",
       "REVISION": "Revision",
+      "INITIAL": "Starting level",
       "TEST": "Test"
     },
+    "rangeMode": {
+      "AYAH": "Ayah",
+      "PAGE": "Page",
+      "SURAH_PAGE": "Pages in surah"
+    },
+    "loggedToday": "Logged today",
+    "juzTest": "Juz test",
+    "juz": "Juz",
+    "score": "Score",
+    "saveTest": "Save test",
+    "passMarkHint": "Pass mark for this course: {{mark}}",
+    "testFailed": "Could not save the test.",
+    "bookProgress": "Class at page {{page}} of {{total}}",
+    "todayEntries": "Today's entries",
+    "pendingEntry": "Waiting to sync",
+    "undoPending": "Remove",
+    "voidLog": "Void",
+    "voidReason": "Corrected in class",
+    "voidFailed": "Could not void this entry.",
+    "voidNeedsOnline": "Sign in online to void a synced entry.",
     "grade": {
       "EXCELLENT": "Excellent",
       "VERY_GOOD": "Very good",
@@ -471,9 +901,26 @@
     "toAyah": "To ayah",
     "fromPage": "From page",
     "toPage": "To page",
+    "from": "From",
+    "to": "To",
+    "rangeSection": "Recitation range",
+    "pickUnit": {
+      "PAGE": "Page",
+      "SURAH": "Surah",
+      "JUZ": "Juz"
+    },
+    "pickStartSurah": "Start at surah",
+    "stepPage": "Page",
+    "stepSurah": "Surah",
+    "rangeStats": "{{pages}} pages · {{ayahs}} ayahs",
+    "didntPass": "Did not pass (saved, does not count)",
+    "didntPassShort": "did not count",
     "mistakes": "Mistakes",
     "note": "Note",
     "invalidRange": "That ayah range does not exist.",
+    "saveFailed": "Could not queue this entry. Refresh the class list and try again.",
+    "lastPositionHeading": "Last position",
+    "continueFromHere": "Continue from here",
     "explanation": "Pages explained in this class",
     "fewerMistakes": "Fewer mistakes",
     "moreMistakes": "More mistakes",
@@ -585,10 +1032,41 @@
     "attempts_one": "{{count}} attempt",
     "attempts_other": "{{count}} attempts"
   },
+  "announcements": {
+    "composeTitle": "Send a message",
+    "targetType": "Audience",
+    "title": "Title",
+    "body": "Message",
+    "send": "Send",
+    "pickCourses": "Halaqas",
+    "pickCourseForGroups": "Halaqa",
+    "pickGroups": "Groups",
+    "pickMembers": "Members",
+    "pickTags": "Tags",
+    "pickPrograms": "Programs (dawra)",
+    "pickRoles": "Roles",
+    "targets": {
+      "EVERYONE": "Everyone in the mosque",
+      "PROGRAMS": "One or more programs (dawra)",
+      "COURSES": "One or more halaqas",
+      "GROUPS": "Groups in a halaqa",
+      "MEMBERS": "Individual members",
+      "ROLES": "Everyone with a role",
+      "TAGS": "Members with a tag"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "empty": "Nothing new.",
     "markAll": "Mark all read",
+    "categories": {
+      "all": "All",
+      "attendance": "Attendance",
+      "homework": "Homework",
+      "progress": "Progress",
+      "schedule": "Schedule",
+      "announcements": "Messages"
+    },
     "passed": "passed",
     "failed": "did not pass",
     "ABSENCE_SUMMARY": {
@@ -622,6 +1100,49 @@
     "SESSION_NOT_TAKEN": {
       "title": "Attendance not taken",
       "body": "{{course}} on {{date}} ended with no attendance."
+    },
+    "ANNOUNCEMENT": {
+      "title": "{{title}}",
+      "body": "{{body}}"
+    },
+    "REPORT_CARD": {
+      "title": "Report card published",
+      "body": "{{student}} · {{course}} · {{periodStart}} – {{periodEnd}}"
+    }
+  },
+  "hifz": {
+    "mapTitle": "Quran memorization map",
+    "mapHint": "Filled ajza are fully memorized (new + initial logs). Ring shows the latest in-class juz test.",
+    "juzMemorized": "Juz {{juz}} memorized",
+    "juzEmpty": "Juz {{juz}} not complete",
+    "juzTestTooltip": "Juz {{juz}}: score {{score}}, {{passed, select, true {passed} other {not passed}}}",
+    "awqafTooltip": "Awqaf juz {{juz}} ({{level}}): {{passed, select, true {passed} other {failed}}}",
+    "legendMemorized": "Memorized",
+    "legendTestPass": "Latest test",
+    "legendAwqaf": "Awqaf exam",
+    "initialTitle": "Starting level",
+    "initialHint": "Record what the student already knew before this mosque (staff only).",
+    "addInitial": "Add starting level",
+    "awqafTitle": "Official Awqaf exams",
+    "awqafHint": "Separate from in-class juz tests. Each sitting keeps every juz result.",
+    "awqafLevel": "Exam level",
+    "passed": "Passed",
+    "yes": "Yes",
+    "no": "No",
+    "recordAwqaf": "Record exam",
+    "recentLogs": "Recent memorization",
+    "noLogs": "No logs yet.",
+    "halaqaWallTitle": "Today's halaqa",
+    "kindsTitle": "Custom recitation types",
+    "kindsHint": "Extra buttons in class mode; each logs as new memorization and fills the map.",
+    "kindName": "Type name",
+    "noKinds": "No custom types yet.",
+    "level": {
+      "AJZA_3": "3 ajza",
+      "AJZA_5": "5 ajza",
+      "AJZA_10": "10 ajza",
+      "AJZA_15": "15 ajza",
+      "KHATMAH": "Khatmah"
     }
   },
   "theme": {

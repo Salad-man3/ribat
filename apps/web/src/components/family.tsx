@@ -11,7 +11,9 @@ import { apiFetch } from '../api/api-fetch';
 import { formatDate, formatTimeRange, today } from '../lib/domain';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
+import { NavButton } from './ui/nav-button';
 import { Badge, Card, Empty, ErrorText, Field, inputClass } from './ui/form';
+import { HifzMap } from './HifzMap';
 
 export function useSchedule() {
   return useQuery({
@@ -26,6 +28,50 @@ export function useProgress(memberId: string | null | undefined) {
     queryFn: () => apiFetch<MemberProgressResponse>(`/api/v1/members/${memberId}/progress`),
     enabled: !!memberId,
   });
+}
+
+/** Today's teaching sessions: quick attendance vs tasmīʿ (PERM-06 class mode). */
+export function TodayTeachingCard() {
+  const { t, i18n } = useTranslation();
+  const schedule = useSchedule();
+  const day = today();
+  const rows = (schedule.data?.entries ?? []).filter(
+    (e) => e.date === day && e.role === 'TEACHING' && e.status !== 'CANCELLED',
+  );
+  if (!rows.length) return null;
+  return (
+    <Card title={t('member.todayHalaqa')}>
+      <ul className="grid gap-3">
+        {rows.map((e) => (
+          <li
+            key={e.sessionId}
+            className="grid gap-2 rounded-xl border border-accent/30 bg-accent-soft/40 p-3"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold">{e.courseName}</span>
+              <span className="text-xs text-muted">
+                {formatTimeRange(e.startsAt, e.endsAt, i18n.language, schedule.data?.timezone)}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <NavButton
+                to={`/teach/${e.sessionId}`}
+                className="min-h-11 flex-1 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold hover:border-accent"
+              >
+                {t('classMode.attendance')}
+              </NavButton>
+              <NavButton
+                to={`/teach/${e.sessionId}/hifz`}
+                className="min-h-11 flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:opacity-90"
+              >
+                {t('classMode.hifz')}
+              </NavButton>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
 }
 
 /** WF-08 / decision 16.1: this week, day by day, Hijri and Gregorian. */
@@ -46,26 +92,47 @@ export function WeekTimetable({ filter, title }: { filter?: (e: ScheduleEntry) =
             <ul className="grid gap-1">
               {entries
                 .filter((e) => e.date === day)
-                .map((e) => (
-                  <li
-                    key={`${e.sessionId}:${e.memberId}:${e.role}`}
-                    className={cn(
-                      'flex flex-wrap items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-sm',
-                      e.status === 'CANCELLED' && 'text-muted line-through',
-                    )}
-                  >
-                    <span className="font-medium">{e.courseName}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs">
-                        {formatTimeRange(e.startsAt, e.endsAt, i18n.language, schedule.data?.timezone)}
+                .map((e) => {
+                  const row = (
+                    <>
+                      <span className="font-medium">{e.courseName}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-xs">
+                          {formatTimeRange(
+                            e.startsAt,
+                            e.endsAt,
+                            i18n.language,
+                            schedule.data?.timezone,
+                          )}
+                        </span>
+                        <Badge tone={e.role === 'TEACHING' ? 'accent' : 'neutral'}>
+                          {e.role === 'WARD' ? e.memberName : t(`family.role.${e.role}`)}
+                        </Badge>
+                        {e.status === 'CANCELLED' ? (
+                          <Badge tone="danger">{t('family.cancelled')}</Badge>
+                        ) : null}
                       </span>
-                      <Badge tone={e.role === 'TEACHING' ? 'accent' : 'neutral'}>
-                        {e.role === 'WARD' ? e.memberName : t(`family.role.${e.role}`)}
-                      </Badge>
-                      {e.status === 'CANCELLED' ? <Badge tone="danger">{t('family.cancelled')}</Badge> : null}
-                    </span>
-                  </li>
-                ))}
+                    </>
+                  );
+                  const className = cn(
+                    'flex w-full flex-wrap items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-sm',
+                    e.status === 'CANCELLED' && 'text-muted line-through',
+                    e.role === 'TEACHING' &&
+                      e.status !== 'CANCELLED' &&
+                      'hover:bg-accent-soft',
+                  );
+                  return (
+                    <li key={`${e.sessionId}:${e.memberId}:${e.role}`}>
+                      {e.role === 'TEACHING' && e.status !== 'CANCELLED' ? (
+                        <NavButton to={`/teach/${e.sessionId}`} className={className}>
+                          {row}
+                        </NavButton>
+                      ) : (
+                        <div className={className}>{row}</div>
+                      )}
+                    </li>
+                  );
+                })}
             </ul>
           </li>
         ))}
@@ -86,11 +153,13 @@ const PILL: Record<Status, string> = {
   ABSENT: 'bg-danger-soft text-danger',
   EXCUSED: 'border border-line text-muted',
 };
-/** "Thursday 15 October": enough to place a class, without the Hijri date on every row. */
-const shortDate = (date: string, locale: string) =>
-  new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-
-export function ProgressPanel({ memberId }: { memberId: string }) {
+export function ProgressPanel({
+  memberId,
+  showExcuse = true,
+}: {
+  memberId: string;
+  showExcuse?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const progress = useProgress(memberId);
   if (progress.isError) return <ErrorText error={progress.error} />;
@@ -137,7 +206,7 @@ export function ProgressPanel({ memberId }: { memberId: string }) {
               {p.recentAttendance.slice(0, 6).map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 border-b border-line py-2 last:border-0">
                   <span>
-                    {shortDate(a.date, i18n.language)}
+                    {formatDate(a.date, i18n.language)}
                     {p.courses.length > 1 ? <span className="text-muted"> · {a.courseName}</span> : null}
                   </span>
                   <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', PILL[a.status])}>
@@ -151,6 +220,7 @@ export function ProgressPanel({ memberId }: { memberId: string }) {
       </Card>
 
       <Card title={t('family.memorization')}>
+        {p.hifz ? <HifzMap hifz={p.hifz} /> : null}
         {p.summaries.length === 0 ? <Empty>{t('classMode.noPosition')}</Empty> : null}
         <ul className="grid gap-2 text-sm">
           {p.summaries.map((s) => (
@@ -201,10 +271,28 @@ export function ProgressPanel({ memberId }: { memberId: string }) {
         </ul>
       </Card>
 
-      <Card title={t('excuses.title')}>
-        <ExcuseForm memberId={memberId} />
-        {p.excuses.length ? (
-          <ul className="mt-3 grid gap-1 text-sm">
+      {showExcuse ? (
+        <Card title={t('excuses.title')}>
+          <ExcuseForm memberId={memberId} />
+          {p.excuses.length ? (
+            <ul className="mt-3 grid gap-1 text-sm">
+              {p.excuses.map((x) => (
+                <li key={x.id} className="flex justify-between gap-2">
+                  <span>
+                    {formatDate(x.fromDate, i18n.language)}
+                    {x.toDate !== x.fromDate ? ` – ${formatDate(x.toDate, i18n.language)}` : ''} · {x.reason}
+                  </span>
+                  <Badge tone={x.status === 'ACCEPTED' ? 'accent' : x.status === 'REJECTED' ? 'danger' : 'neutral'}>
+                    {t(`excuses.status.${x.status}`)}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
+      ) : p.excuses.length ? (
+        <Card title={t('excuses.title')}>
+          <ul className="grid gap-1 text-sm">
             {p.excuses.map((x) => (
               <li key={x.id} className="flex justify-between gap-2">
                 <span>
@@ -217,8 +305,8 @@ export function ProgressPanel({ memberId }: { memberId: string }) {
               </li>
             ))}
           </ul>
-        ) : null}
-      </Card>
+        </Card>
+      ) : null}
     </div>
   );
 }

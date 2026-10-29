@@ -4,6 +4,7 @@ import { toDateString } from '../common/zoned-time';
 import { identitiesOf, notify, withGuardians } from '../notifications/notify';
 import type { OrgTx } from '../prisma/prisma.service';
 import type { EventPayload, EventType } from './emit';
+import { resolveAnnouncementMemberIdsForDelivery } from '../announcements/announcement-audience';
 
 type Handler = (tx: OrgTx, event: DomainEvent, p: EventPayload) => Promise<void>;
 const str = (v: EventPayload[string]) => (typeof v === 'string' ? v : '');
@@ -159,6 +160,63 @@ export const HANDLERS: Record<string, Handler> = {
     );
   },
 
+  'notify.announcement': async (tx, event, p) => {
+    const row = await tx.announcement.findFirst({ where: { id: str(p.announcementId) } });
+    if (!row) return;
+    const memberIds = await resolveAnnouncementMemberIdsForDelivery(tx, row);
+    if (memberIds.length === 0) return;
+    await notify(
+      tx,
+      event.organizationId,
+      await identitiesOf(tx, await withGuardians(tx, memberIds)),
+      {
+        type: 'ANNOUNCEMENT',
+        params: { title: row.title, body: row.body },
+        entityType: 'announcement',
+        entityId: row.id,
+      },
+      `${event.id}:announcement`,
+    );
+  },
+
+  /** WF-12: guardian, student, and teacher when a report card is published. */
+  'notify.reportCard': async (tx, event, p) => {
+    const card = await tx.reportCard.findFirst({
+      where: { id: str(p.reportId) },
+      include: { member: true, course: { select: { name: true } } },
+    });
+    if (!card) return;
+    const teacherIds = card.courseId
+      ? (
+          await tx.teachingAssignment.findMany({
+            where: { courseId: card.courseId, endedAt: null },
+            select: { teacherMemberId: true },
+          })
+        ).map((t) => t.teacherMemberId)
+      : [];
+    const recipients = await identitiesOf(
+      tx,
+      await withGuardians(tx, [card.memberId, ...teacherIds]),
+    );
+    await notify(
+      tx,
+      event.organizationId,
+      recipients,
+      {
+        type: 'REPORT_CARD',
+        params: {
+          student: memberName(card.member),
+          course: card.course?.name ?? null,
+          periodStart: toDateString(card.periodStart),
+          periodEnd: toDateString(card.periodEnd),
+        },
+        entityType: 'report_card',
+        entityId: card.id,
+      },
+      `${event.id}:report`,
+    );
+  },
+
   /** WF-10: enrollments close, logins stop; history stays. Every step is a no-op the second time. */
   'members.closeOnArchive': async (tx, _event, p) => {
     const memberId = str(p.memberId);
@@ -186,4 +244,6 @@ export const SUBSCRIPTIONS: Record<EventType, (keyof typeof HANDLERS)[]> = {
   'session.cancelled': ['notify.sessionCancelled'],
   'excuse.decided': ['notify.excuseDecided'],
   'member.archived': ['members.closeOnArchive'],
+  'announcement.sent': ['notify.announcement'],
+  'report.published': ['notify.reportCard'],
 };

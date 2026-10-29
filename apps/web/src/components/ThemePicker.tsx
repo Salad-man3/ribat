@@ -22,7 +22,13 @@ function Preview({ id, className }: { id: string; className?: string }) {
   );
 }
 
-export function ThemePicker({ className }: { className?: string }) {
+export function ThemePicker({
+  className,
+  variant = 'ghost',
+}: {
+  className?: string;
+  variant?: 'primary' | 'ghost' | 'danger' | 'chrome';
+}) {
   const { t } = useTranslation();
   const { theme, setTheme, pattern, setPattern } = useTheme();
   const id = useId();
@@ -43,7 +49,7 @@ export function ThemePicker({ className }: { className?: string }) {
   return (
     <>
       <Button
-        variant="ghost"
+        variant={variant}
         className={className}
         popoverTarget={id}
         aria-haspopup="dialog"

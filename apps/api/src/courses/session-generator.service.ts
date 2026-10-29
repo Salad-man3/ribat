@@ -3,6 +3,7 @@ import { addDays, dateIn, toDateString } from '../common/zoned-time';
 import { toOrganizationResponse } from '../organizations/organization.mapper';
 import type { PrayerSettings } from '../prayer-times/compute';
 import { PrismaService } from '../prisma/prisma.service';
+import { courseSessionWindow } from './course-window';
 import { generateSessions } from './generate';
 
 /** T211: sessions exist four weeks ahead. */
@@ -37,6 +38,11 @@ export class SessionGeneratorService {
     const course = await db.course.findFirst({ where: { id: courseId } });
     if (!course) return { created: 0, removed: 0 };
 
+    const program = course.programId
+      ? await db.program.findFirst({ where: { id: course.programId } })
+      : null;
+    const window = courseSessionWindow(course, program);
+
     const settings = await this.settingsFor(organizationId);
     const today = dateIn(new Date(), settings.timezone);
     const now = new Date();
@@ -49,10 +55,7 @@ export class SessionGeneratorService {
       ]);
       wanted = generateSessions({
         settings,
-        course: {
-          startDate: course.startDate ? toDateString(course.startDate) : null,
-          endDate: course.endDate ? toDateString(course.endDate) : null,
-        },
+        course: window,
         rules: rules.map((r) => ({
           ...r,
           effectiveFrom: toDateString(r.effectiveFrom),

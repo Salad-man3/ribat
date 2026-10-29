@@ -5,6 +5,12 @@ import { MembersRepository } from './members.repository';
 
 const audit = { record: jest.fn() } as unknown as AuditService;
 const households = { siblingIds: jest.fn().mockResolvedValue([]) } as unknown as import('../households/households.service').HouseholdsService;
+const prisma = {
+    forOrganization: () => ({
+        enrollment: { findMany: jest.fn().mockResolvedValue([]) },
+        teachingAssignment: { findMany: jest.fn().mockResolvedValue([]) },
+    }),
+} as unknown as import('../prisma/prisma.service').PrismaService;
 const auditCtx = {
     organizationId: '11111111-1111-1111-1111-111111111111',
     actorIdentityId: '33333333-3333-3333-3333-333333333333',
@@ -39,14 +45,32 @@ describe('MembersService', () => {
         createdAt: new Date('2024-09-01T10:00:00.000Z'),
         updatedAt: new Date('2024-09-01T10:00:00.000Z'),
         archivedAt: null,
+        customValues: {},
     };
+
+    const customFields = {
+        sanitizeForCreate: jest.fn().mockResolvedValue({}),
+        sanitizeForUpdate: jest.fn().mockResolvedValue({}),
+    } as unknown as import('../custom-fields/custom-fields.service').CustomFieldsService;
+    const tags = {
+        tagIdsByMember: jest.fn().mockResolvedValue(new Map()),
+        tagIdsForMember: jest.fn().mockResolvedValue([]),
+        setMemberTags: jest.fn().mockResolvedValue([]),
+    } as unknown as import('../tags/tags.service').TagsService;
 
     it('getById throws 404 for missing member', async () => {
         const repository = {
             findById: jest.fn().mockResolvedValue(null),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository, audit, households);
+        const service = new MembersService(
+            repository,
+            audit,
+            households,
+            prisma,
+            customFields,
+            tags,
+        );
 
         const org = {
             organizationId,
@@ -69,7 +93,14 @@ describe('MembersService', () => {
             }),
         } as unknown as MembersRepository;
 
-        const service = new MembersService(repository, audit, households);
+        const service = new MembersService(
+            repository,
+            audit,
+            households,
+            prisma,
+            customFields,
+            tags,
+        );
         const result = await service.archive(organizationId, memberId, auditCtx);
 
         expect(result.status).toBe('ARCHIVED');

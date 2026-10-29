@@ -13,18 +13,22 @@ import { Throttle } from '@nestjs/throttler';
 import {
   CreateMaterialLogSchema,
   CreateMemorizationLogSchema,
+  CreateRecitationKindSchema,
   CreateSessionSchema,
   CreateTestSchema,
   ListProgressQuerySchema,
+  ListSessionsQuerySchema,
   PostAttendanceSchema,
   SyncBatchSchema,
   UpdateSessionSchema,
   VoidLogSchema,
   type CreateMaterialLogInput,
   type CreateMemorizationLogInput,
+  type CreateRecitationKindInput,
   type CreateSessionInput,
   type CreateTestInput,
   type ListProgressQuery,
+  type ListSessionsQuery,
   type PostAttendanceInput,
   type SyncBatchInput,
   type SyncMutationInput,
@@ -41,8 +45,10 @@ import {
   type OrgContext,
 } from '../auth/org-context.guard';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
+import { CourseAccessService } from '../courses/course-access.service';
 import { ProgressReaderService } from './progress-reader.service';
 import { ProgressWriterService } from './progress-writer.service';
+import { RecitationKindsService } from './recitation-kinds.service';
 
 const id = new ParseUUIDPipe();
 
@@ -66,6 +72,8 @@ export class ProgressController {
   constructor(
     private readonly reader: ProgressReaderService,
     private readonly writer: ProgressWriterService,
+    private readonly recitationKinds: RecitationKindsService,
+    private readonly courseAccess: CourseAccessService,
   ) {}
 
   // Class kit and offline replay (05-offline-sync.md)
@@ -74,6 +82,16 @@ export class ProgressController {
   @OrgRoute()
   classKit(@CurrentOrg() org: OrgContext) {
     return this.reader.classKit(org);
+  }
+
+  @Get('courses/:id/halaqa-wall')
+  @OrgRoute()
+  async halaqaWall(
+    @CurrentOrg() org: OrgContext,
+    @Param('id', id) courseId: string,
+  ) {
+    await this.courseAccess.forStaffOrTeacher(org, courseId);
+    return this.reader.courseHalaqaWall(org, courseId);
   }
 
   /** SYNC-09…12: up to 200 mutations, each in its own transaction, in the order sent. */
@@ -97,6 +115,22 @@ export class ProgressController {
   }
 
   // Sessions and attendance
+
+  @Get('sessions')
+  @OrgRoute('courses.manage')
+  listStaffSessions(
+    @CurrentOrg() org: OrgContext,
+    @Query(createZodValidationPipe(ListSessionsQuerySchema))
+    query: ListSessionsQuery,
+  ) {
+    return this.reader.listStaffSessions(org, query);
+  }
+
+  @Get('staff/today-overview')
+  @OrgRoute('courses.manage')
+  staffTodayOverview(@CurrentOrg() org: OrgContext) {
+    return this.reader.staffTodayOverview(org);
+  }
 
   @Post('courses/:id/sessions')
   @OrgRoute()
@@ -207,6 +241,34 @@ export class ProgressController {
     @Body(createZodValidationPipe(CreateTestSchema)) body: CreateTestInput,
   ) {
     return this.writer.recordTest(org, audit, body);
+  }
+
+  @Get('recitation-kinds')
+  @OrgRoute('members.manage')
+  listRecitationKinds(@CurrentOrg() org: OrgContext) {
+    return this.recitationKinds.list(org.organizationId);
+  }
+
+  @Post('recitation-kinds')
+  @OrgRoute('members.manage')
+  createRecitationKind(
+    @CurrentOrg() org: OrgContext,
+    @CurrentAudit() audit: AuditContext,
+    @Body(createZodValidationPipe(CreateRecitationKindSchema))
+    body: CreateRecitationKindInput,
+  ) {
+    return this.recitationKinds.create(org.organizationId, body, audit);
+  }
+
+  @Post('recitation-kinds/:id/archive')
+  @HttpCode(200)
+  @OrgRoute('members.manage')
+  archiveRecitationKind(
+    @CurrentOrg() org: OrgContext,
+    @CurrentAudit() audit: AuditContext,
+    @Param('id', id) kindId: string,
+  ) {
+    return this.recitationKinds.archive(org.organizationId, kindId, audit);
   }
 
   // Explanation pages

@@ -48,6 +48,7 @@ export type LedgerRow = {
   ayahEnd: number | null;
   pageFrom: number;
   pageTo: number;
+  countsProgress: boolean;
   loggedAt: Date;
 };
 
@@ -69,7 +70,9 @@ export function summarize(logs: LedgerRow[]): Summary {
   const sorted = [...logs].sort(
     (a, b) => a.loggedAt.getTime() - b.loggedAt.getTime(),
   );
-  const coverage = sorted.filter((l) => l.type === 'NEW' || l.type === 'INITIAL');
+  const coverage = sorted.filter(
+    (l) => (l.type === 'NEW' || l.type === 'INITIAL') && l.countsProgress,
+  );
 
   const pages = new Set<number>();
   for (const l of coverage)
@@ -84,12 +87,13 @@ export function summarize(logs: LedgerRow[]): Summary {
   const ayahs = mergeRanges(ranges).reduce((n, r) => n + ayahsInRange(r), 0);
 
   const last = coverage.at(-1);
+  const lastActivity = sorted.at(-1);
   return {
     pagesMemorized: pages.size,
     ayahsMemorized: ayahs,
     lastPageReached: last?.pageTo ?? null,
     lastSurah: last?.surahEnd ?? null,
     lastAyah: last?.ayahEnd ?? null,
-    lastLoggedAt: sorted.at(-1)?.loggedAt ?? null,
+    lastLoggedAt: lastActivity?.loggedAt ?? null,
   };
 }

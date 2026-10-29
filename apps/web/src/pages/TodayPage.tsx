@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import { Badge, Empty } from '../components/ui/form';
 import { cn } from '../lib/utils';
 import { formatDate, formatTimeRange } from '../lib/domain';
@@ -45,9 +45,9 @@ export function TodayPage() {
             const current = Date.parse(s.startsAt) <= now && now < Date.parse(s.endsAt);
             return (
             <li key={s.id}>
-              <Link
+              <NavButton
                 to={`/teach/${s.id}`}
-                className={cn('flex items-center justify-between gap-3 rounded-2xl border bg-surface p-4 hover:border-accent', current ? 'border-accent ring-2 ring-accent/30' : 'border-line')}
+                className={cn('flex w-full items-center justify-between gap-3 rounded-2xl border bg-surface p-4 text-start hover:border-accent', current ? 'border-accent ring-2 ring-accent/30' : 'border-line')}
               >
                 <span className="grid">
                   <span className="flex items-center gap-2 font-semibold">
@@ -63,7 +63,7 @@ export function TodayPage() {
                   <Badge>{t('classMode.students', { count: s.roster.length })}</Badge>
                   {s.topic ? <span className="text-xs text-muted">{s.topic}</span> : null}
                 </span>
-              </Link>
+              </NavButton>
             </li>
             );
           })}

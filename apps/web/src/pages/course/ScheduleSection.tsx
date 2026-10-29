@@ -2,17 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
-  OrgPrayerTimesResponse,
   PauseResponse,
-  Prayer,
   PrayerTimes,
   ScheduleRule,
   ScheduleRuleResponse,
   SessionResponse,
-  TimePoint,
 } from '@ribat/shared';
 import { apiFetch } from '../../api/api-fetch';
 import { courseKey } from '../../api/courses';
+import {
+  describeTimePoint,
+  TimePointEditor,
+  useOrgPrayerTimes,
+} from '../../components/TimePointEditor';
 import { Button } from '../../components/ui/button';
 import {
   Card,
@@ -21,45 +23,18 @@ import {
   Field,
   inputClass,
 } from '../../components/ui/form';
-import {
-  formatDate,
-  formatTimeRange,
-  fromMinutes,
-  toMinutes,
-  WEEKDAYS,
-} from '../../lib/domain';
+import { formatDate, formatTimeRange, today, WEEKDAYS } from '../../lib/domain';
+import { NavButton } from '../../components/ui/nav-button';
 import type { SectionProps } from './types';
 
-const PRAYER_ANCHORS: Prayer[] = [
-  'FAJR',
-  'SUNRISE',
-  'DHUHR',
-  'ASR',
-  'MAGHRIB',
-  'ISHA',
-];
-
-/** Today's clock time for a point, using the mosque's prayer times. */
-function resolve(point: TimePoint, times?: PrayerTimes): string | null {
-  if (point.anchor === 'FIXED') return point.time;
-  if (!times) return null;
-  return fromMinutes(
-    toMinutes(times[point.prayer.toLowerCase() as keyof PrayerTimes]) +
-      point.offsetMin,
-  );
-}
-
-function useOrgTimes() {
-  return useQuery({
-    queryKey: ['organization', 'prayer-times'],
-    queryFn: () =>
-      apiFetch<OrgPrayerTimesResponse>('/api/v1/organization/prayer-times'),
-  });
-}
-
-export function ScheduleSection({ course, staff, writable }: SectionProps) {
+export function ScheduleSection({
+  course,
+  staff,
+  writable,
+  canOpenClass,
+}: SectionProps) {
   const { t, i18n } = useTranslation();
-  const orgTimes = useOrgTimes();
+  const orgTimes = useOrgPrayerTimes();
   const sessions = useQuery({
     queryKey: courseKey(course.id, 'sessions'),
     queryFn: () =>
@@ -96,101 +71,33 @@ export function ScheduleSection({ course, staff, writable }: SectionProps) {
           <Empty>{t('sessions.empty')}</Empty>
         ) : null}
         <ul className="grid max-h-[28rem] gap-1 overflow-y-auto text-sm">
-          {(sessions.data ?? []).map((s) => (
-            <li
-              key={s.id}
-              className="flex justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-paper"
-            >
-              <span>{formatDate(s.date, i18n.language)}</span>
-              <span className="tabular-nums text-muted">
-                {formatTimeRange(s.startsAt, s.endsAt, i18n.language, timeZone)}
-              </span>
-            </li>
-          ))}
+          {(sessions.data ?? []).map((s) => {
+            const isToday =
+              s.date === today() && s.status !== 'CANCELLED';
+            return (
+              <li
+                key={s.id}
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-paper"
+              >
+                <span>{formatDate(s.date, i18n.language)}</span>
+                <span className="flex items-center gap-2 tabular-nums text-muted">
+                  {formatTimeRange(s.startsAt, s.endsAt, i18n.language, timeZone)}
+                  {isToday && canOpenClass ? (
+                    <NavButton
+                      to={`/teach/${s.id}`}
+                      className="text-xs font-semibold text-accent"
+                    >
+                      {t('staff.openClass')}
+                    </NavButton>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </Card>
     </div>
   );
-}
-
-function PointEditor({
-  value,
-  onChange,
-  times,
-}: {
-  value: TimePoint;
-  onChange: (p: TimePoint) => void;
-  times?: PrayerTimes;
-}) {
-  const { t } = useTranslation();
-  const preview = resolve(value, times);
-  return (
-    <div className="grid gap-1">
-      <div className="flex flex-wrap gap-1">
-        <select
-          aria-label={t('schedule.anchor')}
-          className={`${inputClass} w-auto`}
-          value={value.anchor === 'FIXED' ? 'FIXED' : value.prayer}
-          onChange={(e) =>
-            onChange(
-              e.target.value === 'FIXED'
-                ? { anchor: 'FIXED', time: preview ?? '16:00' }
-                : {
-                    anchor: 'PRAYER',
-                    prayer: e.target.value as Prayer,
-                    offsetMin: value.anchor === 'PRAYER' ? value.offsetMin : 0,
-                  },
-            )
-          }
-        >
-          <option value="FIXED">{t('schedule.fixed')}</option>
-          {PRAYER_ANCHORS.map((p) => (
-            <option key={p} value={p}>
-              {t(`organization.prayers.${p.toLowerCase()}`)}
-            </option>
-          ))}
-        </select>
-        {value.anchor === 'FIXED' ? (
-          <input
-            type="time"
-            dir="ltr"
-            aria-label={t('schedule.time')}
-            className={`${inputClass} w-auto`}
-            value={value.time}
-            onChange={(e) =>
-              e.target.value && onChange({ ...value, time: e.target.value })
-            }
-          />
-        ) : (
-          <input
-            type="number"
-            dir="ltr"
-            step={5}
-            aria-label={t('schedule.offset')}
-            title={t('schedule.offset')}
-            className={`${inputClass} w-20`}
-            value={value.offsetMin}
-            onChange={(e) =>
-              onChange({ ...value, offsetMin: Number(e.target.value) })
-            }
-          />
-        )}
-      </div>
-      {value.anchor === 'PRAYER' && preview ? (
-        <span className="text-xs text-muted">
-          {t('schedule.todayAt')} <span dir="ltr">{preview}</span>
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function describe(point: TimePoint, t: (k: string) => string) {
-  if (point.anchor === 'FIXED') return point.time;
-  const offset = point.offsetMin
-    ? ` ${point.offsetMin > 0 ? '+' : ''}${point.offsetMin}′`
-    : '';
-  return `${t(`organization.prayers.${point.prayer.toLowerCase()}`)}${offset}`;
 }
 
 function RulesCard({
@@ -262,7 +169,8 @@ function RulesCard({
                 {t(`schedule.weekdays.${rule.weekday}`)}
               </span>
               <span>
-                {describe(rule.start, t)} → {describe(rule.end, t)}
+                {describeTimePoint(rule.start, t)} →{' '}
+                {describeTimePoint(rule.end, t)}
               </span>
             </li>
           ))}
@@ -298,14 +206,14 @@ function RulesCard({
                 ))}
               </select>
               <Field label={t('schedule.from')} className="text-xs">
-                <PointEditor
+                <TimePointEditor
                   value={rule.start}
                   times={times}
                   onChange={(start) => update(index, { ...rule, start })}
                 />
               </Field>
               <Field label={t('schedule.to')} className="text-xs">
-                <PointEditor
+                <TimePointEditor
                   value={rule.end}
                   times={times}
                   onChange={(end) => update(index, { ...rule, end })}

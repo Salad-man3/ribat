@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import { redeemSetup } from '../api/auth';
 import { Button } from '../components/ui/button';
 import { ErrorText, Field, inputClass } from '../components/ui/form';
@@ -74,12 +75,12 @@ export function PasswordSetupPage() {
         <Button type="submit" disabled={submit.isPending}>
           {t('auth.createPassword')}
         </Button>
-        <Link
-          className="text-center text-sm text-accent underline underline-offset-4"
+        <NavButton
+          className="w-full text-center text-sm text-accent underline underline-offset-4"
           to="/login"
         >
           {t('auth.backToLogin')}
-        </Link>
+        </NavButton>
       </form>
     </AuthLayout>
   );

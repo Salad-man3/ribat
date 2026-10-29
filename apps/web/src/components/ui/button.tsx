@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'ghost' | 'danger' | 'chrome';
 };
 
 export function Button({
@@ -22,6 +22,8 @@ export function Button({
           'border border-line bg-surface text-ink hover:bg-paper',
         variant === 'danger' &&
           'border border-danger/30 bg-danger-soft text-danger hover:bg-danger hover:text-surface',
+        variant === 'chrome' &&
+          'border-transparent bg-transparent text-chrome-ink hover:bg-white/10',
         className,
       )}
       {...props}

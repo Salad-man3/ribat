@@ -14,7 +14,7 @@ import type { Request } from 'express';
 import { AuditService } from '../audit/audit.service';
 import { auditContextFromOrg, requestIdFrom, type AuditContext } from '../audit/audit-context';
 import { PrismaService } from '../prisma/prisma.service';
-import { isStaff, permissionsFor } from './permissions';
+import { permissionsForMembershipContext } from './membership-permissions';
 import { SessionGuard } from './session.guard';
 import type { SessionContext } from './sessions.service';
 
@@ -62,6 +62,7 @@ export class OrgContextGuard implements CanActivate {
                 organizationId: true,
                 memberId: true,
                 role: true,
+                organization: { select: { settings: true } },
             },
         });
 
@@ -70,15 +71,40 @@ export class OrgContextGuard implements CanActivate {
         }
 
         const membership = memberships[0];
+        const tagPermissionsJson =
+            membership.memberId === null
+                ? []
+                : (
+                      await this.prisma.platform.memberTag.findMany({
+                          where: {
+                              memberId: membership.memberId,
+                              organizationId: membership.organizationId,
+                          },
+                          select: { tag: { select: { permissions: true } } },
+                      })
+                  ).map((row) => row.tag.permissions);
+
         const viewForPerms = session.activeView;
-        const permissions = permissionsFor(membership.role, viewForPerms);
+        const permissions = permissionsForMembershipContext({
+            role: membership.role,
+            activeView: viewForPerms,
+            organizationSettings: membership.organization.settings,
+            tagPermissionsJson,
+        });
+
+        const canUseAdminView = permissionsForMembershipContext({
+            role: membership.role,
+            activeView: 'ADMIN',
+            organizationSettings: membership.organization.settings,
+            tagPermissionsJson,
+        }).length > 0;
 
         req.org = {
             organizationId: membership.organizationId,
             membershipId: membership.id,
             memberId: membership.memberId,
             role: membership.role,
-            activeView: isStaff(membership.role) ? session.activeView : null,
+            activeView: canUseAdminView ? session.activeView : null,
             permissions,
         };
 
@@ -92,21 +118,12 @@ export class OrgContextGuard implements CanActivate {
             );
             if (missing) {
                 await this.audit.record(
+                    auditContextFromOrg(req.org, session.identityId, requestIdFrom(req)),
                     {
-                        organizationId: membership.organizationId,
-                        actorIdentityId: session.identityId,
-                        actorMembershipId: membership.id,
-                        requestId: requestIdFrom(req),
-                    },
-                    {
-                        action: 'permission.denied',
-                        entityType: 'route',
+                        action: 'auth.permission_denied',
+                        entityType: 'membership',
                         entityId: membership.id,
-                        after: {
-                            required,
-                            method: req.method,
-                            path: req.path,
-                        },
+                        after: { required },
                     },
                 );
                 throw forbidden();
@@ -117,28 +134,25 @@ export class OrgContextGuard implements CanActivate {
     }
 }
 
-export function OrgRoute(...permissions: S1Permission[]) {
-    return applyDecorators(
-        SetMetadata(REQUIRED_PERMISSIONS, permissions),
-        UseGuards(SessionGuard, OrgContextGuard),
-    );
-}
+export const OrgRoute = (...permissions: S1Permission[]) =>
+    applyDecorators(SetMetadata(REQUIRED_PERMISSIONS, permissions), UseGuards(SessionGuard, OrgContextGuard));
 
-export const CurrentOrg = createParamDecorator(
-    (_data: unknown, ctx: ExecutionContext): OrgContext => {
-        const request = ctx.switchToHttp().getRequest<Request & { org?: OrgContext }>();
-        if (!request.org) {
-            throw forbidden('Organization context required');
+export const CurrentOrg = createParamDecorator((_data: unknown, ctx: ExecutionContext): OrgContext => {
+    const req = ctx.switchToHttp().getRequest<Request & { org?: OrgContext }>();
+    if (!req.org) {
+        throw forbidden('No organization context');
+    }
+    return req.org;
+});
+
+export const CurrentAudit = createParamDecorator(
+    (_data: unknown, ctx: ExecutionContext): AuditContext => {
+        const req = ctx.switchToHttp().getRequest<
+            Request & { auth?: SessionContext; org?: OrgContext }
+        >();
+        if (!req.auth || !req.org) {
+            throw forbidden('No organization context');
         }
-        return request.org;
+        return auditContextFromOrg(req.org, req.auth.identityId, requestIdFrom(req));
     },
 );
-
-/** The audit context for an @OrgRoute handler: the org, the signed-in identity and the request id. */
-export const CurrentAudit = createParamDecorator((_data: unknown, ctx: ExecutionContext): AuditContext => {
-    const request = ctx
-        .switchToHttp()
-        .getRequest<Request & { org?: OrgContext; auth?: SessionContext }>();
-    if (!request.org || !request.auth) throw forbidden('No active organization context');
-    return auditContextFromOrg(request.org, request.auth.identityId, requestIdFrom(request));
-});

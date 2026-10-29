@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { Queue, Worker, type Job } from 'bullmq';
 import type IORedis from 'ioredis';
 import { conflict, notFound } from '../common/errors';
@@ -9,16 +9,19 @@ import type { Env } from '../config/env';
 import { bullConnection } from '../jobs/sessions-queue';
 import { EveningService } from '../notifications/evening.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StatsRollupService } from '../stats/stats-rollup.service';
 import type { EventPayload, EventType } from './emit';
+import { EVENTS_QUEUE } from './events-queue';
 import { HANDLERS, SUBSCRIPTIONS } from './handlers';
 
-export const EVENTS_QUEUE = 'events';
+export { EVENTS_QUEUE };
 /** 07-events-and-jobs §3: retries after 10 s, 1 min, 5 min, 30 min; the fifth failure is a dead letter. */
 export const RETRY_DELAYS_MS = [10_000, 60_000, 300_000, 1_800_000];
 export const MAX_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 type DeliverJob = { deliveryId: string };
 type EveningJob = { organizationId: string };
+type StatsOrgJob = { organizationId: string };
 
 export type FailedDelivery = {
   id: string;
@@ -52,6 +55,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     @Inject(ENV) private readonly env: Env,
     private readonly prisma: PrismaService,
     private readonly evening: EveningService,
+    private readonly statsRollup: StatsRollupService,
   ) {
     this.connection = bullConnection(env);
     this.queue = new Queue(EVENTS_QUEUE, {
@@ -159,6 +163,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       return this.deliver((job.data as DeliverJob).deliveryId, job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
     }
     if (job.name === 'evening-org') return this.evening.run((job.data as EveningJob).organizationId);
+    if (job.name === 'stats-org') return this.statsRollup.run((job.data as StatsOrgJob).organizationId);
     throw new Error(`Unknown events job ${job.name}`);
   }
 

@@ -2,10 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
   CreateGuardianLinkInput,
   GuardianLinkResponse,
+  ListGuardianLinksQuery,
   MemberResponse,
+  StaffGuardianLinkRow,
 } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
+import { memberName } from '../courses/course.mapper';
 import { shapeMember } from '../members/member-shaping';
 import type { OrgContext } from '../auth/org-context.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +25,34 @@ export class GuardiansService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  async listForStaff(
+    organizationId: string,
+    query: ListGuardianLinksQuery,
+  ): Promise<StaffGuardianLinkRow[]> {
+    const db = this.prisma.forOrganization(organizationId);
+    const rows = await db.guardianLink.findMany({
+      include: {
+        guardianMember: true,
+        wardMember: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+    const search = query.search?.trim().toLowerCase();
+    return rows
+      .map((row) => ({
+        ...toGuardianLinkResponse(row),
+        guardianName: memberName(row.guardianMember),
+        wardName: memberName(row.wardMember),
+      }))
+      .filter((row) => {
+        if (!search) return true;
+        return (
+          row.guardianName.toLowerCase().includes(search) ||
+          row.wardName.toLowerCase().includes(search)
+        );
+      });
+  }
 
   async list(organizationId: string, wardMemberId: string): Promise<GuardianLinkResponse[]> {
     const ward = await this.prisma.forOrganization(organizationId).member.findFirst({

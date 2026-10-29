@@ -3,13 +3,21 @@ import { emit } from '../events/emit';
 import { Injectable } from '@nestjs/common';
 import type { Member, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateMemberInput, ListMembersQuery, UpdateMemberInput } from '@ribat/shared';
+import type {
+  CreateMemberInput,
+  CustomValues,
+  ListMembersQuery,
+  UpdateMemberInput,
+} from '@ribat/shared';
 
 @Injectable()
 export class MembersRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    create(organizationId: string, input: CreateMemberInput): Promise<Member> {
+    create(
+        organizationId: string,
+        input: CreateMemberInput & { customValues?: CustomValues },
+    ): Promise<Member> {
         return this.prisma.forOrganization(organizationId).member.create({
             data: {
                 organizationId,
@@ -30,6 +38,7 @@ export class MembersRepository {
                 highestEducation: input.highestEducation,
                 notes: input.notes,
                 householdId: input.householdId,
+                customValues: input.customValues ?? {},
             },
         });
     }
@@ -66,7 +75,11 @@ export class MembersRepository {
         });
     }
 
-    update(organizationId: string, id: string, input: UpdateMemberInput): Promise<Member | null> {
+    update(
+        organizationId: string,
+        id: string,
+        input: UpdateMemberInput & { customValues?: CustomValues },
+    ): Promise<Member | null> {
         return this.prisma.forOrganization(organizationId).member.updateMany({
             where: { id, status: 'ACTIVE' },
             data: {
@@ -87,6 +100,7 @@ export class MembersRepository {
                 highestEducation: input.highestEducation,
                 notes: input.notes,
                 householdId: input.householdId,
+                customValues: input.customValues,
             },
         }).then(async (result) => {
             if (result.count === 0) {

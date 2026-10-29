@@ -1,19 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
-import { SURAH_BY_NUMBER, SURAHs, validateRange } from '@ribat/quran-data';
-import type { AttendanceStatus, ClassKit, Grade, MemorizationSummaryResponse } from '@ribat/shared';
+import { useParams } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
+import { SURAH_BY_NUMBER } from '@ribat/quran-data';
+import type {
+  AttendanceStatus,
+  ClassKit,
+  MemorizationSummaryResponse,
+} from '@ribat/shared';
 import { Button } from '../components/ui/button';
 import { Empty, Field, inputClass } from '../components/ui/form';
 import { formatDate, formatTimeRange, normalizeArabic } from '../lib/domain';
 import { cn } from '../lib/utils';
-import { db } from '../offline/db';
-import { enqueue, useLive } from '../offline/outbox';
+import { db, type OutboxEntry } from '../offline/db';
+import { enqueue, syncNow, useLive } from '../offline/outbox';
+import { HifzJuzStrip } from '../components/HifzJuzStrip';
+import { HifzLogSheet } from '../components/HifzLogSheet';
+import { quickMemorizationLog } from '../lib/class-mode-quick-log';
 import { SyncStatus } from '../offline/SyncStatus';
 
 type KitSession = ClassKit['sessions'][number];
 type KitMaterial = ClassKit['materials'][number];
 type Student = KitSession['roster'][number];
+type OpenPanel = { enrollmentId: string; mode: 'test' | 'hifz' } | null;
 
 const TONE: Record<AttendanceStatus | 'none', string> = {
   none: 'border-line bg-surface text-muted',
@@ -24,8 +33,6 @@ const TONE: Record<AttendanceStatus | 'none', string> = {
 };
 
 const STATUSES: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
-const GRADES: Grade[] = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'REPEAT'];
-
 /** WF-05: attendance, recitations and explanation pages for one session, all through the outbox. */
 export function ClassSessionPage() {
   const { id } = useParams();
@@ -33,16 +40,21 @@ export function ClassSessionPage() {
   const data = useLive(async () => {
     const row = await db.kit.get('current');
     const kit = row?.kit;
-    // The session keeps its own date: after midnight it is still found in yesterday's kit.
     const session =
       kit?.sessions.find((s) => s.id === id) ?? row?.previous?.sessions.find((s) => s.id === id);
     const source = kit?.sessions.some((s) => s.id === id) ? kit : row?.previous;
-    const pending = (await db.outbox.orderBy('queuedAt').toArray()).filter(
-      (e) => 'sessionId' in e.payload ? e.payload.sessionId === id : e.type === 'memorization.log',
-    );
+    const courseId = session?.courseId;
+    const pending = (await db.outbox.orderBy('queuedAt').toArray()).filter((e) => {
+      if (e.type === 'attendance.mark' || e.type === 'material.log')
+        return e.payload.sessionId === id;
+      if (!courseId) return false;
+      if (e.type === 'memorization.log' || e.type === 'memorization.test')
+        return e.payload.courseId === courseId;
+      return false;
+    });
     return { session, kit: source, pending };
   }, [id]);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<OpenPanel>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   useEffect(() => {
@@ -50,30 +62,48 @@ export function ClassSessionPage() {
     const timer = setTimeout(() => setSaved(null), 3000);
     return () => clearTimeout(timer);
   }, [saved]);
+  useEffect(() => {
+    if (navigator.onLine) void syncNow();
+  }, []);
 
   if (!data) return null;
   const { session, kit, pending } = data;
   if (!session || !kit)
     return (
       <section className="grid gap-4">
-        <Link to="/teach" className="text-sm text-accent"><span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}</Link>
+        <NavButton to="/teach" className="text-sm text-accent"><span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}</NavButton>
         <Empty>{t('classMode.noKit')}</Empty>
       </section>
     );
 
-  // Local marks win over the kit until the server answers (decision 9.4 applies on refresh).
   const marks = new Map<string, AttendanceStatus>();
   for (const e of pending)
     if (e.type === 'attendance.mark') marks.set(e.payload.enrollmentId, e.payload.status);
   const statusOf = (s: Student) => marks.get(s.enrollmentId) ?? s.attendance ?? 'none';
-  const queuedLogs = (memberId: string) =>
-    pending.filter((e) => e.type === 'memorization.log' && e.payload.memberId === memberId && e.payload.courseId === session.courseId).length;
+
+  const pendingForMember = (memberId: string) =>
+    pending.filter(
+      (e) =>
+        (e.type === 'memorization.log' || e.type === 'memorization.test') &&
+        e.payload.memberId === memberId,
+    );
+
+  const syncedLogsFor = (memberId: string) =>
+    kit.todayLogs.filter((l) => l.memberId === memberId);
+
+  const loggedToday = (memberId: string) =>
+    syncedLogsFor(memberId).length > 0 || pendingForMember(memberId).length > 0;
 
   const materials = kit.materials.filter((m) => m.courseId === session.courseId);
   const memorization = materials.filter((m) => m.track === 'MEMORIZATION');
   const explanation = materials.filter((m) => m.track === 'EXPLANATION');
+  const quranMaterial = memorization.find((m) => m.kind === 'QURAN');
   const positionOf = (memberId: string, materialId: string) =>
     kit.positions.find((p) => p.memberId === memberId && p.materialId === materialId);
+  const juzMapOf = (memberId: string, materialId: string) =>
+    kit.memberHifzMaps?.find(
+      (m) => m.memberId === memberId && m.materialId === materialId,
+    )?.juzMemorized;
 
   const mark = (s: Student, status: AttendanceStatus) =>
     enqueue({ type: 'attendance.mark', payload: { sessionId: session.id, enrollmentId: s.enrollmentId, status } });
@@ -87,13 +117,15 @@ export function ClassSessionPage() {
 
   return (
     <section className="grid gap-4">
-      <Link to="/teach" className="text-sm text-accent"><span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}</Link>
-      <div>
-        <h1 className="text-2xl font-bold">{session.courseName}</h1>
-        <p className="text-sm text-muted">
-          {formatDate(session.date, i18n.language)} ·{' '}
-          {formatTimeRange(session.startsAt, session.endsAt, i18n.language, kit.timezone)}
-        </p>
+      <NavButton to="/teach" className="text-sm text-accent"><span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}</NavButton>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{session.courseName}</h1>
+          <p className="text-sm text-muted">
+            {formatDate(session.date, i18n.language)} ·{' '}
+            {formatTimeRange(session.startsAt, session.endsAt, i18n.language, kit.timezone)}
+          </p>
+        </div>
       </div>
       <SyncStatus />
 
@@ -109,29 +141,87 @@ export function ClassSessionPage() {
       ) : null}
 
       {shown.length === 0 ? <Empty>{t('classMode.noMatch')}</Empty> : null}
+      {quranMaterial && kit.memberHifzMaps?.length ? (
+        <p className="text-xs text-muted">{t('hifz.legendMemorized')}</p>
+      ) : null}
       <ul className="grid gap-2">
         {shown.map((s) => {
           const status = statusOf(s);
           const first = memorization[0];
           const position = first ? positionOf(s.memberId, first.materialId) : undefined;
-          const queued = queuedLogs(s.memberId);
+          const queued = pendingForMember(s.memberId).length;
+          const today = loggedToday(s.memberId);
+          const panelOpen = open?.enrollmentId === s.enrollmentId;
+          const juzMap =
+            first && first.kind === 'QURAN' ? juzMapOf(s.memberId, first.materialId) : undefined;
           return (
             <li key={s.enrollmentId} className="rounded-2xl border border-line bg-surface p-3">
               <div className="flex items-center gap-2">
                 <div className="grid min-w-0 flex-1">
                   <span dir="auto" className="truncate text-start font-medium">{s.name}</span>
                   <span className="truncate text-xs text-muted">
-                    {position ? describePosition(position, first, t, i18n.language) : t('classMode.noPosition')}
+                    {position && first ? describePosition(position, first, t, i18n.language) : t('classMode.noPosition')}
+                    {today ? ` · ${t('classMode.loggedToday')}` : ''}
                     {queued ? ` · ${t('classMode.queuedLogs', { count: queued })}` : ''}
                   </span>
                 </div>
-                {memorization.length ? (
-                  <Button variant="ghost" onClick={() => setOpen(open === s.enrollmentId ? null : s.enrollmentId)}>
-                    {t('classMode.log')}
-                  </Button>
+                {memorization.length && first ? (
+                  <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      className="min-h-11 px-2 text-sm font-semibold text-accent"
+                      disabled={today}
+                      onClick={() =>
+                        void quickMemorizationLog({
+                          memberId: s.memberId,
+                          courseId: session.courseId,
+                          materialId: first.materialId,
+                          materialKind: first.kind,
+                          position,
+                        }).then((ok) => {
+                          if (ok) setSaved(s.enrollmentId);
+                        })
+                      }
+                    >
+                      {t('classMode.quickLog')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="min-h-11 px-2 text-sm font-semibold"
+                      onClick={() =>
+                        setOpen(
+                          panelOpen && open?.mode === 'hifz'
+                            ? null
+                            : { enrollmentId: s.enrollmentId, mode: 'hifz' },
+                        )
+                      }
+                    >
+                      {t('classMode.logRecitation')}
+                    </Button>
+                    {quranMaterial ? (
+                      <Button
+                        variant="ghost"
+                        className="min-h-11 px-2"
+                        onClick={() =>
+                          setOpen(
+                            panelOpen && open?.mode === 'test'
+                              ? null
+                              : { enrollmentId: s.enrollmentId, mode: 'test' },
+                          )
+                        }
+                      >
+                        {t('classMode.juzTest')}
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
-              <div role="radiogroup" aria-label={s.name} className="mt-2 grid grid-cols-4 gap-1">
+              {juzMap ? (
+                <div className="mt-2">
+                  <HifzJuzStrip juzMemorized={juzMap} />
+                </div>
+              ) : null}
+              <div role="radiogroup" aria-label={s.name} className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
                 {STATUSES.map((st) => (
                   <button
                     key={st}
@@ -146,12 +236,28 @@ export function ClassSessionPage() {
                 ))}
               </div>
               {saved === s.enrollmentId ? <p role="status" className="mt-2 text-sm text-accent">{t('classMode.logSaved')}</p> : null}
-              {open === s.enrollmentId ? (
-                <LogForm
+              {panelOpen && open?.mode === 'hifz' && first ? (
+                <HifzLogSheet
+                  embedded
                   student={s}
                   courseId={session.courseId}
                   materials={memorization}
-                  positionOf={positionOf}
+                  recitationKinds={kit.recitationKinds}
+                  positionFor={(materialId) => positionOf(s.memberId, materialId)}
+                  syncedLogs={syncedLogsFor(s.memberId)}
+                  pending={pendingForMember(s.memberId)}
+                  onSaved={() => {
+                    setSaved(s.enrollmentId);
+                    setOpen(null);
+                  }}
+                />
+              ) : null}
+              {panelOpen && open?.mode === 'test' && quranMaterial ? (
+                <JuzTestForm
+                  student={s}
+                  courseId={session.courseId}
+                  materialId={quranMaterial.materialId}
+                  passMark={session.testPassMark}
                   onDone={(ok) => {
                     setOpen(null);
                     if (ok) setSaved(s.enrollmentId);
@@ -164,10 +270,10 @@ export function ClassSessionPage() {
       </ul>
 
       {explanation.length ? (
-        <PagesForm session={session} materials={explanation} />
+        <PagesForm session={session} materials={explanation} kit={kit} pending={pending} />
       ) : null}
 
-      <div className="sticky bottom-0 z-10 grid gap-2 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur">
+      <div className="sticky z-10 grid gap-2 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur bottom-0 max-md:bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))]">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
           {STATUSES.map((st) => (
             <span key={st} className={cn('rounded-full border px-2 py-0.5', TONE[st])}>
@@ -212,172 +318,122 @@ function describePosition(
   return p.lastPageReached ? t('classMode.lastPage', { page: p.lastPageReached }) : t('classMode.noPosition');
 }
 
-/** WF-05 step 4: type, range, grade, mistakes. Defaults start where the student stopped. */
-function LogForm({
+function JuzTestForm({
   student,
   courseId,
-  materials,
-  positionOf,
+  materialId,
+  passMark,
   onDone,
 }: {
   student: Student;
   courseId: string;
-  materials: KitMaterial[];
-  positionOf: (memberId: string, materialId: string) => MemorizationSummaryResponse | undefined;
+  materialId: string;
+  passMark: number;
   onDone: (saved: boolean) => void;
 }) {
-  const { t, i18n } = useTranslation();
-  const [materialId, setMaterialId] = useState(materials[0].materialId);
-  const material = materials.find((m) => m.materialId === materialId)!;
-  const position = positionOf(student.memberId, materialId);
-
-  const startSurah = position?.lastSurah ?? 1;
-  const lastAyah = position?.lastAyah ?? 0;
-  const startAyah = Math.min(lastAyah + 1, SURAH_BY_NUMBER.get(startSurah)!.ayahCount);
-  const [type, setType] = useState<'NEW' | 'REVISION' | 'TEST'>('NEW');
-  const [range, setRange] = useState({ surahStart: startSurah, ayahStart: startAyah, surahEnd: startSurah, ayahEnd: startAyah });
-  const nextPage = (position?.lastPageReached ?? 0) + 1;
-  const [pages, setPages] = useState({ pageFrom: nextPage, pageTo: nextPage });
-  const [grade, setGrade] = useState<Grade>('GOOD');
-  const [mistakes, setMistakes] = useState(0);
-  const [note, setNote] = useState('');
+  const { t } = useTranslation();
+  const [juz, setJuz] = useState(30);
+  const [score, setScore] = useState(80);
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const quran = material.kind === 'QURAN';
   const save = async () => {
-    if (
-      quran &&
-      !validateRange({
-        start: { surah: range.surahStart, ayah: range.ayahStart },
-        end: { surah: range.surahEnd, ayah: range.ayahEnd },
-      })
-    )
-      return setError(t('classMode.invalidRange'));
+    setError(null);
     try {
       await enqueue({
-        type: 'memorization.log',
+        type: 'memorization.test',
         payload: {
           memberId: student.memberId,
           materialId,
           courseId,
-          type,
-          ...(quran ? { range } : pages),
-          grade,
-          mistakes,
-          ...(note.trim() ? { note: note.trim() } : {}),
+          scopeType: 'JUZ',
+          juz,
+          score,
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
         },
       });
       onDone(true);
     } catch {
-      setError(t('classMode.invalidRange'));
+      setError(t('classMode.testFailed'));
     }
   };
 
-  const surahOptions = SURAHs.map((s) => (
-    <option key={s.number} value={s.number}>
-      {s.number}. {i18n.language === 'ar' ? s.nameAr : s.nameEn}
-    </option>
-  ));
-  const num = (value: string, max = Infinity) => Math.min(max, Math.max(1, Number(value) || 1));
-  const startCount = SURAH_BY_NUMBER.get(range.surahStart)!.ayahCount;
-  const endCount = SURAH_BY_NUMBER.get(range.surahEnd)!.ayahCount;
-
   return (
     <div className="mt-3 grid gap-3 border-t border-line pt-3">
-      {materials.length > 1 ? (
-        <Field label={t('classMode.material')}>
-          <select className={inputClass} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
-            {materials.map((m) => (
-              <option key={m.materialId} value={m.materialId}>{m.title}</option>
-            ))}
-          </select>
-        </Field>
-      ) : null}
-      <div className="flex gap-2">
-        {(['NEW', 'REVISION', 'TEST'] as const).map((value) => (
-          <Button key={value} variant={type === value ? 'primary' : 'ghost'} className="flex-1" onClick={() => setType(value)}>
-            {t(`classMode.type.${value}`)}
-          </Button>
-        ))}
-      </div>
-      {quran ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label={t('classMode.fromSurah')}>
-            <select
-              className={inputClass}
-              value={range.surahStart}
-              onChange={(e) => {
-                const surah = Number(e.target.value);
-                setRange({ surahStart: surah, ayahStart: 1, surahEnd: surah, ayahEnd: 1 });
-              }}
-            >
-              {surahOptions}
-            </select>
-          </Field>
-          <Field label={t('classMode.fromAyah')}>
-            <input className={inputClass} inputMode="numeric" value={range.ayahStart} onChange={(e) => setRange({ ...range, ayahStart: num(e.target.value, startCount) })} />
-            <span className="text-xs font-normal text-muted">/ {startCount}</span>
-          </Field>
-          <Field label={t('classMode.toSurah')}>
-            <select className={inputClass} value={range.surahEnd} onChange={(e) => {
-                const surahEnd = Number(e.target.value);
-                setRange({ ...range, surahEnd, ayahEnd: Math.min(range.ayahEnd, SURAH_BY_NUMBER.get(surahEnd)!.ayahCount) });
-              }}>
-              {surahOptions}
-            </select>
-          </Field>
-          <Field label={t('classMode.toAyah')}>
-            <input className={inputClass} inputMode="numeric" value={range.ayahEnd} onChange={(e) => setRange({ ...range, ayahEnd: num(e.target.value, endCount) })} />
-            <span className="text-xs font-normal text-muted">/ {endCount}</span>
-          </Field>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label={t('classMode.fromPage')}>
-            <input className={inputClass} inputMode="numeric" value={pages.pageFrom} onChange={(e) => setPages({ ...pages, pageFrom: num(e.target.value) })} />
-          </Field>
-          <Field label={t('classMode.toPage')}>
-            <input className={inputClass} inputMode="numeric" value={pages.pageTo} onChange={(e) => setPages({ ...pages, pageTo: num(e.target.value) })} />
-          </Field>
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {GRADES.map((value) => (
-          <Button key={value} variant={grade === value ? 'primary' : 'ghost'} onClick={() => setGrade(value)}>
-            {t(`classMode.grade.${value}`)}
-          </Button>
-        ))}
-      </div>
-      <div className="grid grid-cols-[11rem_1fr] gap-2">
-        <div role="group" aria-label={t('classMode.mistakes')} className="grid gap-1.5 text-sm font-medium text-ink">
-          {t('classMode.mistakes')}
-          <div className="flex gap-1">
-            <Button variant="ghost" className="px-3" aria-label={t('classMode.fewerMistakes')} onClick={() => setMistakes(Math.max(0, mistakes - 1))}>−</Button>
-            <input className={cn(inputClass, 'min-w-0 text-center')} inputMode="numeric" value={mistakes} onChange={(e) => setMistakes(Math.max(0, Number(e.target.value) || 0))} />
-            <Button variant="ghost" className="px-3" aria-label={t('classMode.moreMistakes')} onClick={() => setMistakes(mistakes + 1)}>+</Button>
-          </div>
-        </div>
-        <Field label={t('classMode.note')}>
-          <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
-        </Field>
-      </div>
+      <p className="text-sm text-muted">{t('classMode.passMarkHint', { mark: passMark })}</p>
+      <Field label={t('classMode.juz')}>
+        <select className={inputClass} value={juz} onChange={(e) => setJuz(Number(e.target.value))}>
+          {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label={t('classMode.score')}>
+        <input
+          className={inputClass}
+          inputMode="numeric"
+          value={score}
+          onChange={(e) => setScore(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+        />
+      </Field>
+      <Field label={t('classMode.note')}>
+        <input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </Field>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => void save()}>{t('classMode.save')}</Button>
+        <Button className="flex-1" onClick={() => void save()}>{t('classMode.saveTest')}</Button>
         <Button variant="ghost" onClick={() => onDone(false)}>{t('classMode.cancel')}</Button>
       </div>
     </div>
   );
 }
 
-/** Decision 7.1: explanation pages are logged once for the class (or the teacher's group). */
-function PagesForm({ session, materials }: { session: KitSession; materials: KitMaterial[] }) {
+function PagesForm({
+  session,
+  materials,
+  kit,
+  pending,
+}: {
+  session: KitSession;
+  materials: KitMaterial[];
+  kit: ClassKit;
+  pending: OutboxEntry[];
+}) {
   const { t } = useTranslation();
+  const groupId = session.groupIds[0] ?? null;
   const [materialId, setMaterialId] = useState(materials[0].materialId);
-  const [pages, setPages] = useState({ pageFrom: 1, pageTo: 1 });
+  const material = materials.find((m) => m.materialId === materialId)!;
+
+  const furthestPage = useMemo(() => {
+    const fromKit = kit.explanationProgress.find(
+      (p) =>
+        p.sessionId === session.id &&
+        p.materialId === materialId &&
+        (p.groupId ?? null) === groupId,
+    )?.pageTo;
+    let fromPending = 0;
+    for (const e of pending) {
+      if (
+        e.type === 'material.log' &&
+        e.payload.sessionId === session.id &&
+        e.payload.materialId === materialId &&
+        (e.payload.groupId ?? null) === groupId
+      )
+        fromPending = Math.max(fromPending, e.payload.pageTo);
+    }
+    return Math.max(fromKit ?? 0, fromPending);
+  }, [kit.explanationProgress, pending, session.id, materialId, groupId]);
+
+  const nextFrom = furthestPage > 0 ? furthestPage + 1 : 1;
+  const [pages, setPages] = useState({ pageFrom: nextFrom, pageTo: nextFrom });
+  useEffect(() => {
+    setPages({ pageFrom: nextFrom, pageTo: nextFrom });
+  }, [nextFrom, materialId]);
+
   const [note, setNote] = useState('');
   const [done, setDone] = useState(false);
   const num = (value: string) => Math.max(1, Number(value) || 1);
+  const total = material.totalPages;
 
   const save = async () => {
     await enqueue({
@@ -385,7 +441,7 @@ function PagesForm({ session, materials }: { session: KitSession; materials: Kit
       payload: {
         sessionId: session.id,
         materialId,
-        groupId: session.groupIds[0] ?? null,
+        groupId,
         ...pages,
         ...(note.trim() ? { note: note.trim() } : {}),
       },
@@ -397,6 +453,14 @@ function PagesForm({ session, materials }: { session: KitSession; materials: Kit
   return (
     <section className="grid gap-3 rounded-2xl border border-line bg-surface p-4">
       <h2 className="font-semibold">{t('classMode.explanation')}</h2>
+      {total ? (
+        <p className="text-sm text-muted">
+          {t('classMode.bookProgress', {
+            page: furthestPage || pages.pageTo,
+            total,
+          })}
+        </p>
+      ) : null}
       {materials.length > 1 ? (
         <select className={inputClass} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
           {materials.map((m) => (

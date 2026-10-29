@@ -34,3 +34,33 @@ test('SetupOrganizationSchema rejects a city name as a time zone', () => {
 test('UpdateOrganizationSchema rejects an empty patch', () => {
     assert.equal(UpdateOrganizationSchema.safeParse({}).success, false);
 });
+
+test('UpdateOrganizationSchema requires {{code}} in whatsapp template', () => {
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: 'Hi' }).success,
+        false,
+    );
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: 'Code {{code}}' }).success,
+        true,
+    );
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: null }).success,
+        true,
+    );
+});
+
+test('UpdateOrganizationSchema requires {{code}} in whatsapp template', () => {
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: 'Hi' }).success,
+        false,
+    );
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: 'Code {{code}}' }).success,
+        true,
+    );
+    assert.equal(
+        UpdateOrganizationSchema.safeParse({ whatsappSetupTemplate: null }).success,
+        true,
+    );
+});

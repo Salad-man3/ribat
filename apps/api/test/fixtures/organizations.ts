@@ -54,6 +54,9 @@ export async function removeTwoOrganizations(
     await prisma.eventDelivery.deleteMany({ where: { event: { organizationId: { in: ids } } } });
     await prisma.domainEvent.deleteMany(scoped);
     await prisma.notification.deleteMany(scoped);
+    await prisma.announcement.deleteMany(scoped);
+    await prisma.memberTag.deleteMany(scoped);
+    await prisma.tag.deleteMany(scoped);
     await prisma.homeworkTask.deleteMany(scoped);
     await prisma.homework.deleteMany(scoped);
     await prisma.excuseRequest.deleteMany(scoped);

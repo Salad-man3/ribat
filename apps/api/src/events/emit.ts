@@ -10,7 +10,9 @@ export type EventType =
   | 'homework.missed'
   | 'session.cancelled'
   | 'excuse.decided'
-  | 'member.archived';
+  | 'member.archived'
+  | 'announcement.sent'
+  | 'report.published';
 
 /** EV-07: IDs and facts only. A handler loads names when it needs them. */
 export type EventPayload = Record<string, string | number | boolean | null>;

@@ -39,6 +39,6 @@ export class OrganizationsController {
     @CurrentOrg() org: OrgContext,
     @Body(createZodValidationPipe(UpdateOrganizationSchema)) body: UpdateOrganizationInput,
   ) {
-    return this.organizations.updateOrganization(org.organizationId, body);
+    return this.organizations.updateOrganization(org.organizationId, body, org);
   }
 }

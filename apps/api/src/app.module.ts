@@ -15,10 +15,17 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { PrayerTimesModule } from './prayer-times/prayer-times.module';
 import { MaterialsModule } from './materials/materials.module';
 import { CoursesModule } from './courses/courses.module';
+import { ProgramsModule } from './programs/programs.module';
 import { JobsQueueModule } from './jobs/jobs-queue.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ProgressModule } from './progress/progress.module';
 import { FamiliesModule } from './families/families.module';
+import { JoinApplicationsModule } from './join-applications/join-applications.module';
+import { CustomFieldsModule } from './custom-fields/custom-fields.module';
+import { TagsModule } from './tags/tags.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { StatsModule } from './stats/stats.module';
+import { ReportCardsModule } from './report-cards/report-cards.module';
 
 @Module({
   imports: [
@@ -40,9 +47,16 @@ import { FamiliesModule } from './families/families.module';
     PrayerTimesModule,
     JobsQueueModule,
     MaterialsModule,
+    ProgramsModule,
     CoursesModule,
     ProgressModule,
     FamiliesModule,
+    JoinApplicationsModule,
+    CustomFieldsModule,
+    TagsModule,
+    AnnouncementsModule,
+    StatsModule,
+    ReportCardsModule,
     JobsModule,
     AuthModule,
   ],

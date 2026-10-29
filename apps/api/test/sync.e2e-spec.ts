@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Logger } from 'nestjs-pino';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -22,7 +22,7 @@ import {
   type TwoOrganizations,
 } from './fixtures/organizations';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const TZ = 'Asia/Damascus';
 
 type Mutation = {
@@ -753,6 +753,42 @@ describe('Class mode and offline sync (S3, e2e)', () => {
         where: { id: logId },
       });
       expect(log.voidReason).toBe('Wrong student');
+    });
+
+    it('replays an offline juz test through sync (SC-B-11)', async () => {
+      const key = randomUUID();
+      const res = await sync(teacher, [
+        {
+          idempotencyKey: key,
+          type: 'memorization.test',
+          capturedAt: now(),
+          payload: {
+            memberId: students[0].memberId,
+            materialId: quranId,
+            courseId,
+            scopeType: 'JUZ',
+            juz: 29,
+            score: 88,
+          },
+        },
+      ]).expect(200);
+      expect(res.body.results[0].status).toBe('applied');
+      const again = await sync(teacher, [
+        {
+          idempotencyKey: key,
+          type: 'memorization.test',
+          capturedAt: now(),
+          payload: {
+            memberId: students[0].memberId,
+            materialId: quranId,
+            courseId,
+            scopeType: 'JUZ',
+            juz: 29,
+            score: 88,
+          },
+        },
+      ]).expect(200);
+      expect(again.body.results[0].status).toBe('duplicate');
     });
 
     it('keeps every test attempt and applies the pass mark (WF-07)', async () => {

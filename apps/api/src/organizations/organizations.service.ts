@@ -1,14 +1,16 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import type {
-  OrganizationResponse,
-  SetupOrganizationInput,
-  SetupOrganizationResponse,
-  SetupStatus,
-  UpdateOrganizationInput,
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import type { OrgContext } from '../auth/org-context.guard';
+import {
+  type OrganizationResponse,
+  type SetupOrganizationInput,
+  type SetupOrganizationResponse,
+  type SetupStatus,
+  type UpdateOrganizationInput,
 } from '@ribat/shared';
 import { AuditService } from '../audit/audit.service';
 import { IdentitiesService } from '../auth/identities.service';
 import { SessionsQueue } from '../jobs/sessions-queue';
+import { StatsRollupService } from '../stats/stats-rollup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   mergeUpdateData,
@@ -35,6 +37,7 @@ export class OrganizationsService {
     private readonly identities: IdentitiesService,
     private readonly audit: AuditService,
     private readonly sessions: SessionsQueue,
+    private readonly statsRollup: StatsRollupService,
   ) {}
 
   async setupStatus(): Promise<SetupStatus> {
@@ -119,6 +122,7 @@ export class OrganizationsService {
     );
 
     await this.sessions.scheduleNightly(created.organization);
+    await this.statsRollup.scheduleRollup(created.organization);
 
     return {
       organizationId: created.organization.id,
@@ -138,7 +142,15 @@ export class OrganizationsService {
   async updateOrganization(
     organizationId: string,
     input: UpdateOrganizationInput,
+    actor?: OrgContext,
   ): Promise<OrganizationResponse> {
+    if (input.orgAdminPermissions !== undefined) {
+      if (!actor || actor.role !== 'SHEIKH') {
+        throw new ForbiddenException({
+          error: { code: 'FORBIDDEN', message: 'Only the sheikh may change org-admin privileges' },
+        });
+      }
+    }
     const current = await this.prisma.platform.organization.findUniqueOrThrow({
       where: { id: organizationId },
     });
@@ -153,6 +165,7 @@ export class OrganizationsService {
     if (timesChanged) await this.sessions.generateOrganization(organizationId);
     if (input.timezone !== undefined && input.timezone !== current.timezone) {
       await this.sessions.scheduleNightly(org);
+      await this.statsRollup.scheduleRollup(org);
     }
     return toOrganizationResponse(org);
   }

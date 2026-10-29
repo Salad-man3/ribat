@@ -8,6 +8,8 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@prisma/client/runtime/client$": "@prisma/client/runtime/client",
+    "^@prisma/client$": "<rootDir>/../src/generated/prisma/client.ts",
     "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }

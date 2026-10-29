@@ -25,6 +25,7 @@ export async function writeSummary(
       ayahEnd: true,
       pageFrom: true,
       pageTo: true,
+      countsProgress: true,
       loggedAt: true,
     },
   });

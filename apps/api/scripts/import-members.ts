@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import { CreateMemberSchema } from '@ribat/shared';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 export type ParsedImportRow = {
   line: number;
@@ -95,13 +95,15 @@ async function main() {
       }
       const validated = valid.find((entry) => entry.line === row.line);
       if (!validated) continue;
+      const { customValues, ...memberInput } = validated.input;
       await tx.member.create({
         data: {
           organizationId: org.id,
           householdId: householdId ?? null,
-          ...validated.input,
+          ...memberInput,
           birthDate: new Date(validated.input.birthDate),
           joinedAt: new Date(validated.input.joinedAt),
+          customValues: (customValues ?? {}) as object,
         },
       });
     }

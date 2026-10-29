@@ -9,6 +9,8 @@ import {
   MarkNotificationsReadSchema,
   ScheduleQuerySchema,
   UpdateHomeworkTaskSchema,
+  CreateAwqafExamSchema,
+  type CreateAwqafExamInput,
   type CreateExcuseInput,
   type CreateHomeworkInput,
   type DecideExcuseInput,
@@ -27,6 +29,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ExcusesService } from './excuses.service';
 import { HomeworkService } from './homework.service';
 import { PortalService } from './portal.service';
+import { AwqafService } from './awqaf.service';
 
 const id = new ParseUUIDPipe();
 
@@ -35,6 +38,7 @@ const id = new ParseUUIDPipe();
 export class FamiliesController {
   constructor(
     private readonly portal: PortalService,
+    private readonly awqaf: AwqafService,
     private readonly excuses: ExcusesService,
     private readonly homework: HomeworkService,
     private readonly notifications: NotificationsService,
@@ -54,6 +58,23 @@ export class FamiliesController {
   @OrgRoute()
   progress(@CurrentOrg() org: OrgContext, @Param('id', id) memberId: string) {
     return this.portal.progress(org, memberId);
+  }
+
+  @Get('members/:id/awqaf-exams')
+  @OrgRoute()
+  listAwqaf(@CurrentOrg() org: OrgContext, @Param('id', id) memberId: string) {
+    return this.awqaf.list(org, memberId);
+  }
+
+  @Post('members/:id/awqaf-exams')
+  @OrgRoute('members.manage')
+  recordAwqaf(
+    @CurrentOrg() org: OrgContext,
+    @CurrentAudit() audit: AuditContext,
+    @Param('id', id) memberId: string,
+    @Body(createZodValidationPipe(CreateAwqafExamSchema)) body: CreateAwqafExamInput,
+  ) {
+    return this.awqaf.create(org, audit, memberId, body);
   }
 
   // Excuses (WF-08)

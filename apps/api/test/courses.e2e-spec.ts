@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Logger } from 'nestjs-pino';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -21,7 +21,7 @@ import {
   type TwoOrganizations,
 } from './fixtures/organizations';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
 
 describe('Courses and scheduling (S2, e2e)', () => {
@@ -185,6 +185,20 @@ describe('Courses and scheduling (S2, e2e)', () => {
         .expect(201);
       const list = await api(sheikh).get('/courses').expect(200);
       expect(list.body.map((c: { id: string }) => c.id)).not.toContain(id);
+    });
+
+    it('lists org-wide sessions for staff and hides them from teachers', async () => {
+      const id = await createCourse();
+      const today = dateIn(new Date(), 'Asia/Damascus');
+      const staff = await api(sheikh)
+        .get(`/sessions?from=${today}&to=${addDays(today, 6)}`)
+        .expect(200);
+      expect(staff.body.sessions).toBeDefined();
+      expect(typeof staff.body.activeTeacherCount).toBe('number');
+      await api(teacher).get('/sessions').expect(403);
+      await api(otherSheikh)
+        .get(`/sessions?from=${today}&to=${today}`)
+        .expect(200);
     });
 
     it('another organization gets 404, a member gets 403 (DM-02)', async () => {

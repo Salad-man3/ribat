@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------------
@@ -42,6 +42,17 @@ enum MemberStatus {
   ARCHIVED
 }
 
+enum JoinApplicationKind {
+  STUDENT
+  GUARDIAN
+}
+
+enum JoinApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum GuardianRelation {
   FATHER
   MOTHER
@@ -62,6 +73,32 @@ enum MaterialKind {
   QURAN
   TEXT
   BOOK
+}
+
+enum StatsScopeType {
+  ORG
+  COURSE
+  TEACHER
+  MEMBER
+}
+
+enum ReportCardStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum CustomFieldEntityType {
+  MEMBER
+  COURSE
+  PROGRAM
+  MATERIAL
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
 }
 
 enum MaterialTrack {
@@ -140,6 +177,14 @@ enum MemorizationType {
   TEST
 }
 
+enum AwqafExamLevel {
+  AJZA_3
+  AJZA_5
+  AJZA_10
+  AJZA_15
+  KHATMAH
+}
+
 enum StudyStatus {
   SCHOOL
   UNIVERSITY
@@ -198,6 +243,18 @@ enum NotificationType {
   SCHEDULE_CHANGE
   EXCUSE_DECIDED
   SESSION_NOT_TAKEN
+  ANNOUNCEMENT
+  REPORT_CARD
+}
+
+enum AnnouncementTargetType {
+  EVERYONE
+  COURSES
+  GROUPS
+  MEMBERS
+  TAGS
+  PROGRAMS
+  ROLES
 }
 
 enum DeliveryStatus {
@@ -236,6 +293,7 @@ model Organization {
   memberNotes         MemberNote[]
   auditLogs           AuditLog[]
   materials           Material[]
+  programs            Program[]
   courses             Course[]
   courseMaterials     CourseMaterial[]
   courseRequirements  CourseRequirement[]
@@ -257,8 +315,53 @@ model Organization {
   homeworkTasks       HomeworkTask[]
   notifications       Notification[]
   domainEvents        DomainEvent[]
+  joinApplications        JoinApplication[]
+  customFieldDefinitions  CustomFieldDefinition[]
+  tags                    Tag[]
+  memberTags              MemberTag[]
+  announcements           Announcement[]
+  statsDaily              StatsDaily[]
+  reportCards             ReportCard[]
+  recitationKinds         RecitationKind[]
+  awqafExams              AwqafExam[]
+  awqafExamJuz            AwqafExamJuz[]
 
   @@index([status])
+}
+
+model CustomFieldDefinition {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @db.Uuid
+  entityType     CustomFieldEntityType
+  key            String
+  label          String
+  type           CustomFieldType
+  createdAt      DateTime              @default(now()) @db.Timestamptz(6)
+  archivedAt     DateTime?             @db.Timestamptz(6)
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, entityType, key])
+  @@index([organizationId, entityType, archivedAt])
+}
+
+model JoinApplication {
+  id                     String                @id @default(uuid()) @db.Uuid
+  organizationId         String                @db.Uuid
+  kind                   JoinApplicationKind
+  status                 JoinApplicationStatus @default(PENDING)
+  phone                  String
+  firstName              String
+  fatherName             String
+  familyName             String
+  birthDate              DateTime?             @db.Date
+  wards                  Json?
+  decidedAt              DateTime?             @db.Timestamptz(6)
+  decidedByMembershipId  String?               @db.Uuid
+  createdAt              DateTime              @default(now()) @db.Timestamptz(6)
+  organization           Organization          @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status, createdAt(sort: Desc)])
+  @@index([organizationId, phone, status])
 }
 
 model Identity {
@@ -368,6 +471,7 @@ model Member {
   createdAt               DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime              @updatedAt @db.Timestamptz(6)
   archivedAt              DateTime?             @db.Timestamptz(6)
+  customValues            Json                  @default("{}")
   organization            Organization          @relation(fields: [organizationId], references: [id])
   household               Household?            @relation(fields: [householdId], references: [id])
   memberships             Membership[]
@@ -383,8 +487,13 @@ model Member {
   memorizationLogsWritten MemorizationLog[]     @relation("MemorizationLogAuthor")
   memorizationTests       MemorizationTest[]    @relation("MemorizationTestMember")
   testsExamined           MemorizationTest[]    @relation("MemorizationTestExaminer")
+  awqafExamsRecorded      AwqafExam[]           @relation("AwqafExamRecorder")
+  awqafExams              AwqafExam[]           @relation("AwqafExamMember")
   memorizationSummaries   MemorizationSummary[]
   materialLogsWritten     MaterialLog[]
+  memberTags              MemberTag[]
+  announcementsSent       Announcement[]        @relation("AnnouncementSender")
+  reportCards             ReportCard[]
 
   @@index([organizationId, status])
   @@index([organizationId, familyName, firstName])
@@ -439,6 +548,7 @@ model Material {
   url               String?
   createdAt         DateTime              @default(now()) @db.Timestamptz(6)
   archivedAt        DateTime?             @db.Timestamptz(6)
+  customValues      Json                  @default("{}")
   organization      Organization          @relation(fields: [organizationId], references: [id])
   courseMaterials   CourseMaterial[]
   groups            CourseGroup[]
@@ -450,9 +560,25 @@ model Material {
   @@index([organizationId, archivedAt])
 }
 
+model Program {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  name           String
+  startDate      DateTime?    @db.Date
+  endDate        DateTime?    @db.Date
+  customValues   Json         @default("{}")
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  archivedAt     DateTime?    @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  courses        Course[]
+
+  @@index([organizationId, archivedAt])
+}
+
 model Course {
   id                String               @id @default(uuid()) @db.Uuid
   organizationId    String               @db.Uuid
+  programId         String?              @db.Uuid
   name              String
   description       String?
   type              CourseType
@@ -466,9 +592,11 @@ model Course {
   isHierarchical    Boolean              @default(false)
   hasGroups         Boolean              @default(false)
   testPassMark      Int                  @default(60)
+  customValues      Json                 @default("{}")
   createdAt         DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
   organization      Organization         @relation(fields: [organizationId], references: [id])
+  program           Program?             @relation(fields: [programId], references: [id])
   materials         CourseMaterial[]
   requirements      CourseRequirement[]
   enrollments       Enrollment[]
@@ -480,8 +608,10 @@ model Course {
   memberNotes       MemberNote[]
   memorizationLogs  MemorizationLog[]
   memorizationTests MemorizationTest[]
+  reportCards       ReportCard[]
 
   @@index([organizationId, status])
+  @@index([organizationId, programId])
 }
 
 model CourseMaterial {
@@ -687,6 +817,7 @@ model MemorizationLog {
   ayahCount        Int?
   grade            Grade?
   mistakes         Int              @default(0)
+  countsProgress   Boolean          @default(true)
   note             String?
   loggedByMemberId String           @db.Uuid
   loggedAt         DateTime         @db.Timestamptz(6)
@@ -695,12 +826,14 @@ model MemorizationLog {
   voidedAt         DateTime?        @db.Timestamptz(6)
   voidedByMemberId String?          @db.Uuid
   voidReason       String?
+  recitationKindId String?          @db.Uuid
   createdAt        DateTime         @default(now()) @db.Timestamptz(6)
   organization     Organization     @relation(fields: [organizationId], references: [id])
   member           Member           @relation("MemorizationLogMember", fields: [memberId], references: [id])
   material         Material         @relation(fields: [materialId], references: [id])
   course           Course?          @relation(fields: [courseId], references: [id])
   loggedBy         Member           @relation("MemorizationLogAuthor", fields: [loggedByMemberId], references: [id])
+  recitationKind   RecitationKind?  @relation(fields: [recitationKindId], references: [id])
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, memberId, loggedAt(sort: Desc)])
@@ -742,6 +875,53 @@ model MemorizationTest {
   @@index([organizationId, memberId, takenAt(sort: Desc)])
 }
 
+/// Mosque-defined recitation labels (stored as NEW + kindId).
+model RecitationKind {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  name           String
+  active         Boolean          @default(true)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  archivedAt     DateTime?        @db.Timestamptz(6)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  logs           MemorizationLog[]
+
+  @@unique([organizationId, name])
+}
+
+/// Official Awqaf sitting — one row per attempt, juz outcomes in AwqafExamJuz.
+model AwqafExam {
+  id                 String           @id @default(uuid()) @db.Uuid
+  organizationId     String           @db.Uuid
+  memberId           String           @db.Uuid
+  level              AwqafExamLevel
+  takenAt            DateTime         @db.Timestamptz(6)
+  attemptNo          Int
+  notes              String?
+  recorderMemberId   String           @db.Uuid
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  member             Member           @relation("AwqafExamMember", fields: [memberId], references: [id])
+  recorder           Member           @relation("AwqafExamRecorder", fields: [recorderMemberId], references: [id])
+  juzResults         AwqafExamJuz[]
+
+  @@index([organizationId, memberId, takenAt(sort: Desc)])
+}
+
+model AwqafExamJuz {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  examId         String       @db.Uuid
+  juz            Int
+  passed         Boolean
+  score          Int?
+  exam           AwqafExam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([examId, juz])
+  @@index([organizationId, juz])
+}
+
 /// ADR-0010: derived, rewritten in the same transaction as every log and void.
 /// Disposable — `pnpm --filter api projections:rebuild` recreates it from the ledger.
 model MemorizationSummary {
@@ -762,6 +942,45 @@ model MemorizationSummary {
 
   @@unique([memberId, materialId])
   @@index([organizationId])
+}
+
+/// ADR-0010: nightly aggregates for the statistics dashboard (NFR-10).
+model StatsDaily {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  date           DateTime        @db.Date
+  scopeType      StatsScopeType
+  scopeId        String          @db.Uuid
+  metrics        Json
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(6)
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, date, scopeType, scopeId])
+  @@index([organizationId, date, scopeType])
+}
+
+/// WF-12: manually generated period report, published in-app.
+model ReportCard {
+  id                    String           @id @default(uuid()) @db.Uuid
+  organizationId        String           @db.Uuid
+  memberId              String           @db.Uuid
+  courseId              String?          @db.Uuid
+  periodStart           DateTime         @db.Date
+  periodEnd             DateTime         @db.Date
+  content               Json
+  teacherComment        String?
+  status                ReportCardStatus @default(DRAFT)
+  publishedAt           DateTime?        @db.Timestamptz(6)
+  createdByMembershipId String           @db.Uuid
+  createdAt             DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime         @updatedAt @db.Timestamptz(6)
+  organization          Organization     @relation(fields: [organizationId], references: [id])
+  member                Member           @relation(fields: [memberId], references: [id])
+  course                Course?          @relation(fields: [courseId], references: [id])
+
+  @@index([organizationId, status, createdAt(sort: Desc)])
+  @@index([organizationId, memberId])
 }
 
 /// Explanation pages, once per class or group (decision 7.1). Append-only.
@@ -880,6 +1099,49 @@ model Notification {
 
   @@unique([organizationId, dedupeKey])
   @@index([recipientIdentityId, readAt, createdAt(sort: Desc)])
+}
+
+model Tag {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  name           String
+  permissions    Json         @default("[]")
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  archivedAt     DateTime?    @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        MemberTag[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, archivedAt])
+}
+
+model MemberTag {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  memberId       String       @db.Uuid
+  tagId          String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tag            Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, tagId])
+  @@index([organizationId, tagId])
+  @@index([memberId])
+}
+
+model Announcement {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  senderMemberId String                 @db.Uuid
+  title          String
+  body           String
+  targetType     AnnouncementTargetType
+  targetIds      Json                   @default("[]")
+  createdAt      DateTime               @default(now()) @db.Timestamptz(6)
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  sender         Member                 @relation("AnnouncementSender", fields: [senderMemberId], references: [id])
+
+  @@index([organizationId, createdAt(sort: Desc)])
 }
 
 /// ADR-0009: written in the same transaction as the change it describes. IDs and facts only.

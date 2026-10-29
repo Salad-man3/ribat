@@ -5,6 +5,7 @@ import {
   MemorizationSummaryResponseSchema,
   MemorizationTestResponseSchema,
 } from './progress.js';
+import { NotificationCategoryCountsSchema, NotificationCategorySchema } from './notifications.js';
 
 // ---------------------------------------------------------------------------
 // S4: excuses, homework, the weekly timetable, member progress, notifications.
@@ -185,6 +186,28 @@ export const MemberProgressResponseSchema = z.object({
     }),
   ),
   excuses: z.array(ExcuseResponseSchema),
+  hifz: z
+    .object({
+      juzMemorized: z.array(z.number().int().min(1).max(30)),
+      juzTests: z.array(
+        z.object({
+          juz: z.number().int().min(1).max(30),
+          passed: z.boolean(),
+          score: z.number().int(),
+          attemptNo: z.number().int(),
+        }),
+      ),
+      awqafByJuz: z.array(
+        z.object({
+          juz: z.number().int().min(1).max(30),
+          passed: z.boolean(),
+          score: z.number().int().nullable(),
+          level: z.string(),
+          takenAt: isoDateTime,
+        }),
+      ),
+    })
+    .nullable(),
 });
 export type MemberProgressResponse = z.infer<typeof MemberProgressResponseSchema>;
 
@@ -199,6 +222,8 @@ export const NotificationTypeSchema = z.enum([
   'SCHEDULE_CHANGE',
   'EXCUSE_DECIDED',
   'SESSION_NOT_TAKEN',
+  'ANNOUNCEMENT',
+  'REPORT_CARD',
 ]);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
@@ -218,12 +243,14 @@ export type NotificationResponse = z.infer<typeof NotificationResponseSchema>;
 export const NotificationsResponseSchema = z.object({
   items: z.array(NotificationResponseSchema),
   unread: z.number().int(),
+  unreadByCategory: NotificationCategoryCountsSchema,
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
 export const ListNotificationsQuerySchema = z.object({
   cursor: uuid.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
+  category: NotificationCategorySchema.optional(),
 });
 export type ListNotificationsQuery = z.infer<typeof ListNotificationsQuerySchema>;
 

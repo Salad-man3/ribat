@@ -12,6 +12,7 @@ import { badRequest } from '../common/errors';
 import { addDays, dateIn, fromDateString, toDateString } from '../common/zoned-time';
 import { memberName } from '../courses/course.mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { hifzMapFromData } from '../progress/hifz-map';
 import { toSummaryResponse, toTestResponse } from '../progress/progress.mapper';
 import { ExcusesService } from './excuses.service';
 import { MemberAccessService } from './member-access.service';
@@ -100,7 +101,11 @@ export class PortalService {
       include: { course: { select: { name: true } } },
     });
     const enrollmentIds = enrollments.map((e) => e.id);
-    const [marks, summaries, tests, tasks, excuses] = await Promise.all([
+    const quranMaterial = await db.material.findFirst({
+      where: { organizationId: org.organizationId, kind: 'QURAN' },
+    });
+    const [marks, summaries, tests, tasks, excuses, quranLogs, awqafExams] =
+      await Promise.all([
       db.attendance.findMany({
         where: { enrollmentId: { in: enrollmentIds } },
         include: { session: { select: { date: true } } },
@@ -115,6 +120,16 @@ export class PortalService {
         take: 30,
       }),
       db.excuseRequest.findMany({ where: { memberId }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      quranMaterial
+        ? db.memorizationLog.findMany({
+            where: { memberId, materialId: quranMaterial.id },
+          })
+        : Promise.resolve([]),
+      db.awqafExam.findMany({
+        where: { memberId },
+        include: { juzResults: true },
+        orderBy: { takenAt: 'desc' },
+      }),
     ]);
     const courseOf = new Map(enrollments.map((e) => [e.id, e.course.name]));
 
@@ -148,6 +163,20 @@ export class PortalService {
         status: t.status,
       })),
       excuses: await this.excuses.present(org.organizationId, excuses),
+      hifz: quranMaterial
+        ? {
+            ...hifzMapFromData(quranLogs, tests),
+            awqafByJuz: awqafExams.flatMap((exam) =>
+              exam.juzResults.map((j) => ({
+                juz: j.juz,
+                passed: j.passed,
+                score: j.score,
+                level: exam.level,
+                takenAt: exam.takenAt.toISOString(),
+              })),
+            ),
+          }
+        : null,
     };
   }
 }

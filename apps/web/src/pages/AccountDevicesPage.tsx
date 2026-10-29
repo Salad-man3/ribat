@@ -39,7 +39,11 @@ export function AccountDevicesPage() {
 
   return (
     <section className="grid gap-6">
-      <PageHeader title={t('devices.title')} subtitle={t('devices.subtitle')} />
+      <PageHeader
+        chrome
+        title={t('devices.title')}
+        subtitle={t('devices.subtitle')}
+      />
       <Card>
         <ul className="divide-y divide-line">
           {(devices.data ?? []).map((device) => (

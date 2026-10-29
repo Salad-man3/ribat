@@ -6,11 +6,13 @@ import { apiFetch } from './api-fetch';
 export function useMembers(
   status: 'ACTIVE' | 'ARCHIVED' = 'ACTIVE',
   search = '',
+  includeCourses = false,
 ) {
   const params = new URLSearchParams({ status, limit: '200' });
   if (search.trim()) params.set('search', search.trim());
+  if (includeCourses) params.set('includeCourses', 'true');
   return useQuery({
-    queryKey: ['members', status, search.trim()],
+    queryKey: ['members', status, search.trim(), includeCourses],
     queryFn: () => apiFetch<MemberResponse[]>(`/api/v1/members?${params}`),
   });
 }

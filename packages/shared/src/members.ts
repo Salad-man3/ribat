@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CustomValuesInputSchema, CustomValuesSchema } from './custom-fields.js';
 import { CursorPaginationQuerySchema } from './pagination.js';
 import { e164Phone, isoDate, isoDateTime, requiredName, uuid } from './fields.js';
 
@@ -49,6 +50,8 @@ export const CreateMemberSchema = z.object({
   highestEducation: EducationLevelSchema.nullish(),
   notes: z.string().trim().min(1).optional(),
   householdId: uuid.optional(),
+  customValues: CustomValuesInputSchema,
+  tagIds: z.array(uuid).optional(),
 });
 
 export type CreateMemberInput = z.infer<typeof CreateMemberSchema>;
@@ -60,9 +63,17 @@ export const UpdateMemberSchema = CreateMemberSchema.partial().refine(
 
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>;
 
+export const MemberCourseSummarySchema = z.object({
+  courseId: uuid,
+  courseName: z.string(),
+  endedAt: isoDate.nullable().optional(),
+});
+export type MemberCourseSummary = z.infer<typeof MemberCourseSummarySchema>;
+
 export const ListMembersQuerySchema = CursorPaginationQuerySchema.extend({
   search: z.string().trim().min(1).optional(),
   status: MemberStatusSchema.default('ACTIVE'),
+  includeCourses: z.coerce.boolean().optional(),
 });
 
 export type ListMembersQuery = z.infer<typeof ListMembersQuerySchema>;
@@ -91,7 +102,11 @@ export const MemberResponseSchema = z.object({
   createdAt: isoDateTime,
   updatedAt: isoDateTime,
   archivedAt: isoDateTime.nullable(),
+  customValues: CustomValuesSchema,
+  tagIds: z.array(uuid).optional(),
   siblingMemberIds: z.array(uuid).optional(),
+  studying: z.array(MemberCourseSummarySchema).optional(),
+  teaching: z.array(MemberCourseSummarySchema).optional(),
 });
 
 export type MemberResponse = z.infer<typeof MemberResponseSchema>;

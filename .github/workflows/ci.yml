@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -37,6 +41,7 @@ jobs:
           --health-retries 10
 
     env:
+      NODE_OPTIONS: --experimental-vm-modules
       DATABASE_URL: postgresql://ribat:ribat@localhost:5432/ribat
       REDIS_URL: redis://localhost:6379
       SESSION_SECRET: ci-test-secret-not-for-production
@@ -58,7 +63,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm --filter api exec prisma generate --generator client
+
       - run: pnpm --filter api exec prisma migrate deploy
+
+      - run: pnpm fmt
 
       - run: pnpm lint
 
@@ -69,3 +78,12 @@ jobs:
       - run: pnpm test:e2e
 
       - run: pnpm build
+
+  docker:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build -f deploy/Dockerfile .

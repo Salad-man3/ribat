@@ -1,77 +1,193 @@
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ActiveView, MembershipRole, S1Permission } from '@ribat/shared';
 import { logout, switchView } from '../api/auth';
-import { Button } from '../components/ui/button';
 import { Emblem } from '../components/Emblem';
-import { ThemePicker } from '../components/ThemePicker';
 import { useActiveMembership } from '../hooks/use-me';
 import { useBackgroundSync } from '../offline/outbox';
 import { useNotifications } from '../pages/NotificationsPage';
 import { cn } from '../lib/utils';
+import {
+  navFor,
+  phoneTabsFromNav,
+  splitNavEntries,
+  type NavEntry,
+} from './app-nav';
+import { PhoneChrome } from './PhoneChrome';
+import { ShellAccount } from './ShellAccount';
 
-type NavItem = { to: string; label: string };
+const navLinkClass = (isActive: boolean, quiet?: boolean) =>
+  cn(
+    'shrink-0 rounded-lg border-s-2 px-3 py-2 font-medium transition',
+    quiet ? 'text-[13px]' : 'text-sm',
+    isActive
+      ? 'border-gold bg-white/10 text-chrome-ink'
+      : 'border-transparent text-chrome-muted hover:bg-white/5 hover:text-chrome-ink',
+  );
 
-/** Ghost buttons sitting on the green chrome. */
-const onChrome =
-  'border-white/20 bg-transparent text-chrome-ink hover:bg-white/10';
+function NavEntries({
+  entries,
+  unread,
+  membersExpanded,
+  setMembersExpanded,
+  pathname,
+  quiet,
+  onNavigate,
+}: {
+  entries: NavEntry[];
+  unread: number;
+  membersExpanded: boolean;
+  setMembersExpanded: (open: boolean) => void;
+  pathname: string;
+  quiet?: boolean;
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslation();
+  return entries.map((entry) => {
+    if (entry.kind === 'link') {
+      return (
+        <NavButton
+          key={entry.to}
+          to={entry.to}
+          end={entry.to === '/staff'}
+          onClick={onNavigate}
+          className="shrink-0 text-start"
+          activeClassName={navLinkClass(true, quiet)}
+          inactiveClassName={navLinkClass(false, quiet)}
+        >
+          {t(entry.label)}
+          {entry.to === '/notifications' && unread ? (
+            <span className="ms-2 rounded-full bg-chrome-ink px-1.5 text-xs font-semibold text-chrome">
+              {unread}
+            </span>
+          ) : null}
+        </NavButton>
+      );
+    }
 
-/** Which links a viewer sees. The API enforces the same rules; this only hides dead ends. */
-function navFor(
-  role: MembershipRole,
-  activeView: ActiveView | null,
-  can: (permission: S1Permission) => boolean,
-): NavItem[] {
-  if (role === 'GUARDIAN') return [{ to: '/guardian', label: 'nav.guardian' }];
-  if (role === 'MEMBER' || activeView === 'MEMBER')
-    return [
-      { to: '/member', label: 'nav.member' },
-      { to: '/teach', label: 'nav.teach' },
-    ];
-  return [
-    { to: '/staff', label: 'nav.staff' },
-    { to: '/teach', label: 'nav.teach' },
-    ...(can('members.manage')
-      ? [{ to: '/staff/members', label: 'nav.members' }]
-      : []),
-    ...(can('courses.manage')
-      ? [{ to: '/staff/courses', label: 'nav.courses' }]
-      : []),
-    ...(can('materials.manage')
-      ? [{ to: '/staff/materials', label: 'nav.materials' }]
-      : []),
-    ...(can('memberships.manage')
-      ? [{ to: '/staff/roles', label: 'nav.roles' }]
-      : []),
-    ...(can('members.manage')
-      ? [{ to: '/staff/excuses', label: 'nav.excuses' }]
-      : []),
-    ...(can('audit.read') ? [{ to: '/staff/audit', label: 'nav.audit' }] : []),
-    ...(can('audit.read')
-      ? [{ to: '/staff/events', label: 'nav.events' }]
-      : []),
-    ...(can('organization.manage')
-      ? [{ to: '/staff/organization', label: 'nav.organization' }]
-      : []),
-  ];
+    const underMembers = pathname.startsWith(entry.matchPrefix);
+    const open = membersExpanded || underMembers;
+    const groupActive = underMembers;
+
+    return (
+      <div key={entry.matchPrefix} className="grid w-full gap-1">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setMembersExpanded(!open)}
+          className={cn(
+            navLinkClass(groupActive, quiet),
+            'flex w-full items-center justify-between text-start',
+          )}
+        >
+          <span>{t(entry.label)}</span>
+          <span className="text-xs opacity-70" aria-hidden>
+            {open ? '▾' : '▸'}
+          </span>
+        </button>
+        {open ? (
+          <div
+            role="group"
+            className="ms-3 grid gap-0.5 rounded-lg border border-white/25 bg-white/5 p-1"
+          >
+            {entry.children.map((child) => (
+              <NavButton
+                key={child.to}
+                to={child.to}
+                end={child.end}
+                onClick={onNavigate}
+                className="text-start text-[13px]"
+                activeClassName={navLinkClass(true, true)}
+                inactiveClassName={navLinkClass(false, true)}
+              >
+                {t(child.label)}
+              </NavButton>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  });
+}
+
+function SidebarNav({
+  primary,
+  more,
+  utility,
+  unread,
+  membersExpanded,
+  setMembersExpanded,
+  pathname,
+}: {
+  primary: NavEntry[];
+  more: NavEntry[];
+  utility: NavEntry[];
+  unread: number;
+  membersExpanded: boolean;
+  setMembersExpanded: (open: boolean) => void;
+  pathname: string;
+}) {
+  const { t } = useTranslation();
+  const props = {
+    unread,
+    membersExpanded,
+    setMembersExpanded,
+    pathname,
+  };
+  return (
+    <nav className="grid gap-1">
+      <NavEntries entries={primary} {...props} />
+      {more.length ? (
+        <div className="mt-3 grid gap-1">
+          <p className="px-3 text-[11px] font-semibold uppercase tracking-wide text-chrome-muted/90">
+            {t('nav.more')}
+          </p>
+          <NavEntries entries={more} quiet {...props} />
+        </div>
+      ) : null}
+      {utility.length ? (
+        <div className="mt-3 grid gap-1 border-t border-white/15 pt-3">
+          <NavEntries entries={utility} {...props} />
+        </div>
+      ) : null}
+    </nav>
+  );
 }
 
 export function AppShell() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { me, membership, activeView, can } = useActiveMembership();
   useBackgroundSync();
-  const unread = useNotifications().data?.unread ?? 0;
-  // No membership (offline or still loading): class mode is the only link that works.
-  const nav = membership
+  const unread = useNotifications(null).data?.unread ?? 0;
+  const [membersExpanded, setMembersExpanded] = useState(
+    location.pathname.startsWith('/staff/members'),
+  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (location.pathname.startsWith('/staff/members')) setMembersExpanded(true);
+  }, [location.pathname]);
+
+  const roleNav: NavEntry[] = membership
+    ? navFor(membership.role, activeView, can)
+    : [{ kind: 'link', to: '/teach', label: 'nav.teach' }];
+
+  const { primary, more } = splitNavEntries(roleNav);
+
+  const utilityNav: NavEntry[] = membership
     ? [
-        ...navFor(membership.role, activeView, can),
-        { to: '/notifications', label: 'nav.notifications' },
-        { to: '/account/devices', label: 'nav.devices' },
+        { kind: 'link', to: '/notifications', label: 'nav.notifications' },
+        { kind: 'link', to: '/account/devices', label: 'nav.devices' },
       ]
-    : [{ to: '/teach', label: 'nav.teach' }];
+    : [];
+
+  const nav: NavEntry[] = [...roleNav, ...utilityNav];
+
+  const phoneTabs = phoneTabsFromNav(roleNav);
 
   const toggleView = useMutation({
     mutationFn: () => switchView(activeView === 'MEMBER' ? 'ADMIN' : 'MEMBER'),
@@ -89,44 +205,49 @@ export function AppShell() {
     },
   });
 
-  const languageToggle = (
-    <Button
-      variant="ghost"
-      className={onChrome}
-      onClick={() =>
+  const account = (
+    <ShellAccount
+      variant="sidebar"
+      phone={me.data?.identity.phone}
+      role={membership?.role}
+      activeView={activeView}
+      onToggleView={() => toggleView.mutate()}
+      togglePending={toggleView.isPending}
+      onSignOut={() => signOut.mutate()}
+      onLanguage={() =>
         void i18n.changeLanguage(i18n.language === 'ar' ? 'en' : 'ar')
       }
-    >
-      {i18n.language === 'ar' ? t('switchToEnglish') : t('switchToArabic')}
-    </Button>
+    />
   );
 
-  const links = nav.map((item) => (
-    <NavLink
-      key={item.to}
-      to={item.to}
-      end={item.to === '/staff'}
-      className={({ isActive }) =>
-        cn(
-          'shrink-0 rounded-lg border-s-2 px-3 py-2 text-sm font-medium transition',
-          isActive
-            ? 'border-gold bg-white/10 text-chrome-ink'
-            : 'border-transparent text-chrome-muted hover:bg-white/5 hover:text-chrome-ink',
-        )
+  const drawerAccount = (
+    <ShellAccount
+      variant="drawer"
+      phone={me.data?.identity.phone}
+      role={membership?.role}
+      activeView={activeView}
+      onToggleView={() => toggleView.mutate()}
+      togglePending={toggleView.isPending}
+      onSignOut={() => signOut.mutate()}
+      onLanguage={() =>
+        void i18n.changeLanguage(i18n.language === 'ar' ? 'en' : 'ar')
       }
-    >
-      {t(item.label)}
-      {item.to === '/notifications' && unread ? (
-        <span className="ms-2 rounded-full bg-chrome-ink px-1.5 text-xs font-semibold text-chrome">
-          {unread}
-        </span>
-      ) : null}
-    </NavLink>
-  ));
+    />
+  );
+
+  const navBlock = {
+    primary,
+    more,
+    utility: utilityNav,
+    unread,
+    membersExpanded,
+    setMembersExpanded,
+    pathname: location.pathname,
+  };
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
-      <aside className="chrome-lattice hidden bg-chrome text-chrome-ink md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:overflow-y-auto md:gap-6 md:p-4">
+      <aside className="chrome-lattice relative hidden bg-chrome text-chrome-ink md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:overflow-y-auto md:gap-6 md:p-4">
         <div aria-hidden className="frieze-y absolute inset-y-0 end-0" />
         <div className="flex items-center gap-3">
           <Emblem className="size-8" />
@@ -137,77 +258,28 @@ export function AppShell() {
             </p>
           </div>
         </div>
-        <nav className="grid gap-1">{links}</nav>
-        <div className="mt-auto grid gap-2">
-          {membership ? (
-            <p className="text-xs text-chrome-muted">
-              {me.data?.identity.phone} · {t(`roles.${membership.role}`)}
-            </p>
-          ) : null}
-          {activeView ? (
-            <Button
-              variant="ghost"
-              className={onChrome}
-              onClick={() => toggleView.mutate()}
-              disabled={toggleView.isPending}
-            >
-              {activeView === 'ADMIN'
-                ? t('shell.switchToMember')
-                : t('shell.switchToAdmin')}
-            </Button>
-          ) : null}
-          {languageToggle}
-          <ThemePicker className={onChrome} />
-          <Button
-            variant="ghost"
-            className={onChrome}
-            onClick={() => signOut.mutate()}
-          >
-            {t('shell.signOut')}
-          </Button>
-        </div>
+        <SidebarNav {...navBlock} />
+        <div className="mt-auto">{account}</div>
       </aside>
 
-      <header className="chrome-lattice sticky top-0 z-10 bg-chrome text-chrome-ink md:hidden">
-        <div className="flex items-center justify-between gap-2 px-4 py-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Emblem />
-            <div className="min-w-0">
-              <p className="font-brand text-lg font-semibold leading-tight">{t('appName')}</p>
-              <p className="truncate text-xs text-chrome-muted">
-                {membership?.organizationName}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-1">
-            {activeView ? (
-              <Button
-                variant="ghost"
-                className={cn(onChrome, 'px-2')}
-                onClick={() => toggleView.mutate()}
-                disabled={toggleView.isPending}
-              >
-                {activeView === 'ADMIN'
-                  ? t('shell.memberViewShort')
-                  : t('shell.adminViewShort')}
-              </Button>
-            ) : null}
-            {languageToggle}
-            <ThemePicker className={cn(onChrome, 'px-2')} />
-            <Button
-              variant="ghost"
-              className={cn(onChrome, 'px-2')}
-              onClick={() => signOut.mutate()}
-            >
-              {t('shell.signOut')}
-            </Button>
-          </div>
-        </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-2">{links}</nav>
-        <div aria-hidden className="frieze-x" />
-      </header>
+      <PhoneChrome
+        nav={nav}
+        navBlock={navBlock}
+        tabs={phoneTabs}
+        unread={unread}
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+        drawerAccount={drawerAccount}
+      />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-10">
+      <main
+        className={cn(
+          'w-full px-4 py-6 md:px-8 md:py-10',
+          phoneTabs.length
+            ? 'max-md:pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))]'
+            : 'max-md:pb-6',
+        )}
+      >
         <Outlet />
       </main>
     </div>

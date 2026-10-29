@@ -30,7 +30,6 @@ import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
 import { IdentitiesService } from './identities.service';
-import { isStaff } from './permissions';
 import { CurrentOrg, OrgRoute, type OrgContext } from './org-context.guard';
 import { CurrentSession, SessionGuard } from './session.guard';
 import { SessionsService, type SessionContext } from './sessions.service';
@@ -104,7 +103,7 @@ export class AuthController {
         @CurrentOrg() org: OrgContext,
         @Req() req: Request,
     ) {
-        if (!isStaff(org.role)) {
+        if (org.activeView === null) {
             throw new ForbiddenException({
                 error: { code: 'FORBIDDEN', message: 'Forbidden' },
             });

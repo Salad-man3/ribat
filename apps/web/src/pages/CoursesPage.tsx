@@ -1,14 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
+import { formatDate } from '../lib/domain';
 import type {
   CourseResponse,
   CourseStatus,
-  CourseType,
   CreateCourseInput,
+  CreateProgramInput,
+  CustomValues,
+  ProgramResponse,
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
+import { CustomFieldsSection } from '../components/CustomFieldsSection';
+import { CourseForm, type CourseFormValues } from '../components/CourseForm';
+import { saveCourseExtras } from '../lib/course-save';
 import { Button } from '../components/ui/button';
 import {
   Badge,
@@ -18,9 +25,9 @@ import {
   Field,
   inputClass,
   PageHeader,
+  RecordRow,
+  Segmented,
 } from '../components/ui/form';
-import { cn } from '../lib/utils';
-
 const FILTERS: (CourseStatus | 'CURRENT')[] = [
   'CURRENT',
   'DRAFT',
@@ -29,7 +36,6 @@ const FILTERS: (CourseStatus | 'CURRENT')[] = [
   'FINISHED',
   'ARCHIVED',
 ];
-const TYPES: CourseType[] = ['MEMORIZATION', 'EXPLANATION', 'BOTH'];
 
 export function statusTone(status: CourseStatus) {
   return status === 'ACTIVE'
@@ -41,6 +47,7 @@ export function statusTone(status: CourseStatus) {
 
 export function CoursesPage() {
   const { t } = useTranslation();
+  const [tab, setTab] = useState<'courses' | 'programs'>('courses');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('CURRENT');
   const courses = useQuery({
     queryKey: ['courses', filter],
@@ -52,54 +59,63 @@ export function CoursesPage() {
 
   return (
     <section className="grid gap-6">
-      <PageHeader title={t('courses.title')} subtitle={t('courses.subtitle')} />
-      <NewCourse />
-      <Card>
-        <div className="mb-4 flex flex-wrap gap-1">
-          {FILTERS.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFilter(value)}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-sm',
-                filter === value
-                  ? 'bg-accent text-accent-ink'
-                  : 'text-muted hover:bg-paper hover:text-ink',
-              )}
-            >
-              {value === 'CURRENT'
-                ? t('courses.current')
-                : t(`courses.status.${value}`)}
-            </button>
-          ))}
-        </div>
-        {courses.isError ? <ErrorText error={courses.error} /> : null}
-        {courses.data?.length === 0 ? (
-          <Empty>{t('courses.empty')}</Empty>
-        ) : null}
-        <ul className="divide-y divide-line">
-          {(courses.data ?? []).map((course) => (
-            <li key={course.id}>
-              <Link
-                to={`/staff/courses/${course.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-3 hover:bg-paper"
-              >
-                <span>
-                  <span className="block font-medium">{course.name}</span>
-                  <span className="block text-xs text-muted">
-                    {t(`courses.type.${course.type}`)}
-                    {course.location ? ` · ${course.location}` : ''}
-                  </span>
-                </span>
-                <Badge tone={statusTone(course.status)}>
-                  {t(`courses.status.${course.status}`)}
-                </Badge>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <PageHeader
+        chrome
+        title={t('courses.title')}
+        subtitle={t('courses.subtitle')}
+      />
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        aria-label={t('courses.title')}
+        options={(['courses', 'programs'] as const).map((value) => ({
+          value,
+          label: t(`courses.tab.${value}`),
+        }))}
+      />
+      {tab === 'courses' ? (
+        <>
+          <NewCourse />
+          <Card>
+            <div className="mb-4">
+              <Segmented
+                value={filter}
+                onChange={setFilter}
+                aria-label={t('courses.title')}
+                options={FILTERS.map((value) => ({
+                  value,
+                  label:
+                    value === 'CURRENT'
+                      ? t('courses.current')
+                      : t(`courses.status.${value}`),
+                }))}
+              />
+            </div>
+            {courses.isError ? <ErrorText error={courses.error} /> : null}
+            {courses.data?.length === 0 ? (
+              <Empty>{t('courses.empty')}</Empty>
+            ) : null}
+            <ul className="divide-y divide-line">
+              {(courses.data ?? []).map((course) => (
+                <li key={course.id}>
+                  <RecordRow
+                    to={`/staff/courses/${course.id}`}
+                    title={course.name}
+                    meta={t(`courses.type.${course.type}`)}
+                    badge={
+                      <Badge tone={statusTone(course.status)}>
+                        {t(`courses.status.${course.status}`)}
+                      </Badge>
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </>
+      ) : (
+        <ProgramsPanel />
+      )}
     </section>
   );
 }
@@ -108,21 +124,18 @@ function NewCourse() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    name: '',
-    type: 'MEMORIZATION' as CourseType,
-    location: '',
-    startDate: '',
-  });
+  const [customValues, setCustomValues] = useState<CustomValues>({});
   const create = useMutation({
-    mutationFn: () => {
-      const body: CreateCourseInput = { name: form.name, type: form.type };
-      if (form.location.trim()) body.location = form.location.trim();
-      if (form.startDate) body.startDate = form.startDate;
-      return apiFetch<CourseResponse>('/api/v1/courses', {
+    mutationFn: async (values: CourseFormValues) => {
+      const body: CreateCourseInput = { name: values.name, type: values.type };
+      if (values.programId) body.programId = values.programId;
+      if (Object.keys(customValues).length) body.customValues = customValues;
+      const course = await apiFetch<CourseResponse>('/api/v1/courses', {
         method: 'POST',
         body: JSON.stringify(body),
       });
+      await saveCourseExtras(course.id, values);
+      return course;
     },
     onSuccess: async (course) => {
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
@@ -135,61 +148,128 @@ function NewCourse() {
       <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-accent">
         + {t('courses.create')}
       </summary>
+      <div className="border-t border-line p-5 grid gap-4">
+        <CourseForm
+          submitLabel={t('courses.create')}
+          pending={create.isPending}
+          onSubmit={(values) => create.mutate(values)}
+        />
+        <CustomFieldsSection
+          entityType="COURSE"
+          values={customValues}
+          onChange={setCustomValues}
+        />
+        {create.isError ? <ErrorText error={create.error} /> : null}
+      </div>
+    </details>
+  );
+}
+
+function programDateRange(
+  p: ProgramResponse,
+  locale: string,
+  t: (key: string) => string,
+) {
+  if (p.startDate && p.endDate) {
+    return `${formatDate(p.startDate, locale)} – ${formatDate(p.endDate, locale)}`;
+  }
+  if (p.startDate) return formatDate(p.startDate, locale);
+  if (p.endDate) return formatDate(p.endDate, locale);
+  return t('courses.programDatesUnset');
+}
+
+function ProgramsPanel() {
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [customValues, setCustomValues] = useState<CustomValues>({});
+  const programs = useQuery({
+    queryKey: ['programs'],
+    queryFn: () => apiFetch<ProgramResponse[]>('/api/v1/programs'),
+  });
+  const create = useMutation({
+    mutationFn: (input: CreateProgramInput) =>
+      apiFetch<ProgramResponse>('/api/v1/programs', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      setName('');
+      setStartDate('');
+      setEndDate('');
+      setCustomValues({});
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+
+  return (
+    <Card title={t('courses.programsTitle')}>
       <form
-        className="grid gap-4 border-t border-line p-5"
+        className="mb-4 flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          create.mutate();
+          const input: CreateProgramInput = { name };
+          if (startDate) input.startDate = startDate;
+          if (endDate) input.endDate = endDate;
+          if (Object.keys(customValues).length) input.customValues = customValues;
+          create.mutate(input);
         }}
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label={t('courses.name')}>
-            <input
-              className={inputClass}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-          </Field>
-          <Field label={t('courses.typeLabel')}>
-            <select
-              className={inputClass}
-              value={form.type}
-              onChange={(e) =>
-                setForm({ ...form, type: e.target.value as CourseType })
-              }
-            >
-              {TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {t(`courses.type.${type}`)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t('courses.location')}>
-            <input
-              className={inputClass}
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-            />
-          </Field>
-          <Field label={t('courses.startDate')}>
-            <input
-              type="date"
-              className={inputClass}
-              value={form.startDate}
-              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-            />
-          </Field>
-        </div>
-        <p className="text-xs text-muted">{t('courses.createHint')}</p>
-        {create.isError ? <ErrorText error={create.error} /> : null}
-        <div>
+        <Field label={t('courses.programName')}>
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </Field>
+        <Field label={t('courses.startDate')}>
+          <input
+            type="date"
+            className={inputClass}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </Field>
+        <Field label={t('courses.endDate')}>
+          <input
+            type="date"
+            className={inputClass}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </Field>
+        <div className="flex items-end">
           <Button type="submit" disabled={create.isPending}>
-            {t('courses.create')}
+            {t('courses.programCreate')}
           </Button>
         </div>
+        <div className="w-full">
+          <CustomFieldsSection
+            entityType="PROGRAM"
+            values={customValues}
+            onChange={setCustomValues}
+          />
+        </div>
       </form>
-    </details>
+      {create.isError ? <ErrorText error={create.error} /> : null}
+      <ul className="divide-y divide-line">
+        {(programs.data ?? []).map((p) => (
+          <li key={p.id}>
+            <NavButton
+              to={`/staff/programs/${p.id}`}
+              className="block w-full rounded-lg px-2 py-3 text-start hover:bg-paper"
+            >
+              <span className="block font-medium">{p.name}</span>
+              <span className="block text-xs text-muted">
+                {programDateRange(p, i18n.language, t)}
+              </span>
+            </NavButton>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

@@ -23,6 +23,7 @@ const base = {
   notes: 'private',
   status: 'ACTIVE',
   archivedAt: null,
+  customValues: {},
   createdAt: new Date(),
   updatedAt: new Date(),
 } satisfies Member;

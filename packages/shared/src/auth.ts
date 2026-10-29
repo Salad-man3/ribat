@@ -12,6 +12,12 @@ import {
     MembershipRoleSchema,
     MembershipStatusSchema,
 } from './people.js';
+import { S1PermissionSchema, type S1Permission } from './s1-permission.js';
+
+export { S1PermissionSchema, type S1Permission };
+
+/** Matches organization.settings.locale; kept here to avoid auth → organization import cycle. */
+const OrganizationLocaleSchema = z.enum(['ar', 'en']);
 
 export const PlatformRoleSchema = z.enum(['OWNER', 'NONE']);
 export const IdentityStatusSchema = z.enum(['ACTIVE', 'DISABLED']);
@@ -19,23 +25,6 @@ export const IdentityStatusSchema = z.enum(['ACTIVE', 'DISABLED']);
 /** PERM-05. Absent when the caller is not staff. */
 export const ActiveViewSchema = z.enum(['ADMIN', 'MEMBER']);
 export type ActiveView = z.infer<typeof ActiveViewSchema>;
-
-/**
- * S1 keys only. T108 decides who receives which key.
- * Later slices add keys; they do not rename these.
- */
-export const S1PermissionSchema = z.enum([
-    'members.manage',
-    'memberships.manage',
-    'memberships.manage_org_admin',
-    'organization.manage',
-    'notes.write',
-    'notes.read_all',
-    'audit.read',
-    'courses.manage',
-    'materials.manage',
-]);
-export type S1Permission = z.infer<typeof S1PermissionSchema>;
 
 export const LoginSchema = z.object({
     phone: e164Phone,
@@ -72,6 +61,7 @@ export const MembershipSummarySchema = z.object({
     id: uuid,
     organizationId: uuid,
     organizationName: z.string(),
+    organizationLocale: OrganizationLocaleSchema,
     role: MembershipRoleSchema,
     memberId: uuid.nullable(),
     status: MembershipStatusSchema,

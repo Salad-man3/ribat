@@ -21,7 +21,11 @@ export function FailedEventsPage() {
 
   return (
     <section className="grid gap-6">
-      <PageHeader title={t('events.title')} subtitle={t('events.subtitle')} />
+      <PageHeader
+        chrome
+        title={t('events.title')}
+        subtitle={t('events.subtitle')}
+      />
       {failed.isError ? <ErrorText error={failed.error} /> : null}
       {retry.isError ? <ErrorText error={retry.error} /> : null}
       {failed.data?.length === 0 ? <Empty>{t('events.empty')}</Empty> : null}

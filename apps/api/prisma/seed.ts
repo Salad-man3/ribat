@@ -1,4 +1,5 @@
-import { PrismaClient, type Prayer, type Prisma } from '@prisma/client';
+import type { Prayer, Prisma, PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import { ayahsInRange, pagesForRange, SURAH_BY_NUMBER } from '@ribat/quran-data';
 import { hashSecret } from '../src/auth/credentials';
 import { addDays, dateIn, fromDateString, zonedToUtc } from '../src/common/zoned-time';
@@ -6,7 +7,17 @@ import { organizationScopeExtension } from '../src/prisma/organization-scope';
 import { identitiesOf, notify } from '../src/notifications/notify';
 import { writeSummary } from '../src/progress/memorization-summary';
 
-const prisma = new PrismaClient();
+let defaultPrisma: PrismaClient | undefined;
+let seedPrismaOverride: PrismaClient | undefined;
+
+/** Browser demo snapshot builder seeds into PGlite via this hook. */
+export function useSeedClient(client: PrismaClient) {
+  seedPrismaOverride = client;
+}
+
+function prisma(): PrismaClient {
+  return seedPrismaOverride ?? (defaultPrisma ??= createPrismaClient());
+}
 const DEMO_PASSWORD = 'demo-ribat-2026';
 const TZ = 'Asia/Damascus';
 
@@ -58,7 +69,7 @@ type Person = {
 async function seedDemo() {
   const today = dateIn(new Date(), TZ);
   const year = Number(today.slice(0, 4));
-  const org = await prisma.organization.create({
+  const org = await prisma().organization.create({
     data: {
       name: 'مسجد النور',
       slug: 'demo-mosque',
@@ -88,7 +99,7 @@ async function seedDemo() {
   type MaterialKey = keyof typeof materialSpecs;
   const material = {} as Record<MaterialKey, { id: string; kind: string; totalPages: number }>;
   for (const [key, spec] of Object.entries(materialSpecs) as [MaterialKey, (typeof materialSpecs)[MaterialKey]][]) {
-    const row = await prisma.material.create({ data: { organizationId, ...spec } });
+    const row = await prisma().material.create({ data: { organizationId, ...spec } });
     material[key] = { id: row.id, kind: spec.kind, totalPages: spec.totalPages };
   }
 
@@ -109,7 +120,7 @@ async function seedDemo() {
     student?: boolean;
   }) {
     const education = educationFor(people.size, input.schoolGrade !== undefined, input.student === true);
-    const member = await prisma.member.create({
+    const member = await prisma().member.create({
       data: {
         organizationId,
         firstName: input.firstName,
@@ -134,12 +145,12 @@ async function seedDemo() {
     };
     people.set(member.id, person);
     if (input.role && input.phone) {
-      const identity = await prisma.identity.upsert({
+      const identity = await prisma().identity.upsert({
         where: { phone: input.phone },
         update: { passwordHash, status: 'ACTIVE' },
         create: { phone: input.phone, passwordHash, status: 'ACTIVE' },
       });
-      const membership = await prisma.membership.create({
+      const membership = await prisma().membership.create({
         data: { organizationId, identityId: identity.id, memberId: member.id, role: input.role, status: 'ACTIVE' },
       });
       membershipOf.set(member.id, { id: membership.id, identityId: identity.id });
@@ -148,14 +159,14 @@ async function seedDemo() {
   }
 
   // The six demo logins from the README keep their phones and roles.
-  const noor = await prisma.household.create({ data: { organizationId, name: 'آل النوري' } });
+  const noor = await prisma().household.create({ data: { organizationId, name: 'آل النوري' } });
   const sheikh = await addMember({ firstName: 'عمر', fatherName: 'يوسف', familyName: 'الحداد', gender: 'M', birthDate: '1975-04-01', phone: '+963999001001', role: 'SHEIKH' });
   await addMember({ firstName: 'سالم', fatherName: 'كريم', familyName: 'العظم', gender: 'M', birthDate: '1988-02-10', phone: '+963999001010', role: 'ORG_ADMIN' });
   await addMember({ firstName: 'رامي', fatherName: 'نبيل', familyName: 'العظم', gender: 'M', birthDate: '1990-06-15', phone: '+963999001011', role: 'ORG_ADMIN' });
   const tariq = await addMember({ firstName: 'طارق', fatherName: 'سالم', familyName: 'النوري', gender: 'M', birthDate: '2005-08-20', phone: '+963999001030', role: 'MEMBER', householdId: noor.id });
   const ward = await addMember({ firstName: 'يوسف', fatherName: 'سالم', familyName: 'النوري', motherName: 'هدى الشامي', gender: 'M', birthDate: '2014-01-12', phone: '+963999001040', role: 'MEMBER', householdId: noor.id, schoolGrade: 'السادس' });
   const salim = await addMember({ firstName: 'سالم', fatherName: 'كريم', familyName: 'النوري', gender: 'M', birthDate: '1982-11-03', phone: '+963999001050', role: 'GUARDIAN', householdId: noor.id });
-  await prisma.guardianLink.create({
+  await prisma().guardianLink.create({
     data: { organizationId, guardianMemberId: salim.id, wardMemberId: ward.id, relation: 'FATHER', isPrimary: true },
   });
 
@@ -182,7 +193,7 @@ async function seedDemo() {
   const wardsOf = new Map<string, Person[]>([[salim.id, [ward]]]);
   for (let i = 0; i < 24; i++) {
     const familyName = FAMILIES[i];
-    const household = await prisma.household.create({ data: { organizationId, name: `آل ${familyName}` } });
+    const household = await prisma().household.create({ data: { organizationId, name: `آل ${familyName}` } });
     const fatherFirst = MEN[i];
     const father = await addMember({
       firstName: fatherFirst,
@@ -216,7 +227,7 @@ async function seedDemo() {
     }
     kids.push(...children);
     wardsOf.set(father.id, children);
-    await prisma.guardianLink.createMany({
+    await prisma().guardianLink.createMany({
       data: children.map((child) => ({ organizationId, guardianMemberId: father.id, wardMemberId: child.id, relation: 'FATHER' as const, isPrimary: true })),
     });
   }
@@ -284,7 +295,7 @@ async function seedDemo() {
 
   for (const [index, spec] of courses.entries()) {
     const students = [...new Map(spec.students.map((s) => [s.id, s])).values()];
-    const course = await prisma.course.create({
+    const course = await prisma().course.create({
       data: {
         organizationId,
         name: spec.name,
@@ -300,13 +311,13 @@ async function seedDemo() {
     });
     courseIds.push(course.id);
     if (spec.memorize)
-      await prisma.courseMaterial.create({ data: { organizationId, courseId: course.id, materialId: material[spec.memorize].id, track: 'MEMORIZATION' } });
+      await prisma().courseMaterial.create({ data: { organizationId, courseId: course.id, materialId: material[spec.memorize].id, track: 'MEMORIZATION' } });
     if (spec.explain)
-      await prisma.courseMaterial.create({ data: { organizationId, courseId: course.id, materialId: material[spec.explain].id, track: 'EXPLANATION', order: 1 } });
-    await prisma.teachingAssignment.create({ data: { organizationId, courseId: course.id, teacherMemberId: spec.lead.id, role: 'LEAD' } });
+      await prisma().courseMaterial.create({ data: { organizationId, courseId: course.id, materialId: material[spec.explain].id, track: 'EXPLANATION', order: 1 } });
+    await prisma().teachingAssignment.create({ data: { organizationId, courseId: course.id, teacherMemberId: spec.lead.id, role: 'LEAD' } });
     if (index === 2) // Tariq also helps with the little ones, so his class mode lists two circles.
-      await prisma.teachingAssignment.create({ data: { organizationId, courseId: course.id, teacherMemberId: tariq.id, role: 'TEACHER' } });
-    await prisma.courseSchedule.createMany({
+      await prisma().teachingAssignment.create({ data: { organizationId, courseId: course.id, teacherMemberId: tariq.id, role: 'TEACHER' } });
+    await prisma().courseSchedule.createMany({
       data: spec.weekdays.map((weekday) => ({
         organizationId,
         courseId: course.id,
@@ -321,7 +332,7 @@ async function seedDemo() {
     const enrollments = [];
     for (const student of students)
       enrollments.push(
-        await prisma.enrollment.create({
+        await prisma().enrollment.create({
           data: { organizationId, courseId: course.id, memberId: student.id, startedAt: fromDateString(historyFrom) },
         }),
       );
@@ -331,7 +342,7 @@ async function seedDemo() {
     let explainPage = between(1, 10);
     for (let date = historyFrom; date < today; date = addDays(date, 1)) {
       if (!spec.weekdays.includes(weekdayOf(date))) continue;
-      const session = await prisma.courseSession.create({
+      const session = await prisma().courseSession.create({
         data: {
           organizationId,
           courseId: course.id,
@@ -425,10 +436,10 @@ async function seedDemo() {
     // Homework: last week's is closed out, this week's is still open.
     const memberTitle = spec.memorize === 'quran' ? 'مراجعة محفوظ الأسبوع' : spec.memorize ? `حفظ صفحتين من ${materialSpecs[spec.memorize].title}` : `قراءة الدرس القادم من ${materialSpecs[spec.explain!].title}`;
     for (const [offset, open] of [[-4, false], [3, true]] as const) {
-      const homework = await prisma.homework.create({
+      const homework = await prisma().homework.create({
         data: { organizationId, courseId: course.id, targetType: 'COURSE', title: memberTitle, description: 'مرتين في البيت قبل الحلقة.', dueDate: fromDateString(addDays(today, offset)), createdByMemberId: spec.lead.id },
       });
-      await prisma.homeworkTask.createMany({
+      await prisma().homeworkTask.createMany({
         data: enrollments.map((e) => {
           const status = open ? (random() < 0.3 ? 'DONE' : 'ASSIGNED') : random() < 0.8 ? 'DONE' : 'MISSED';
           return { organizationId, homeworkId: homework.id, enrollmentId: e.id, status, ...(status !== 'ASSIGNED' ? { markedByMemberId: spec.lead.id, markedAt: zonedToUtc(addDays(today, offset), '18:00', TZ) } : {}) } as const;
@@ -438,18 +449,18 @@ async function seedDemo() {
   }
 
   // Class mode has something to open on any day: an extra evening class for Tariq today.
-  await prisma.courseSession.create({
+  await prisma().courseSession.create({
     data: { organizationId, courseId: courseIds[0], date: fromDateString(today), startsAt: zonedToUtc(today, '18:00', TZ), endsAt: zonedToUtc(today, '20:00', TZ), status: 'SCHEDULED', isException: true, topic: 'مراجعة سورة النبأ' },
   });
 
   const chunk = async <T>(rows: T[], write: (part: T[]) => Promise<unknown>) => {
     for (let i = 0; i < rows.length; i += 500) await write(rows.slice(i, i + 500));
   };
-  await chunk(attendanceRows, (data) => prisma.attendance.createMany({ data }));
-  await chunk(logRows, (data) => prisma.memorizationLog.createMany({ data }));
-  await chunk(materialLogRows, (data) => prisma.materialLog.createMany({ data }));
+  await chunk(attendanceRows, (data) => prisma().attendance.createMany({ data }));
+  await chunk(logRows, (data) => prisma().memorizationLog.createMany({ data }));
+  await chunk(materialLogRows, (data) => prisma().materialLog.createMany({ data }));
 
-  const scoped = prisma.$extends(organizationScopeExtension(organizationId));
+  const scoped = prisma().$extends(organizationScopeExtension(organizationId));
   for (const key of summaries) {
     const [memberId, materialId] = key.split('|');
     await writeSummary(scoped, organizationId, memberId, materialId);
@@ -461,7 +472,7 @@ async function seedDemo() {
     const surah = pos.surah + 1;
     const score = between(48, 99);
     const courseId = [...enrollmentsByCourse.entries()].find(([, rows]) => rows.some((r) => r.memberId === memberId))?.[0];
-    await prisma.memorizationTest.create({
+    await prisma().memorizationTest.create({
       data: {
         organizationId,
         memberId,
@@ -483,7 +494,7 @@ async function seedDemo() {
       },
     });
   }
-  await prisma.memorizationTest.create({
+  await prisma().memorizationTest.create({
     data: { organizationId, memberId: ward.id, materialId: material.quran.id, courseId: courseIds[0], scopeType: 'JUZ', juz: 30, score: 86, passMark: 60, passed: true, attemptNo: 1, examinerMemberId: tariq.id, takenAt: zonedToUtc(addDays(today, -5), '17:00', TZ), idempotencyKey: crypto.randomUUID() },
   });
 
@@ -495,7 +506,7 @@ async function seedDemo() {
     const child = wards[0];
     const status = i < 3 ? 'PENDING' : i < 7 ? 'ACCEPTED' : 'REJECTED';
     const day = addDays(today, i < 3 ? i + 1 : -(i * 2));
-    await prisma.excuseRequest.create({
+    await prisma().excuseRequest.create({
       data: {
         organizationId,
         memberId: child.id,
@@ -512,13 +523,13 @@ async function seedDemo() {
   // Staff notes: a few for the sheikh only, the rest for all staff.
   const notes = ['متقن للحفظ، يحتاج إلى تحسين المخارج.', 'كثير الغياب هذا الشهر، تم التواصل مع الوالد.', 'تقدّم ملحوظ في التجويد.', 'يُرشَّح لحلقة المراجعة.', 'يحتاج إلى متابعة في البيت.', 'صوت حسن، يُشجَّع على الأذان.', 'ضعف في مراجعة القديم.', 'من المتميزين في الحلقة.'];
   for (const [i, kid] of shuffle(kids).slice(0, 14).entries()) {
-    await prisma.memberNote.create({
+    await prisma().memberNote.create({
       data: { organizationId, memberId: kid.id, authorMemberId: i % 3 ? pick(teachers).id : sheikh.id, body: notes[i % notes.length], visibility: i % 4 === 0 ? 'SHEIKH_ONLY' : 'STAFF' },
     });
   }
 
   // The demo ward's father has something in his inbox.
-  const db = prisma.$extends(organizationScopeExtension(organizationId));
+  const db = prisma().$extends(organizationScopeExtension(organizationId));
   const family = await identitiesOf(db, [salim.id]);
   const asr = courses[0].name;
   await notify(db, organizationId, family, { type: 'TEST_RESULT', params: { student: ward.name, course: asr, score: 86, passed: true }, entityType: 'member', entityId: ward.id }, 'seed:test');
@@ -532,60 +543,61 @@ async function seedDemo() {
 }
 
 async function seedIsolation() {
-  const org = await prisma.organization.create({
+  const org = await prisma().organization.create({
     data: { name: 'مسجد اختبار العزل', slug: 'isolation-test-mosque', timezone: TZ, latitude: 33.5131, longitude: 36.3096, prayerMethod: 'MuslimWorldLeague', settings: { locale: 'ar', pointsEnabled: false } },
   });
   const passwordHash = await hashSecret(DEMO_PASSWORD);
-  const member = await prisma.member.create({
+  const member = await prisma().member.create({
     data: { organizationId: org.id, firstName: 'معزول', fatherName: 'اختبار', familyName: 'المسجد', birthDate: new Date('1970-01-01'), joinedAt: new Date('2024-09-01'), phone: '+963999002001' },
   });
-  const identity = await prisma.identity.upsert({
+  const identity = await prisma().identity.upsert({
     where: { phone: '+963999002001' },
     update: { passwordHash, status: 'ACTIVE' },
     create: { phone: '+963999002001', passwordHash, status: 'ACTIVE' },
   });
-  await prisma.membership.create({ data: { organizationId: org.id, identityId: identity.id, memberId: member.id, role: 'SHEIKH', status: 'ACTIVE' } });
-  await prisma.material.create({ data: { organizationId: org.id, kind: 'QURAN', title: 'القرآن الكريم', totalPages: 604 } });
+  await prisma().membership.create({ data: { organizationId: org.id, identityId: identity.id, memberId: member.id, role: 'SHEIKH', status: 'ACTIVE' } });
+  await prisma().material.create({ data: { organizationId: org.id, kind: 'QURAN', title: 'القرآن الكريم', totalPages: 604 } });
   return org;
 }
 
-async function main() {
+export async function runSeed(client: PrismaClient) {
+  useSeedClient(client);
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Refusing to seed in production');
   }
 
-  await prisma.auditLog.deleteMany({});
-  await prisma.eventDelivery.deleteMany({});
-  await prisma.domainEvent.deleteMany({});
-  await prisma.notification.deleteMany({});
-  await prisma.homeworkTask.deleteMany({});
-  await prisma.homework.deleteMany({});
-  await prisma.excuseRequest.deleteMany({});
-  await prisma.syncMutation.deleteMany({});
-  await prisma.attendance.deleteMany({});
-  await prisma.materialLog.deleteMany({});
-  await prisma.memorizationSummary.deleteMany({});
-  await prisma.memorizationTest.deleteMany({});
-  await prisma.memorizationLog.deleteMany({});
-  await prisma.groupMember.deleteMany({});
-  await prisma.courseGroup.deleteMany({});
-  await prisma.courseSession.deleteMany({});
-  await prisma.courseSchedule.deleteMany({});
-  await prisma.coursePause.deleteMany({});
-  await prisma.enrollment.deleteMany({});
-  await prisma.teachingAssignment.deleteMany({});
-  await prisma.courseRequirement.deleteMany({});
-  await prisma.courseMaterial.deleteMany({});
-  await prisma.guardianLink.deleteMany({});
-  await prisma.memberNote.deleteMany({});
-  await prisma.accountSetupCode.deleteMany({});
-  await prisma.authSession.deleteMany({});
-  await prisma.membership.deleteMany({});
-  await prisma.member.deleteMany({});
-  await prisma.household.deleteMany({});
-  await prisma.course.deleteMany({});
-  await prisma.material.deleteMany({});
-  await prisma.organization.deleteMany({
+  await prisma().auditLog.deleteMany({});
+  await prisma().eventDelivery.deleteMany({});
+  await prisma().domainEvent.deleteMany({});
+  await prisma().notification.deleteMany({});
+  await prisma().homeworkTask.deleteMany({});
+  await prisma().homework.deleteMany({});
+  await prisma().excuseRequest.deleteMany({});
+  await prisma().syncMutation.deleteMany({});
+  await prisma().attendance.deleteMany({});
+  await prisma().materialLog.deleteMany({});
+  await prisma().memorizationSummary.deleteMany({});
+  await prisma().memorizationTest.deleteMany({});
+  await prisma().memorizationLog.deleteMany({});
+  await prisma().groupMember.deleteMany({});
+  await prisma().courseGroup.deleteMany({});
+  await prisma().courseSession.deleteMany({});
+  await prisma().courseSchedule.deleteMany({});
+  await prisma().coursePause.deleteMany({});
+  await prisma().enrollment.deleteMany({});
+  await prisma().teachingAssignment.deleteMany({});
+  await prisma().courseRequirement.deleteMany({});
+  await prisma().courseMaterial.deleteMany({});
+  await prisma().guardianLink.deleteMany({});
+  await prisma().memberNote.deleteMany({});
+  await prisma().accountSetupCode.deleteMany({});
+  await prisma().authSession.deleteMany({});
+  await prisma().membership.deleteMany({});
+  await prisma().member.deleteMany({});
+  await prisma().household.deleteMany({});
+  await prisma().course.deleteMany({});
+  await prisma().material.deleteMany({});
+  await prisma().organization.deleteMany({
     where: { slug: { in: ['demo-mosque', 'isolation-test-mosque'] } },
   });
 
@@ -604,6 +616,14 @@ async function main() {
   console.log('  sheikh: +963999002001');
 }
 
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+async function main() {
+  await runSeed(prisma());
+}
+
+if (process.argv[1]?.replace(/\\/g, '/').endsWith('prisma/seed.ts')) {
+  main()
+    .catch(console.error)
+    .finally(async () => {
+      await defaultPrisma?.$disconnect();
+    });
+}

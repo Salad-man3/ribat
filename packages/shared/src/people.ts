@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { S1PermissionSchema } from './s1-permission.js';
 import { CursorPaginationQuerySchema } from './pagination.js';
 import {
     e164Phone,
@@ -80,6 +81,17 @@ export const GuardianLinkResponseSchema = z.object({
 });
 export type GuardianLinkResponse = z.infer<typeof GuardianLinkResponseSchema>;
 
+export const ListGuardianLinksQuerySchema = z.object({
+  search: z.string().trim().min(1).optional(),
+});
+export type ListGuardianLinksQuery = z.infer<typeof ListGuardianLinksQuerySchema>;
+
+export const StaffGuardianLinkRowSchema = GuardianLinkResponseSchema.extend({
+  guardianName: z.string(),
+  wardName: z.string(),
+});
+export type StaffGuardianLinkRow = z.infer<typeof StaffGuardianLinkRowSchema>;
+
 export const CreateMemberNoteSchema = z.object({
     body: z.string().trim().min(1).max(5000),
     visibility: MemberNoteVisibilitySchema.default('SHEIKH_ONLY'),
@@ -116,9 +128,10 @@ export const UpdateMembershipSchema = z
         role: AssignableRoleSchema.optional(),
         status: MembershipStatusSchema.optional(),
     })
-    .refine((value) => value.role !== undefined || value.status !== undefined, {
-        message: 'At least one field is required',
-    });
+    .refine(
+        (value) => value.role !== undefined || value.status !== undefined,
+        { message: 'At least one field is required' },
+    );
 export type UpdateMembershipInput = z.infer<typeof UpdateMembershipSchema>;
 
 export const MembershipResponseSchema = z.object({
@@ -128,6 +141,9 @@ export const MembershipResponseSchema = z.object({
     memberId: uuid.nullable(),
     role: MembershipRoleSchema,
     status: MembershipStatusSchema,
+    permissions: z.array(S1PermissionSchema),
+    /** Member tag assignments when tags are enabled (list/detail for access UI). */
+    memberTagIds: z.array(uuid).optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
 });

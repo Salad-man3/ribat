@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { ClassKit, SyncMutationInput, SyncResponse } from '@ribat/shared';
 import { ApiError } from '../api/api-fetch';
 import { OfflineDb } from './db';
-import { enqueue, flush, localIso } from './outbox';
+import { enqueue, flush, localIso, newIdempotencyKey } from './outbox';
 
 const ME = '11111111-1111-4111-8111-111111111111';
 const SESSION = '22222222-2222-4222-8222-222222222222';
@@ -18,6 +18,10 @@ const kit = (memberId = ME): ClassKit => ({
   sessions: [],
   materials: [],
   positions: [],
+  todayLogs: [],
+  explanationProgress: [],
+  recitationKinds: [],
+  memberHifzMaps: [],
 });
 
 const markDraft = (n: number, status: 'PRESENT' | 'ABSENT' = 'PRESENT') => ({
@@ -42,6 +46,19 @@ beforeEach(async () => {
 });
 
 describe('outbox', () => {
+  it('builds a UUID when randomUUID is missing (plain HTTP)', () => {
+    const orig = crypto.randomUUID;
+    // @ts-expect-error simulate insecure origin
+    crypto.randomUUID = undefined;
+    try {
+      expect(newIdempotencyKey()).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    } finally {
+      crypto.randomUUID = orig;
+    }
+  });
+
   it('stamps device time with its offset', () => {
     expect(localIso(new Date())).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$/);
   });

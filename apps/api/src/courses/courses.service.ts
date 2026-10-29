@@ -21,6 +21,7 @@ import { SessionsQueue } from '../jobs/sessions-queue';
 import { toMaterialResponse } from '../materials/material.mapper';
 import { MaterialsService } from '../materials/materials.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CustomFieldsService } from '../custom-fields/custom-fields.service';
 import { assertWritable, CourseAccessService } from './course-access.service';
 import { memberName, toCourseResponse } from './course.mapper';
 import { canTransition } from './lifecycle';
@@ -36,6 +37,7 @@ export class CoursesService {
     private readonly access: CourseAccessService,
     private readonly materials: MaterialsService,
     private readonly sessions: SessionsQueue,
+    private readonly customFields: CustomFieldsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -67,14 +69,28 @@ export class CoursesService {
     input: CreateCourseInput,
     auditCtx: AuditContext,
   ): Promise<CourseResponse> {
+    await this.assertProgram(organizationId, input.programId);
+    const { programId, startDate, endDate, customValues: customPatch, ...rest } =
+      input;
+    const linked = programId ?? null;
+    const customValues =
+      customPatch === undefined
+        ? {}
+        : await this.customFields.sanitizeForCreate(
+            organizationId,
+            'COURSE',
+            customPatch,
+          );
     const row = await this.prisma
       .forOrganization(organizationId)
       .course.create({
         data: {
           organizationId,
-          ...input,
-          startDate: optionalDate(input.startDate),
-          endDate: optionalDate(input.endDate),
+          ...rest,
+          customValues,
+          programId: linked,
+          startDate: linked ? null : optionalDate(startDate),
+          endDate: linked ? null : optionalDate(endDate),
         },
       });
     await this.audit.record(auditCtx, {
@@ -95,13 +111,38 @@ export class CoursesService {
     const db = this.prisma.forOrganization(organizationId);
     const before = await this.access.writable(organizationId, id);
     await this.assertToggles(organizationId, before, input);
+    await this.assertProgram(organizationId, input.programId);
 
+    const { programId, startDate, endDate, customValues: customPatch, ...rest } =
+      input;
+    const linked =
+      programId !== undefined ? (programId ?? null) : before.programId;
+    const datePatch = linked
+      ? { startDate: null, endDate: null }
+      : {
+          ...(startDate !== undefined
+            ? { startDate: optionalDate(startDate) ?? null }
+            : {}),
+          ...(endDate !== undefined
+            ? { endDate: optionalDate(endDate) ?? null }
+            : {}),
+        };
+    const customValues =
+      customPatch === undefined
+        ? undefined
+        : await this.customFields.sanitizeForUpdate(
+            organizationId,
+            'COURSE',
+            before.customValues,
+            customPatch,
+          );
     await db.course.updateMany({
       where: { id },
       data: {
-        ...input,
-        startDate: optionalDate(input.startDate),
-        endDate: optionalDate(input.endDate),
+        ...rest,
+        ...(customValues !== undefined ? { customValues } : {}),
+        ...(programId !== undefined ? { programId: programId ?? null } : {}),
+        ...datePatch,
       },
     });
     const after = await this.access.find(organizationId, id);
@@ -112,10 +153,27 @@ export class CoursesService {
       before: toCourseResponse(before),
       after: toCourseResponse(after),
     });
-    if (input.startDate !== undefined || input.endDate !== undefined) {
+    const datesChanged =
+      programId !== undefined ||
+      startDate !== undefined ||
+      endDate !== undefined;
+    if (datesChanged) {
       await this.sessions.generateCourse(organizationId, id);
     }
     return toCourseResponse(after);
+  }
+
+  private async assertProgram(
+    organizationId: string,
+    programId: string | null | undefined,
+  ) {
+    if (!programId) return;
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .program.findFirst({
+        where: { id: programId, archivedAt: null },
+      });
+    if (!row) throw notFound('Program');
   }
 
   /**
@@ -132,6 +190,7 @@ export class CoursesService {
     const groups = input.hasGroups ?? course.hasGroups;
     if (groups && !hierarchical) {
       throw conflict(
+        'COURSE_GROUPS_NEED_HIERARCHY',
         'Groups need several teachers: turn on the hierarchical option first',
       );
     }
@@ -139,8 +198,12 @@ export class CoursesService {
       const teachers = await db.teachingAssignment.count({
         where: { courseId: course.id, endedAt: null },
       });
-      if (teachers > 1)
-        throw conflict('Remove the extra teachers before turning this off');
+      if (teachers > 1) {
+        throw conflict(
+          'COURSE_TEACHERS_BEFORE_HIERARCHY_OFF',
+          'Remove the extra teachers before turning this off',
+        );
+      }
     }
     if (
       (input.hasGroups === false || input.isHierarchical === false) &&
@@ -149,8 +212,12 @@ export class CoursesService {
       const count = await db.courseGroup.count({
         where: { courseId: course.id },
       });
-      if (count > 0)
-        throw conflict('Delete the groups before turning this off');
+      if (count > 0) {
+        throw conflict(
+          'COURSE_GROUPS_BEFORE_TOGGLE_OFF',
+          'Delete the groups before turning this off',
+        );
+      }
     }
   }
 

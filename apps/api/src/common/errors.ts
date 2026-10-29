@@ -13,8 +13,19 @@ export function notFound(what: string): NotFoundException {
   });
 }
 
-export function conflict(message: string): ConflictException {
-  return new ConflictException({ error: { code: 'CONFLICT', message } });
+/** Second argument sets a stable `error.code` for translated UI copy. */
+export function conflict(
+  messageOrCode: string,
+  message?: string,
+): ConflictException {
+  if (message === undefined) {
+    return new ConflictException({
+      error: { code: 'CONFLICT', message: messageOrCode },
+    });
+  }
+  return new ConflictException({
+    error: { code: messageOrCode, message },
+  });
 }
 
 export function forbidden(message = 'Forbidden'): ForbiddenException {

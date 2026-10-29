@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import { Button } from '../components/ui/button';
 import { formatDateTime } from '../lib/domain';
 import { db } from './db';
@@ -78,9 +78,9 @@ export function SyncStatus() {
       {state.needsLogin ? (
         <p role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
           {t('classMode.sync.needsLogin', { count: state.mine })}
-          <Link to="/login" state={{ from: '/teach' }} className="font-semibold underline">
+          <NavButton to="/login" state={{ from: '/teach' }} className="font-semibold underline">
             {t('classMode.sync.signIn')}
-          </Link>
+          </NavButton>
         </p>
       ) : null}
       {stale ? (

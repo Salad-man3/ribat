@@ -1,12 +1,11 @@
 import type { MemberResponse } from '@ribat/shared';
 import type { OrgContext } from '../auth/org-context.guard';
-import { isStaff } from '../auth/permissions';
 import { toMemberResponse } from './member.mapper';
 import type { Member } from '@prisma/client';
 
 export function shapeMember(member: Member, org: OrgContext): MemberResponse {
   const base = toMemberResponse(member);
-  if (isStaff(org.role) && org.activeView === 'ADMIN') {
+  if (org.activeView === 'ADMIN' && org.permissions.length > 0) {
     return base;
   }
   if (org.role === 'MEMBER' && org.memberId === member.id) {

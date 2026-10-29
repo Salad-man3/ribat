@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Link, Navigate } from 'react-router';
+import { Navigate } from 'react-router';
+import { NavButton } from '../components/ui/nav-button';
 import type {
   SetupOrganizationInput,
   SetupOrganizationResponse,
@@ -52,12 +53,12 @@ export function SetupOrganizationPage() {
         >
           {issuedCode}
         </p>
-        <Link
-          className="block text-center text-sm text-accent underline underline-offset-4"
+        <NavButton
+          className="block w-full text-center text-sm text-accent underline underline-offset-4"
           to="/setup/password"
         >
           {t('setup.continue')}
-        </Link>
+        </NavButton>
       </AuthLayout>
     );
   }
