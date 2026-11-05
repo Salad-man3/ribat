@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { NavButton } from '../components/ui/nav-button';
-import { formatDate } from '../lib/domain';
+import { useFormatDates } from '../lib/calendar';
 import type {
   CourseResponse,
   CourseStatus,
@@ -24,6 +24,8 @@ import {
   ErrorText,
   Field,
   inputClass,
+  FilterChips,
+  ListPageShell,
   PageHeader,
   RecordRow,
   Segmented,
@@ -76,9 +78,10 @@ export function CoursesPage() {
       {tab === 'courses' ? (
         <>
           <NewCourse />
-          <Card>
-            <div className="mb-4">
-              <Segmented
+          <ListPageShell
+            header={null}
+            toolbar={
+              <FilterChips
                 value={filter}
                 onChange={setFilter}
                 aria-label={t('courses.title')}
@@ -90,7 +93,8 @@ export function CoursesPage() {
                       : t(`courses.status.${value}`),
                 }))}
               />
-            </div>
+            }
+          >
             {courses.isError ? <ErrorText error={courses.error} /> : null}
             {courses.data?.length === 0 ? (
               <Empty>{t('courses.empty')}</Empty>
@@ -111,7 +115,7 @@ export function CoursesPage() {
                 </li>
               ))}
             </ul>
-          </Card>
+          </ListPageShell>
         </>
       ) : (
         <ProgramsPanel />
@@ -167,19 +171,20 @@ function NewCourse() {
 
 function programDateRange(
   p: ProgramResponse,
-  locale: string,
+  formatDate: (date: string) => string,
   t: (key: string) => string,
 ) {
   if (p.startDate && p.endDate) {
-    return `${formatDate(p.startDate, locale)} – ${formatDate(p.endDate, locale)}`;
+    return `${formatDate(p.startDate)} – ${formatDate(p.endDate)}`;
   }
-  if (p.startDate) return formatDate(p.startDate, locale);
-  if (p.endDate) return formatDate(p.endDate, locale);
+  if (p.startDate) return formatDate(p.startDate);
+  if (p.endDate) return formatDate(p.endDate);
   return t('courses.programDatesUnset');
 }
 
 function ProgramsPanel() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDate } = useFormatDates();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -213,7 +218,8 @@ function ProgramsPanel() {
           const input: CreateProgramInput = { name };
           if (startDate) input.startDate = startDate;
           if (endDate) input.endDate = endDate;
-          if (Object.keys(customValues).length) input.customValues = customValues;
+          if (Object.keys(customValues).length)
+            input.customValues = customValues;
           create.mutate(input);
         }}
       >
@@ -264,7 +270,7 @@ function ProgramsPanel() {
             >
               <span className="block font-medium">{p.name}</span>
               <span className="block text-xs text-muted">
-                {programDateRange(p, i18n.language, t)}
+                {programDateRange(p, formatDate, t)}
               </span>
             </NavButton>
           </li>

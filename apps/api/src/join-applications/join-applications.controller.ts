@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ListJoinApplicationsQuerySchema,
   type ApproveJoinApplicationResponse,
@@ -7,7 +14,12 @@ import {
   type MemberAccessGap,
   type PublicOrganizationJoinInfo,
 } from '@ribat/shared';
-import { CurrentAudit, CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentAudit,
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import type { AuditContext } from '../audit/audit-context';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { JoinApplicationsService } from './join-applications.service';
@@ -20,7 +32,8 @@ export class JoinApplicationsController {
   @OrgRoute('members.manage')
   list(
     @CurrentOrg() org: OrgContext,
-    @Query(createZodValidationPipe(ListJoinApplicationsQuerySchema)) query: ListJoinApplicationsQuery,
+    @Query(createZodValidationPipe(ListJoinApplicationsQuerySchema))
+    query: ListJoinApplicationsQuery,
   ): Promise<JoinApplicationResponse[]> {
     return this.joinApplications.list(org.organizationId, query);
   }

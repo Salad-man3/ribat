@@ -44,7 +44,9 @@ Expires: {{expires}}
 Choose your own password. Mosque staff will never ask for your password.`,
 };
 
-export function defaultWhatsappSetupTemplate(locale: OrganizationLocale): string {
+export function defaultWhatsappSetupTemplate(
+  locale: OrganizationLocale,
+): string {
   return DEFAULT_TEMPLATES[locale];
 }
 
@@ -73,7 +75,10 @@ export function whatsappDigitsFromE164(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
-export function whatsappSetupChatUrl(phoneE164: string, message: string): string {
+export function whatsappSetupChatUrl(
+  phoneE164: string,
+  message: string,
+): string {
   const digits = whatsappDigitsFromE164(phoneE164);
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }

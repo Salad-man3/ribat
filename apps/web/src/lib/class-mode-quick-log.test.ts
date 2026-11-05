@@ -26,7 +26,10 @@ describe('quickMemorizationLog', () => {
     expect(call.type).toBe('memorization.log');
     expect(call).toMatchObject({
       type: 'memorization.log',
-      payload: expect.objectContaining({ grade: 'GOOD', range: expect.anything() }),
+      payload: expect.objectContaining({
+        grade: 'GOOD',
+        range: expect.anything(),
+      }),
     });
   });
 });

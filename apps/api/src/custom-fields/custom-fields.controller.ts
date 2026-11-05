@@ -17,7 +17,11 @@ import {
   type ListCustomFieldsQuery,
   type UpdateCustomFieldInput,
 } from '@ribat/shared';
-import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { CustomFieldsService } from './custom-fields.service';
 
@@ -41,7 +45,8 @@ export class CustomFieldsController {
   @OrgRoute('organization.manage')
   create(
     @CurrentOrg() org: OrgContext,
-    @Body(createZodValidationPipe(CreateCustomFieldSchema)) body: CreateCustomFieldInput,
+    @Body(createZodValidationPipe(CreateCustomFieldSchema))
+    body: CreateCustomFieldInput,
   ) {
     return this.customFields.create(org.organizationId, body);
   }
@@ -51,7 +56,8 @@ export class CustomFieldsController {
   update(
     @CurrentOrg() org: OrgContext,
     @Param('id', id) fieldId: string,
-    @Body(createZodValidationPipe(UpdateCustomFieldSchema)) body: UpdateCustomFieldInput,
+    @Body(createZodValidationPipe(UpdateCustomFieldSchema))
+    body: UpdateCustomFieldInput,
   ) {
     return this.customFields.update(org.organizationId, fieldId, body);
   }

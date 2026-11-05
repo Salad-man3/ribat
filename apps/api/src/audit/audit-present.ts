@@ -141,13 +141,22 @@ export function resolveAuditNames(
           typeof before?.courseId === 'string' ? before.courseId : undefined,
         ),
       };
+    case 'enrollment.moved':
+      return {
+        targetName: member(
+          typeof after?.memberId === 'string' ? after.memberId : undefined,
+        ),
+        contextName:
+          typeof after?.fromCourseName === 'string' &&
+          typeof after?.toCourseName === 'string'
+            ? `${after.fromCourseName} → ${after.toCourseName}`
+            : null,
+      };
     case 'member.created':
     case 'member.updated':
     case 'member.archived':
-      return {
-        targetName: maps.members.get(row.entityId) ?? null,
-        contextName: null,
-      };
+      // Names live only in member records; audit payloads omit PII (NFR-08, e2e audit suite).
+      return { targetName: null, contextName: null };
     case 'material.created':
     case 'material.updated':
     case 'material.archived':

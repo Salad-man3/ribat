@@ -1,67 +1,125 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MemberProgressResponse } from '@ribat/shared';
+import type { JuzFill } from '@ribat/shared';
 import { cn } from '../lib/utils';
 
-type Hifz = NonNullable<MemberProgressResponse['hifz']>;
+type Awqaf = { juz: number; level: string; passed: boolean };
 
-export function HifzMap({ hifz }: { hifz: Hifz }) {
+export function HifzLegend() {
   const { t } = useTranslation();
-  const memorized = new Set(hifz.juzMemorized);
-  const testOf = new Map(hifz.juzTests.map((row) => [row.juz, row]));
-  const awqafOf = new Map<number, Hifz['awqafByJuz'][number][]>();
-  for (const row of hifz.awqafByJuz) {
-    awqafOf.set(row.juz, [...(awqafOf.get(row.juz) ?? []), row]);
-  }
+  return (
+    <ul className="flex flex-wrap gap-3 text-xs text-muted">
+      <li className="flex items-center gap-1.5">
+        <span className="size-3 rounded bg-accent" />
+        {t('hifz.legendMosque')}
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span className="hifz-prior-swatch size-3 rounded border border-line" />
+        {t('hifz.legendPrior')}
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span className="size-3 rounded bg-gold" />
+        {t('hifz.legendCertified')}
+      </li>
+    </ul>
+  );
+}
+
+export function HifzMap({
+  hifz,
+  showLegend = true,
+}: {
+  hifz: {
+    juzFills?: JuzFill[];
+    awqafByJuz?: Awqaf[];
+  };
+  showLegend?: boolean;
+}) {
+  const { t } = useTranslation();
+  const fillOf = new Map((hifz.juzFills ?? []).map((row) => [row.juz, row]));
+  const awqafOf = new Map<number, Awqaf>();
+  for (const row of hifz.awqafByJuz ?? []) awqafOf.set(row.juz, row);
 
   return (
     <div className="grid gap-2">
-      <p className="text-xs text-muted">{t('hifz.mapHint')}</p>
+      {showLegend ? (
+        <p className="text-xs text-muted">{t('hifz.mapHint')}</p>
+      ) : null}
       <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6">
-        {Array.from({ length: 30 }, (_, i) => i + 1).map((juz) => {
-          const test = testOf.get(juz);
-          const awqaf = awqafOf.get(juz)?.[0];
-          const filled = memorized.has(juz);
-          return (
-            <div
-              key={juz}
-              title={
-                test
-                  ? t('hifz.juzTestTooltip', { juz, score: test.score, passed: test.passed })
-                  : awqaf
-                    ? t('hifz.awqafTooltip', { juz, level: awqaf.level, passed: awqaf.passed })
-                    : filled
-                      ? t('hifz.juzMemorized', { juz })
-                      : t('hifz.juzEmpty', { juz })
-              }
-              className={cn(
-                'flex min-h-11 flex-col items-center justify-center rounded-lg border text-xs font-semibold',
-                filled ? 'border-accent bg-accent-soft text-accent-strong' : 'border-line bg-paper text-muted',
-                test && (test.passed ? 'ring-2 ring-accent/40' : 'ring-2 ring-danger/40'),
-                awqaf && 'underline decoration-gold decoration-2 underline-offset-2',
-              )}
-            >
-              <span>{juz}</span>
-              {test ? (
-                <span className="text-[10px] font-normal">{test.score}</span>
-              ) : null}
-            </div>
-          );
-        })}
+        {Array.from({ length: 30 }, (_, i) => i + 1).map((juz) => (
+          <JuzCell
+            key={juz}
+            juz={juz}
+            fill={fillOf.get(juz)}
+            awqaf={awqafOf.get(juz)}
+          />
+        ))}
       </div>
-      <ul className="flex flex-wrap gap-3 text-xs text-muted">
-        <li className="flex items-center gap-1.5">
-          <span className="size-3 rounded border border-accent bg-accent-soft" />
-          {t('hifz.legendMemorized')}
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span className="size-3 rounded border border-line ring-2 ring-accent/40" />
-          {t('hifz.legendTestPass')}
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span className="size-3 rounded border border-line underline decoration-gold"> </span>
-          {t('hifz.legendAwqaf')}
-        </li>
-      </ul>
+      {showLegend ? (
+        <>
+          <HifzLegend />
+          {hifz.awqafByJuz?.length ? (
+            <p className="text-xs text-muted">{t('hifz.legendAwqaf')}</p>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function JuzCell({
+  juz,
+  fill,
+  awqaf,
+}: {
+  juz: number;
+  fill?: JuzFill;
+  awqaf?: Awqaf;
+}) {
+  const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  const total = fill?.totalPages || 1;
+  const prior = fill ? (fill.initialPages / total) * 100 : 0;
+  const mosque = fill ? (fill.newPages / total) * 100 : 0;
+  const certified = fill?.certified ?? false;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || certified) return;
+    el.style.setProperty('--prior', `${prior}%`);
+    el.style.setProperty('--mosque', `${mosque}%`);
+  }, [prior, mosque, certified]);
+
+  const label = certified
+    ? t('hifz.juzCertified', { juz })
+    : fill && (fill.newPages || fill.initialPages)
+      ? t('hifz.juzFill', {
+          juz,
+          newPages: fill.newPages,
+          initialPages: fill.initialPages,
+          totalPages: fill.totalPages,
+        })
+      : t('hifz.juzEmpty', { juz });
+
+  return (
+    <div
+      ref={ref}
+      title={
+        awqaf
+          ? `${label}. ${t('hifz.awqafTooltip', { juz, level: awqaf.level, passed: awqaf.passed })}`
+          : label
+      }
+      className={cn(
+        'flex min-h-11 items-center justify-center rounded-lg border text-xs font-semibold',
+        certified
+          ? 'border-gold bg-gold text-ink'
+          : 'hifz-fill border-line text-ink',
+        !certified && mosque >= 55 && 'text-white',
+        awqaf &&
+          !certified &&
+          'underline decoration-gold decoration-2 underline-offset-2',
+      )}
+    >
+      <span>{juz}</span>
     </div>
   );
 }

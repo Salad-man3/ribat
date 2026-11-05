@@ -7,7 +7,15 @@ import { ExcuseForm, ProgressPanel, WeekTimetable } from '../components/family';
 import { PublishedReportCards } from '../components/PublishedReportCards';
 import { MemberCard } from '../components/MemberCard';
 import { NavButton } from '../components/ui/nav-button';
-import { Badge, Card, Empty, ErrorText, Field, PageHeader, inputClass } from '../components/ui/form';
+import {
+  Badge,
+  Card,
+  Empty,
+  ErrorText,
+  Field,
+  PageHeader,
+  inputClass,
+} from '../components/ui/form';
 import { useNotifications } from './NotificationsPage';
 
 export function GuardianHomePage() {
@@ -18,8 +26,7 @@ export function GuardianHomePage() {
   });
   const unread = useNotifications(null).data?.unread ?? 0;
   const [excuseMemberId, setExcuseMemberId] = useState<string | null>(null);
-  const excuseTarget =
-    excuseMemberId ?? wards.data?.[0]?.id ?? null;
+  const excuseTarget = excuseMemberId ?? wards.data?.[0]?.id ?? null;
 
   return (
     <section className="grid gap-6">
@@ -36,7 +43,9 @@ export function GuardianHomePage() {
               >
                 {t('guardian.openNotifications')}
                 {unread ? (
-                  <Badge tone="accent">{t('guardian.unreadNotifications', { count: unread })}</Badge>
+                  <Badge tone="accent">
+                    {t('guardian.unreadNotifications', { count: unread })}
+                  </Badge>
                 ) : null}
               </NavButton>
             </div>
@@ -51,7 +60,9 @@ export function GuardianHomePage() {
                 >
                   {wards.data.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {[m.firstName, m.fatherName, m.familyName].filter(Boolean).join(' ')}
+                      {[m.firstName, m.fatherName, m.familyName]
+                        .filter(Boolean)
+                        .join(' ')}
                     </option>
                   ))}
                 </select>
@@ -64,7 +75,7 @@ export function GuardianHomePage() {
       ) : null}
       {(wards.data ?? []).map((member) => (
         <section key={member.id} className="grid gap-3">
-          <MemberCard member={member} />
+          <MemberCard member={member} to={`/guardian/members/${member.id}`} />
           <PublishedReportCards memberId={member.id} basePath="/guardian" />
           <ProgressPanel memberId={member.id} showExcuse={false} />
         </section>

@@ -119,10 +119,12 @@ export class CustomFieldsService {
     organizationId: string,
     entityType: CustomFieldEntityType,
   ) {
-    return this.prisma.forOrganization(organizationId).customFieldDefinition.findMany({
-      where: { entityType, archivedAt: null },
-      select: { key: true, type: true },
-    });
+    return this.prisma
+      .forOrganization(organizationId)
+      .customFieldDefinition.findMany({
+        where: { entityType, archivedAt: null },
+        select: { key: true, type: true },
+      });
   }
 
   async sanitizeForCreate(

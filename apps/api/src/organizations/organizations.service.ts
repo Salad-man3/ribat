@@ -1,4 +1,8 @@
-import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import type { OrgContext } from '../auth/org-context.guard';
 import {
   type OrganizationResponse,
@@ -45,11 +49,16 @@ export class OrganizationsService {
     return { setupRequired: count === 0 };
   }
 
-  async setupOrganization(input: SetupOrganizationInput): Promise<SetupOrganizationResponse> {
+  async setupOrganization(
+    input: SetupOrganizationInput,
+  ): Promise<SetupOrganizationResponse> {
     const existing = await this.prisma.platform.organization.count();
     if (existing > 0) {
       throw new ConflictException({
-        error: { code: 'CONFLICT', message: 'Organization setup is already complete' },
+        error: {
+          code: 'CONFLICT',
+          message: 'Organization setup is already complete',
+        },
       });
     }
 
@@ -72,7 +81,12 @@ export class OrganizationsService {
       });
 
       await tx.material.create({
-        data: { organizationId: organization.id, kind: 'QURAN', title: QURAN_TITLE, totalPages: 604 },
+        data: {
+          organizationId: organization.id,
+          kind: 'QURAN',
+          title: QURAN_TITLE,
+          totalPages: 604,
+        },
       });
 
       const identity = await this.identities.ensureIdentity(input.sheikh.phone);
@@ -147,7 +161,10 @@ export class OrganizationsService {
     if (input.orgAdminPermissions !== undefined) {
       if (!actor || actor.role !== 'SHEIKH') {
         throw new ForbiddenException({
-          error: { code: 'FORBIDDEN', message: 'Only the sheikh may change org-admin privileges' },
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Only the sheikh may change org-admin privileges',
+          },
         });
       }
     }
@@ -159,9 +176,15 @@ export class OrganizationsService {
       data: mergeUpdateData(input, current),
     });
     // Prayer-anchored sessions move when any of these change; regenerate the next four weeks.
-    const timesChanged = (['timezone', 'latitude', 'longitude', 'prayerMethod', 'prayerOffsets'] as const).some(
-      (key) => input[key] !== undefined,
-    );
+    const timesChanged = (
+      [
+        'timezone',
+        'latitude',
+        'longitude',
+        'prayerMethod',
+        'prayerOffsets',
+      ] as const
+    ).some((key) => input[key] !== undefined);
     if (timesChanged) await this.sessions.generateOrganization(organizationId);
     if (input.timezone !== undefined && input.timezone !== current.timezone) {
       await this.sessions.scheduleNightly(org);
@@ -181,7 +204,10 @@ export class OrganizationsService {
       candidate = `${base}-${Math.random().toString(36).slice(2, 6)}`;
     }
     throw new ConflictException({
-      error: { code: 'CONFLICT', message: 'Could not allocate organization slug' },
+      error: {
+        code: 'CONFLICT',
+        message: 'Could not allocate organization slug',
+      },
     });
   }
 }

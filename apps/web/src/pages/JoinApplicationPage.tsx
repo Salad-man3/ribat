@@ -9,7 +9,12 @@ import type {
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { Button } from '../components/ui/button';
-import { ErrorText, Field, inputClass, PageHeader } from '../components/ui/form';
+import {
+  ErrorText,
+  Field,
+  inputClass,
+  PageHeader,
+} from '../components/ui/form';
 import { NotFoundPage } from './NotFoundPage';
 
 const RELATIONS: GuardianRelation[] = ['FATHER', 'MOTHER', 'OTHER'];
@@ -56,7 +61,10 @@ export function JoinApplicationPage() {
   if (submitted) {
     return (
       <section className="mx-auto grid max-w-lg gap-4 px-4 py-10">
-        <PageHeader title={t('join.submittedTitle')} subtitle={t('join.submittedHint', { mosque: mosqueName })} />
+        <PageHeader
+          title={t('join.submittedTitle')}
+          subtitle={t('join.submittedHint', { mosque: mosqueName })}
+        />
       </section>
     );
   }
@@ -94,7 +102,10 @@ export function JoinApplicationPage() {
 
   return (
     <section className="mx-auto grid max-w-lg gap-6 px-4 py-10">
-      <PageHeader title={t('join.title', { mosque: mosqueName })} subtitle={t('join.subtitle')} />
+      <PageHeader
+        title={t('join.title', { mosque: mosqueName })}
+        subtitle={t('join.subtitle')}
+      />
       <div className="flex gap-2">
         <Button
           type="button"
@@ -122,13 +133,28 @@ export function JoinApplicationPage() {
           />
         </Field>
         <Field label={t('members.firstName')}>
-          <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+          <input
+            className={inputClass}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+          />
         </Field>
         <Field label={t('members.fatherName')}>
-          <input className={inputClass} value={fatherName} onChange={(e) => setFatherName(e.target.value)} required />
+          <input
+            className={inputClass}
+            value={fatherName}
+            onChange={(e) => setFatherName(e.target.value)}
+            required
+          />
         </Field>
         <Field label={t('members.familyName')}>
-          <input className={inputClass} value={familyName} onChange={(e) => setFamilyName(e.target.value)} required />
+          <input
+            className={inputClass}
+            value={familyName}
+            onChange={(e) => setFamilyName(e.target.value)}
+            required
+          />
         </Field>
         {kind === 'STUDENT' ? (
           <Field label={t('members.birthDate')}>
@@ -144,13 +170,28 @@ export function JoinApplicationPage() {
           <div className="grid gap-3 rounded-xl border border-line p-4">
             <p className="text-sm font-medium">{t('join.wardSection')}</p>
             <Field label={t('members.firstName')}>
-              <input className={inputClass} value={wardFirst} onChange={(e) => setWardFirst(e.target.value)} required />
+              <input
+                className={inputClass}
+                value={wardFirst}
+                onChange={(e) => setWardFirst(e.target.value)}
+                required
+              />
             </Field>
             <Field label={t('members.fatherName')}>
-              <input className={inputClass} value={wardFather} onChange={(e) => setWardFather(e.target.value)} required />
+              <input
+                className={inputClass}
+                value={wardFather}
+                onChange={(e) => setWardFather(e.target.value)}
+                required
+              />
             </Field>
             <Field label={t('members.familyName')}>
-              <input className={inputClass} value={wardFamily} onChange={(e) => setWardFamily(e.target.value)} required />
+              <input
+                className={inputClass}
+                value={wardFamily}
+                onChange={(e) => setWardFamily(e.target.value)}
+                required
+              />
             </Field>
             <Field label={t('members.birthDate')}>
               <input
@@ -165,7 +206,9 @@ export function JoinApplicationPage() {
               <select
                 className={inputClass}
                 value={wardRelation}
-                onChange={(e) => setWardRelation(e.target.value as GuardianRelation)}
+                onChange={(e) =>
+                  setWardRelation(e.target.value as GuardianRelation)
+                }
               >
                 {RELATIONS.map((r) => (
                   <option key={r} value={r}>

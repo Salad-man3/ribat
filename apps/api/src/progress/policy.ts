@@ -1,5 +1,8 @@
 import { ayahsInRange, mergeRanges, type AyahRange } from '@ribat/quran-data';
-import { dateIn, toDateString } from '../common/zoned-time';
+import { addDays, dateIn, toDateString } from '../common/zoned-time';
+
+/** Teachers may correct attendance and logs for this many calendar days after the session. */
+export const TEACHER_PAST_SESSION_EDIT_DAYS = 7;
 
 /** 05-offline-sync §6: a device clock is trusted only this far from the server's. */
 export const MAX_CLOCK_SKEW_MS = 12 * 60 * 60 * 1000;
@@ -30,6 +33,20 @@ export function teacherMayWriteSession(
   const sessionDay = toDateString(session.date);
   if (day < sessionDay) return false;
   return day === sessionDay || at <= session.endsAt;
+}
+
+/** Staff edit anytime; teachers within TEACHER_PAST_SESSION_EDIT_DAYS after the session date. */
+export function teacherMayEditSession(
+  now: Date,
+  session: { date: Date; endsAt: Date },
+  timeZone: string,
+): boolean {
+  const today = dateIn(now, timeZone);
+  const sessionDay = toDateString(session.date);
+  if (sessionDay > today) return false;
+  if (teacherMayWriteSession(now, session, timeZone)) return true;
+  const oldest = addDays(today, -TEACHER_PAST_SESSION_EDIT_DAYS);
+  return sessionDay >= oldest;
 }
 
 /** DM-09: the later `markedAt` wins; a tie goes to the write that arrives last. */

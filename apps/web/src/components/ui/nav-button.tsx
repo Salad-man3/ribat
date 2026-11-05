@@ -42,10 +42,7 @@ export function NavButton({
     <button
       type={type}
       {...props}
-      className={cn(
-        className,
-        active ? activeClassName : inactiveClassName,
-      )}
+      className={cn(className, active ? activeClassName : inactiveClassName)}
       aria-current={active ? 'page' : undefined}
       onClick={(event) => {
         onClick?.(event);

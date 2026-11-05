@@ -54,15 +54,22 @@ export class GuardiansService {
       });
   }
 
-  async list(organizationId: string, wardMemberId: string): Promise<GuardianLinkResponse[]> {
-    const ward = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: wardMemberId, status: 'ACTIVE' },
-    });
+  async list(
+    organizationId: string,
+    wardMemberId: string,
+  ): Promise<GuardianLinkResponse[]> {
+    const ward = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: wardMemberId, status: 'ACTIVE' },
+      });
     if (!ward) throw notFound();
 
-    const rows = await this.prisma.forOrganization(organizationId).guardianLink.findMany({
-      where: { wardMemberId },
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .guardianLink.findMany({
+        where: { wardMemberId },
+      });
     return rows.map(toGuardianLinkResponse);
   }
 
@@ -72,42 +79,50 @@ export class GuardiansService {
     input: CreateGuardianLinkInput,
     auditCtx: AuditContext,
   ): Promise<GuardianLinkResponse> {
-    const ward = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: wardMemberId, status: 'ACTIVE' },
-    });
+    const ward = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: wardMemberId, status: 'ACTIVE' },
+      });
     if (!ward) throw notFound();
 
     let guardianMemberId: string;
     if (input.mode === 'existing') {
-      const guardian = await this.prisma.forOrganization(organizationId).member.findFirst({
-        where: { id: input.guardianMemberId, status: 'ACTIVE' },
-      });
+      const guardian = await this.prisma
+        .forOrganization(organizationId)
+        .member.findFirst({
+          where: { id: input.guardianMemberId, status: 'ACTIVE' },
+        });
       if (!guardian) throw notFound();
       guardianMemberId = guardian.id;
     } else {
-      const created = await this.prisma.forOrganization(organizationId).member.create({
-        data: {
-          organizationId,
-          firstName: input.guardian.firstName,
-          fatherName: input.guardian.fatherName,
-          familyName: input.guardian.familyName,
-          birthDate: new Date('1985-01-01'),
-          phone: input.guardian.phone ?? null,
-          joinedAt: new Date(),
-        },
-      });
+      const created = await this.prisma
+        .forOrganization(organizationId)
+        .member.create({
+          data: {
+            organizationId,
+            firstName: input.guardian.firstName,
+            fatherName: input.guardian.fatherName,
+            familyName: input.guardian.familyName,
+            birthDate: new Date('1985-01-01'),
+            phone: input.guardian.phone ?? null,
+            joinedAt: new Date(),
+          },
+        });
       guardianMemberId = created.id;
     }
 
-    const row = await this.prisma.forOrganization(organizationId).guardianLink.create({
-      data: {
-        organizationId,
-        guardianMemberId,
-        wardMemberId,
-        relation: input.relation,
-        isPrimary: input.isPrimary,
-      },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .guardianLink.create({
+        data: {
+          organizationId,
+          guardianMemberId,
+          wardMemberId,
+          relation: input.relation,
+          isPrimary: input.isPrimary,
+        },
+      });
 
     await this.audit.record(auditCtx, {
       action: 'guardian.linked',
@@ -129,9 +144,11 @@ export class GuardiansService {
     linkId: string,
     auditCtx: AuditContext,
   ): Promise<void> {
-    const deleted = await this.prisma.forOrganization(organizationId).guardianLink.deleteMany({
-      where: { id: linkId, wardMemberId },
-    });
+    const deleted = await this.prisma
+      .forOrganization(organizationId)
+      .guardianLink.deleteMany({
+        where: { id: linkId, wardMemberId },
+      });
     if (deleted.count === 0) throw notFound();
 
     await this.audit.record(auditCtx, {
@@ -145,16 +162,20 @@ export class GuardiansService {
     const organizationId = org.organizationId;
     const guardianMemberId = org.memberId;
     if (!guardianMemberId) return [];
-    const links = await this.prisma.forOrganization(organizationId).guardianLink.findMany({
-      where: { guardianMemberId },
-      select: { wardMemberId: true },
-    });
+    const links = await this.prisma
+      .forOrganization(organizationId)
+      .guardianLink.findMany({
+        where: { guardianMemberId },
+        select: { wardMemberId: true },
+      });
     const wardIds = links.map((link) => link.wardMemberId);
     if (wardIds.length === 0) return [];
 
-    const members = await this.prisma.forOrganization(organizationId).member.findMany({
-      where: { id: { in: wardIds }, status: 'ACTIVE' },
-    });
+    const members = await this.prisma
+      .forOrganization(organizationId)
+      .member.findMany({
+        where: { id: { in: wardIds }, status: 'ACTIVE' },
+      });
     return members.map((member) => shapeMember(member, org));
   }
 
@@ -164,9 +185,11 @@ export class GuardiansService {
     wardMemberId: string,
   ): Promise<boolean> {
     if (!guardianMemberId) return false;
-    const link = await this.prisma.forOrganization(organizationId).guardianLink.findFirst({
-      where: { guardianMemberId, wardMemberId },
-    });
+    const link = await this.prisma
+      .forOrganization(organizationId)
+      .guardianLink.findFirst({
+        where: { guardianMemberId, wardMemberId },
+      });
     return link !== null;
   }
 }

@@ -17,7 +17,9 @@ export const KIT_STALE_MS = 24 * 60 * 60 * 1000;
 export function localIso(date = new Date()): string {
   const offset = -date.getTimezoneOffset();
   const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
-  const local = new Date(date.getTime() + offset * 60_000).toISOString().slice(0, 19);
+  const local = new Date(date.getTime() + offset * 60_000)
+    .toISOString()
+    .slice(0, 19);
   return `${local}${offset >= 0 ? '+' : '-'}${pad(offset / 60)}:${pad(offset % 60)}`;
 }
 
@@ -47,7 +49,10 @@ export async function dropQueued(
   await store.outbox.delete(idempotencyKey);
 }
 
-export async function enqueue(draft: Draft, store: OfflineDb = db): Promise<OutboxEntry> {
+export async function enqueue(
+  draft: Draft,
+  store: OfflineDb = db,
+): Promise<OutboxEntry> {
   const row = await store.kit.get('current');
   if (!row) throw new Error('No class kit on this device');
   const mutation = SyncMutationSchema.parse({
@@ -55,7 +60,11 @@ export async function enqueue(draft: Draft, store: OfflineDb = db): Promise<Outb
     idempotencyKey: newIdempotencyKey(),
     capturedAt: localIso(),
   });
-  const entry: OutboxEntry = { ...mutation, queuedAt: Date.now(), ownerMemberId: row.kit.memberId };
+  const entry: OutboxEntry = {
+    ...mutation,
+    queuedAt: Date.now(),
+    ownerMemberId: row.kit.memberId,
+  };
   await store.outbox.add(entry);
   if (store === db && navigator.onLine) void syncNow();
   return entry;
@@ -70,7 +79,9 @@ export type FlushOutcome = 'idle' | 'ok' | 'offline' | 'needs-login';
  */
 export async function flush(
   store: OfflineDb = db,
-  send: (mutations: SyncMutationInput[]) => Promise<SyncResponse> = postMutations,
+  send: (
+    mutations: SyncMutationInput[],
+  ) => Promise<SyncResponse> = postMutations,
 ): Promise<FlushOutcome> {
   const kit = await store.kit.get('current');
   const queued = (await store.outbox.orderBy('queuedAt').toArray()).filter(
@@ -82,7 +93,11 @@ export async function flush(
     const chunk = queued.slice(i, i + SYNC_BATCH_LIMIT);
     let response: SyncResponse;
     try {
-      response = await send(chunk.map(({ queuedAt: _q, ownerMemberId: _o, ...mutation }) => mutation));
+      response = await send(
+        chunk.map(
+          ({ queuedAt: _q, ownerMemberId: _o, ...mutation }) => mutation,
+        ),
+      );
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         await store.meta.put({ key: 'needsLogin', value: true });
@@ -165,10 +180,16 @@ export function useBackgroundSync() {
 }
 
 /** A Dexie query that re-renders when its tables change. */
-export function useLive<T>(query: () => Promise<T>, deps: unknown[] = []): T | undefined {
+export function useLive<T>(
+  query: () => Promise<T>,
+  deps: unknown[] = [],
+): T | undefined {
   const [value, setValue] = useState<T>();
   useEffect(() => {
-    const subscription = liveQuery(query).subscribe({ next: setValue, error: console.error });
+    const subscription = liveQuery(query).subscribe({
+      next: setValue,
+      error: console.error,
+    });
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

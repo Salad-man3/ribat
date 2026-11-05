@@ -35,7 +35,9 @@ export function TagFilterChips({
   );
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs font-medium text-muted">{t('roles.filterByTag')}</span>
+      <span className="text-xs font-medium text-muted">
+        {t('roles.filterByTag')}
+      </span>
       {chip('all', t('roles.filterAll'))}
       {tags.map((tag) => chip(tag.id, tag.name))}
     </div>
@@ -126,7 +128,9 @@ export function TagsSettingsPanel() {
                 <Button
                   type="button"
                   disabled={update.isPending || !editName.trim()}
-                  onClick={() => update.mutate({ id: tag.id, name: editName.trim() })}
+                  onClick={() =>
+                    update.mutate({ id: tag.id, name: editName.trim() })
+                  }
                 >
                   {t('common.save')}
                 </Button>

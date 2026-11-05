@@ -1,3 +1,9 @@
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/600.css';
+@import '@fontsource/amiri/400.css';
+@import '@fontsource/amiri/700.css';
+@import '@fontsource/reem-kufi/600.css';
 @import 'tailwindcss';
 
 @theme {
@@ -73,7 +79,7 @@
   color-scheme: light;
 }
 
-/* Iznik tiles: cobalt, turquoise, cream, tile red for the active marks. */
+/* Iznik tiles: cobalt, turquoise, cream; brass for emblem and certification marks. */
 [data-theme='iznik'] {
   --color-paper: #f6f1e6;
   --color-surface: #fffdf8;
@@ -88,7 +94,7 @@
   --color-chrome-deep: #0f2f5c;
   --color-chrome-ink: #ffffff;
   --color-chrome-muted: #bccfec;
-  --color-gold: #f0705c;
+  --color-gold: #c9922e;
   --color-pattern: #16407a;
   --color-danger: #a8321f;
   --color-danger-soft: #f8e6e0;
@@ -207,9 +213,12 @@ h1 {
   pointer-events: none;
   background: var(--color-pattern);
   opacity: 0.12;
-  mask-image: url('./ornaments/lattice.svg'),
+  mask-image:
+    url('./ornaments/lattice.svg'),
     linear-gradient(to bottom, transparent 8rem, #000 26rem);
-  mask-size: 128px, 100% 100%;
+  mask-size:
+    128px,
+    100% 100%;
   mask-repeat: repeat, no-repeat;
   mask-composite: intersect;
 }
@@ -262,6 +271,45 @@ h1 {
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 35%, transparent)
+    transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted) 35%, transparent);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.hifz-fill {
+  background-color: var(--color-paper);
+  background-image: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--color-muted) 42%, var(--color-paper)) 0
+      var(--prior, 0%),
+    var(--color-accent) var(--prior, 0%)
+      calc(var(--prior, 0%) + var(--mosque, 0%)),
+    transparent calc(var(--prior, 0%) + var(--mosque, 0%))
+  );
+}
+.hifz-prior-swatch {
+  background: color-mix(in srgb, var(--color-muted) 42%, var(--color-paper));
 }
 
 .record-section {

@@ -29,7 +29,10 @@ export class ReportCardsService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(org: OrgContext, query: ListReportCardsQuery): Promise<ReportCardResponse[]> {
+  async list(
+    org: OrgContext,
+    query: ListReportCardsQuery,
+  ): Promise<ReportCardResponse[]> {
     const db = this.prisma.forOrganization(org.organizationId);
     const where: {
       status?: 'DRAFT' | 'PUBLISHED';
@@ -76,13 +79,17 @@ export class ReportCardsService {
     input: CreateReportCardInput,
     audit: AuditContext,
   ): Promise<ReportCardResponse> {
-    if (!org.permissions.includes('members.manage') && !org.permissions.includes('courses.manage')) {
+    if (
+      !org.permissions.includes('members.manage') &&
+      !org.permissions.includes('courses.manage')
+    ) {
       throw forbidden();
     }
     const db = this.prisma.forOrganization(org.organizationId);
     const member = await db.member.findFirst({ where: { id: input.memberId } });
     if (!member) throw notFound('Member');
-    if (input.courseId) await this.courses.find(org.organizationId, input.courseId);
+    if (input.courseId)
+      await this.courses.find(org.organizationId, input.courseId);
 
     const content = await this.buildContent(
       org.organizationId,
@@ -145,7 +152,8 @@ export class ReportCardsService {
       include: { member: true, course: { select: { name: true } } },
     });
     if (!card) throw notFound('Report card');
-    if (card.status !== 'DRAFT') throw conflict('Published report cards cannot be edited');
+    if (card.status !== 'DRAFT')
+      throw conflict('Published report cards cannot be edited');
     await this.assertCanComment(org, card.memberId, card.courseId);
 
     const updated = await db.$transaction(async (tx) => {
@@ -169,7 +177,11 @@ export class ReportCardsService {
     return this.toResponse(updated);
   }
 
-  async publish(org: OrgContext, id: string, audit: AuditContext): Promise<ReportCardResponse> {
+  async publish(
+    org: OrgContext,
+    id: string,
+    audit: AuditContext,
+  ): Promise<ReportCardResponse> {
     if (!isStaffContext(org)) throw forbidden();
     const db = this.prisma.forOrganization(org.organizationId);
     const card = await db.reportCard.findFirst({
@@ -211,7 +223,10 @@ export class ReportCardsService {
     return this.toResponse(published);
   }
 
-  async listPublishedForMember(org: OrgContext, memberId: string): Promise<ReportCardResponse[]> {
+  async listPublishedForMember(
+    org: OrgContext,
+    memberId: string,
+  ): Promise<ReportCardResponse[]> {
     await this.access.relation(org, memberId);
     const db = this.prisma.forOrganization(org.organizationId);
     const cards = await db.reportCard.findMany({
@@ -264,7 +279,13 @@ export class ReportCardsService {
           takenAt: { gte: start, lte: end },
           ...(courseId ? { courseId } : {}),
         },
-        select: { id: true, materialId: true, score: true, passed: true, takenAt: true },
+        select: {
+          id: true,
+          materialId: true,
+          score: true,
+          passed: true,
+          takenAt: true,
+        },
       }),
       db.homeworkTask.findMany({
         where: {

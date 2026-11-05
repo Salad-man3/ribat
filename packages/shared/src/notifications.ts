@@ -6,7 +6,7 @@ export const NotificationCategorySchema = z.enum([
   'progress',
   'schedule',
   'announcements',
-]);
+] as const);
 export type NotificationCategory = z.infer<typeof NotificationCategorySchema>;
 
 const CATEGORY_BY_TYPE: Record<string, NotificationCategory> = {
@@ -19,6 +19,7 @@ const CATEGORY_BY_TYPE: Record<string, NotificationCategory> = {
   SCHEDULE_CHANGE: 'schedule',
   SESSION_NOT_TAKEN: 'schedule',
   ANNOUNCEMENT: 'announcements',
+  REPORT_CARD: 'progress',
 };
 
 export function notificationCategory(type: string): NotificationCategory {

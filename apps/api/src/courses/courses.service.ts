@@ -52,6 +52,7 @@ export class CoursesService {
       .forOrganization(organizationId)
       .course.findMany({
         where: {
+          kind: 'HALAQA',
           type: query.type,
           status: query.status ?? { not: 'ARCHIVED' },
         },
@@ -70,8 +71,13 @@ export class CoursesService {
     auditCtx: AuditContext,
   ): Promise<CourseResponse> {
     await this.assertProgram(organizationId, input.programId);
-    const { programId, startDate, endDate, customValues: customPatch, ...rest } =
-      input;
+    const {
+      programId,
+      startDate,
+      endDate,
+      customValues: customPatch,
+      ...rest
+    } = input;
     const linked = programId ?? null;
     const customValues =
       customPatch === undefined
@@ -113,8 +119,13 @@ export class CoursesService {
     await this.assertToggles(organizationId, before, input);
     await this.assertProgram(organizationId, input.programId);
 
-    const { programId, startDate, endDate, customValues: customPatch, ...rest } =
-      input;
+    const {
+      programId,
+      startDate,
+      endDate,
+      customValues: customPatch,
+      ...rest
+    } = input;
     const linked =
       programId !== undefined ? (programId ?? null) : before.programId;
     const datePatch = linked

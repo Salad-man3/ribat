@@ -9,16 +9,16 @@ import { SessionGuard } from './session.guard';
 import { SessionsService } from './sessions.service';
 
 @Module({
-    imports: [forwardRef(() => AuditModule)],
-    controllers: [AuthController],
-    providers: [
-        IdentitiesService,
-        SessionsService,
-        SessionGuard,
-        OrgContextGuard,
-        CsrfGuard,
-        { provide: APP_GUARD, useClass: CsrfGuard },
-    ],
-    exports: [IdentitiesService, SessionsService, SessionGuard, OrgContextGuard],
+  imports: [forwardRef(() => AuditModule)],
+  controllers: [AuthController],
+  providers: [
+    IdentitiesService,
+    SessionsService,
+    SessionGuard,
+    OrgContextGuard,
+    CsrfGuard,
+    { provide: APP_GUARD, useClass: CsrfGuard },
+  ],
+  exports: [IdentitiesService, SessionsService, SessionGuard, OrgContextGuard],
 })
-export class AuthModule { }
+export class AuthModule {}

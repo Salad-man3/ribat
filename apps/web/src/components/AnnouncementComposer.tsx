@@ -29,7 +29,11 @@ const STAFF_TARGETS: AnnouncementTargetType[] = [
   'TAGS',
 ];
 
-const TEACHER_TARGETS: AnnouncementTargetType[] = ['COURSES', 'GROUPS', 'MEMBERS'];
+const TEACHER_TARGETS: AnnouncementTargetType[] = [
+  'COURSES',
+  'GROUPS',
+  'MEMBERS',
+];
 
 const MEMBERSHIP_ROLES: MembershipRole[] = [
   'SHEIKH',
@@ -126,7 +130,9 @@ export function AnnouncementComposer() {
 
   if (!isStaff && courses.length === 0) return null;
 
-  const memberOptions = (members.data ?? []).filter((m) => m.status === 'ACTIVE');
+  const memberOptions = (members.data ?? []).filter(
+    (m) => m.status === 'ACTIVE',
+  );
 
   return (
     <Card title={t('announcements.composeTitle')}>

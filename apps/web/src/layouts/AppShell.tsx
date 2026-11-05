@@ -11,10 +11,12 @@ import { useNotifications } from '../pages/NotificationsPage';
 import { cn } from '../lib/utils';
 import {
   navFor,
+  navZonesFor,
   phoneTabsFromNav,
-  splitNavEntries,
   type NavEntry,
+  type NavZone,
 } from './app-nav';
+import { NavZoneHeading } from './NavZoneHeading';
 import { PhoneChrome } from './PhoneChrome';
 import { ShellAccount } from './ShellAccount';
 
@@ -113,16 +115,14 @@ function NavEntries({
 }
 
 function SidebarNav({
-  primary,
-  more,
+  zones,
   utility,
   unread,
   membersExpanded,
   setMembersExpanded,
   pathname,
 }: {
-  primary: NavEntry[];
-  more: NavEntry[];
+  zones: NavZone[];
   utility: NavEntry[];
   unread: number;
   membersExpanded: boolean;
@@ -138,15 +138,28 @@ function SidebarNav({
   };
   return (
     <nav className="grid gap-1">
-      <NavEntries entries={primary} {...props} />
-      {more.length ? (
-        <div className="mt-3 grid gap-1">
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wide text-chrome-muted/90">
-            {t('nav.more')}
-          </p>
-          <NavEntries entries={more} quiet {...props} />
-        </div>
-      ) : null}
+      {zones.map((zone, index) => {
+        const showHeading = zone.entries.length > 1 || zone.id !== 'today';
+        const headingId = `nav-zone-${zone.id}`;
+        return (
+          <section
+            key={zone.id}
+            className={cn(index > 0 && 'mt-2')}
+            aria-labelledby={showHeading ? headingId : undefined}
+          >
+            {showHeading ? (
+              <NavZoneHeading id={headingId} label={t(zone.labelKey)} />
+            ) : null}
+            <div className="grid gap-1">
+              <NavEntries
+                entries={zone.entries}
+                quiet={zone.id === 'record'}
+                {...props}
+              />
+            </div>
+          </section>
+        );
+      })}
       {utility.length ? (
         <div className="mt-3 grid gap-1 border-t border-white/15 pt-3">
           <NavEntries entries={utility} {...props} />
@@ -169,14 +182,25 @@ export function AppShell() {
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
-    if (location.pathname.startsWith('/staff/members')) setMembersExpanded(true);
+    if (location.pathname.startsWith('/staff/members'))
+      setMembersExpanded(true);
   }, [location.pathname]);
 
   const roleNav: NavEntry[] = membership
     ? navFor(membership.role, activeView, can)
     : [{ kind: 'link', to: '/teach', label: 'nav.teach' }];
 
-  const { primary, more } = splitNavEntries(roleNav);
+  const navZones = membership
+    ? navZonesFor(membership.role, activeView, can)
+    : [
+        {
+          id: 'today' as const,
+          labelKey: 'nav.zone.today',
+          entries: [
+            { kind: 'link' as const, to: '/teach', label: 'nav.teach' },
+          ],
+        },
+      ];
 
   const utilityNav: NavEntry[] = membership
     ? [
@@ -236,8 +260,7 @@ export function AppShell() {
   );
 
   const navBlock = {
-    primary,
-    more,
+    zones: navZones,
     utility: utilityNav,
     unread,
     membersExpanded,

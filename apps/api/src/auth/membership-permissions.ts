@@ -44,8 +44,13 @@ export function permissionGrantOptionsFromContext(
   const settings = readOrganizationSettings(input.organizationSettings);
   const tagsEnabled = settings.tagsEnabled ?? false;
   return {
-    orgAdminPermissions: orgAdminPermissionsFromSettings(input.organizationSettings),
-    tagPermissionKeys: tagPermissionKeysFromRows(input.tagPermissionsJson, tagsEnabled),
+    orgAdminPermissions: orgAdminPermissionsFromSettings(
+      input.organizationSettings,
+    ),
+    tagPermissionKeys: tagPermissionKeysFromRows(
+      input.tagPermissionsJson,
+      tagsEnabled,
+    ),
     tagsEnabled,
   };
 }
@@ -57,7 +62,9 @@ export function permissionsForMembershipContext(
   return permissionsFor(input.role, input.activeView, options);
 }
 
-export function orgAdminPermissionsForDisplay(settings: Prisma.JsonValue): S1Permission[] {
+export function orgAdminPermissionsForDisplay(
+  settings: Prisma.JsonValue,
+): S1Permission[] {
   const fromSettings = orgAdminPermissionsFromSettings(settings);
   return fromSettings ?? [...STAFF_ADMIN_PERMISSIONS];
 }

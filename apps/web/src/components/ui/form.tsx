@@ -89,6 +89,114 @@ export function PageHeader({
   );
 }
 
+/** Navigate back — text style, not a filled button. */
+export function BackLink({
+  to,
+  children,
+}: {
+  to: string;
+  children: ReactNode;
+}) {
+  return (
+    <NavButton
+      to={to}
+      className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+    >
+      <span className="inline-block rtl:rotate-180" aria-hidden>
+        ←
+      </span>
+      {children}
+    </NavButton>
+  );
+}
+
+export function FilterChips<T extends string>({
+  value,
+  onChange,
+  options,
+  'aria-label': ariaLabel,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+  'aria-label'?: string;
+}) {
+  return (
+    <div role="group" aria-label={ariaLabel} className="flex flex-wrap gap-1.5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={cn(
+            'rounded-full border px-3 py-1.5 text-sm font-medium transition',
+            value === opt.value
+              ? 'border-accent bg-accent-soft text-accent'
+              : 'border-line bg-surface text-muted hover:border-accent/40 hover:text-ink',
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function SwitchField({
+  label,
+  hint,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-paper/50 px-3 py-2.5">
+      <input
+        type="checkbox"
+        role="switch"
+        className="mt-0.5 size-5 shrink-0 accent-accent"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="grid gap-0.5 text-sm">
+        <span className="font-medium text-ink">{label}</span>
+        {hint ? <span className="text-xs text-muted">{hint}</span> : null}
+      </span>
+    </label>
+  );
+}
+
+/** List pages: header, optional peer switcher, toolbar, card body. */
+export function ListPageShell({
+  header,
+  peer,
+  toolbar,
+  children,
+}: {
+  header?: ReactNode;
+  peer?: ReactNode;
+  toolbar?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      {header}
+      {peer}
+      <Card>
+        {toolbar ? <div className="mb-4 grid gap-3">{toolbar}</div> : null}
+        {children}
+      </Card>
+    </>
+  );
+}
+
 export function Segmented<T extends string>({
   value,
   onChange,

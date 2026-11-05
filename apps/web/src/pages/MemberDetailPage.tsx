@@ -22,19 +22,23 @@ import { fullName, MemberCard } from '../components/MemberCard';
 import { MemberForm } from '../components/MemberForm';
 import { Button } from '../components/ui/button';
 import {
+  BackLink,
   Badge,
   Card,
   Empty,
   ErrorText,
   Field,
   inputClass,
-  SectionNav,
+  Segmented,
 } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 import { setupWhatsappChatUrl } from '../lib/whatsapp-setup';
 import { MemberTagsSection } from '../components/MemberTagsSection';
 import { MemberHifzSection } from '../components/MemberHifzSection';
+import { MemberHalaqatOverview } from '../components/MemberHalaqatOverview';
+import { AttendanceHeatmap } from '../components/AttendanceHeatmap';
 import { NotFoundPage } from './NotFoundPage';
+import { useCalendar, useFormatDates } from '../lib/calendar';
 import { formatDateTime } from '../lib/domain';
 
 const RELATIONS: GuardianRelation[] = ['FATHER', 'MOTHER', 'OTHER'];
@@ -47,6 +51,8 @@ export function MemberDetailPage() {
   const { can } = useActiveMembership();
   const [editing, setEditing] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
+  type MemberTab = 'hifz' | 'attendance' | 'family' | 'notes' | 'access';
+  const [tab, setTab] = useState<MemberTab>('hifz');
 
   const member = useQuery({
     queryKey: ['member', id],
@@ -99,27 +105,26 @@ export function MemberDetailPage() {
   if (!member.data) return <p className="text-sm text-muted">…</p>;
   const data = member.data;
 
-  const sectionItems = [
+  const memberTabs: { value: MemberTab; label: string }[] = [
     ...(can('members.manage')
-      ? [{ id: 'member-tags', label: t('members.tags.title') }]
+      ? [
+          { value: 'hifz' as const, label: t('members.tabHifz') },
+          { value: 'attendance' as const, label: t('members.tabAttendance') },
+        ]
       : []),
-    ...(can('members.manage')
-      ? [{ id: 'member-hifz', label: t('hifz.mapTitle') }]
-      : []),
-    { id: 'member-guardians', label: t('guardians.title') },
-    { id: 'member-household', label: t('household.title') },
-    { id: 'member-notes', label: t('notes.title') },
+    { value: 'family', label: t('members.tabFamily') },
+    { value: 'notes', label: t('notes.title') },
     ...(can('memberships.manage')
-      ? [{ id: 'member-access', label: t('access.title') }]
+      ? [{ value: 'access' as const, label: t('access.title') }]
       : []),
   ];
+  const activeTab = memberTabs.some((opt) => opt.value === tab)
+    ? tab
+    : (memberTabs[0]?.value ?? 'family');
 
   return (
     <section className="grid gap-6">
-      <NavButton to="/staff/members" className="text-sm text-accent">
-        <span className="inline-block rtl:rotate-180">←</span>{' '}
-        {t('members.title')}
-      </NavButton>
+      <BackLink to="/staff/members">{t('members.title')}</BackLink>
 
       {editing ? (
         <Card
@@ -180,28 +185,33 @@ export function MemberDetailPage() {
         </div>
       )}
 
-      <SectionNav items={sectionItems} />
+      <MemberHalaqatOverview memberId={id} />
 
-      {can('members.manage') ? (
-        <div id="member-tags" className="record-section">
-          <MemberTagsSection member={data} />
-        </div>
+      {memberTabs.length > 1 ? (
+        <Segmented
+          value={activeTab}
+          onChange={setTab}
+          aria-label={fullName(data)}
+          options={memberTabs}
+        />
       ) : null}
-      {can('members.manage') ? (
-        <div id="member-hifz" className="record-section">
+
+      {activeTab === 'hifz' && can('members.manage') ? (
+        <div className="grid gap-6">
+          <MemberTagsSection member={data} />
           <MemberHifzSection memberId={id} />
         </div>
       ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div id="member-guardians" className="record-section">
+      {activeTab === 'attendance' && can('members.manage') ? (
+        <AttendanceHeatmap memberId={id} />
+      ) : null}
+      {activeTab === 'family' ? (
+        <div className="grid gap-6 lg:grid-cols-2">
           <GuardiansSection
             memberId={id}
             nameOf={nameOf}
             candidates={everyone.data ?? []}
           />
-        </div>
-        <div id="member-household" className="record-section">
           <HouseholdSection
             member={data}
             nameOf={nameOf}
@@ -209,19 +219,17 @@ export function MemberDetailPage() {
             onLinked={refresh}
           />
         </div>
-        <div id="member-notes" className="record-section">
-          <NotesSection
-            memberId={id}
-            nameOf={nameOf}
-            canWrite={can('notes.write')}
-          />
-        </div>
-        {can('memberships.manage') ? (
-          <div id="member-access" className="record-section">
-            <AccessSection member={data} />
-          </div>
-        ) : null}
-      </div>
+      ) : null}
+      {activeTab === 'notes' ? (
+        <NotesSection
+          memberId={id}
+          nameOf={nameOf}
+          canWrite={can('notes.write')}
+        />
+      ) : null}
+      {activeTab === 'access' && can('memberships.manage') ? (
+        <AccessSection member={data} />
+      ) : null}
     </section>
   );
 }
@@ -514,7 +522,8 @@ function NotesSection({
   nameOf: (id: string) => string;
   canWrite: boolean;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDateTime: formatWhen } = useFormatDates();
   const queryClient = useQueryClient();
   const key = ['member', memberId, 'notes'];
   const notes = useQuery({
@@ -548,8 +557,7 @@ function NotesSection({
               {note.body}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
-              {nameOf(note.authorMemberId)} ·{' '}
-              {formatDateTime(note.createdAt, i18n.language)}
+              {nameOf(note.authorMemberId)} · {formatWhen(note.createdAt)}
               <Badge
                 tone={note.visibility === 'SHEIKH_ONLY' ? 'danger' : 'neutral'}
               >
@@ -600,7 +608,9 @@ function NotesSection({
 }
 
 function AccessSection({ member }: { member: MemberResponse }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDateTime: formatWhen } = useFormatDates();
+  const { calendar } = useCalendar();
   const queryClient = useQueryClient();
   const { membership, can } = useActiveMembership();
   const orgSettings = useQuery({
@@ -643,7 +653,11 @@ function AccessSection({ member }: { member: MemberResponse }) {
           mosqueName: membership.organizationName,
           setupUrl: `${window.location.origin}/setup`,
           code: issued.setupCode,
-          expires: formatDateTime(issued.expiresAt, membership.organizationLocale),
+          expires: formatDateTime(
+            issued.expiresAt,
+            membership.organizationLocale,
+            calendar,
+          ),
         })
       : null;
 
@@ -673,8 +687,7 @@ function AccessSection({ member }: { member: MemberResponse }) {
             {issued.setupCode}
           </p>
           <p className="mt-2 text-xs opacity-80">
-            {t('access.expires')}:{' '}
-            {formatDateTime(issued.expiresAt, i18n.language)}
+            {t('access.expires')}: {formatWhen(issued.expiresAt)}
           </p>
           {whatsappHref ? (
             <div className="mt-4 grid gap-2">

@@ -295,15 +295,28 @@ export class ScheduleService {
         `Ask for at most ${MAX_SESSION_RANGE_DAYS} days at a time`,
       );
     }
-    const rows = await this.prisma
-      .forOrganization(organizationId)
-      .courseSession.findMany({
-        where: {
-          courseId,
-          date: { gte: fromDateString(from), lte: fromDateString(to) },
-        },
-        orderBy: { startsAt: 'asc' },
-      });
+    const db = this.prisma.forOrganization(organizationId);
+    const rows = await db.courseSession.findMany({
+      where: {
+        courseId,
+        date: { gte: fromDateString(from), lte: fromDateString(to) },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    const sessionIds = rows.map((r) => r.id);
+    const [rosterCount, marked] = await Promise.all([
+      db.enrollment.count({ where: { courseId, status: 'ACTIVE' } }),
+      sessionIds.length
+        ? db.attendance.groupBy({
+            by: ['sessionId'],
+            where: { sessionId: { in: sessionIds } },
+            _count: { _all: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const markedBySession = new Map(
+      marked.map((m) => [m.sessionId, m._count._all]),
+    );
     return rows.map((row) => ({
       id: row.id,
       courseId: row.courseId,
@@ -312,6 +325,8 @@ export class ScheduleService {
       endsAt: row.endsAt.toISOString(),
       status: row.status,
       topic: row.topic,
+      rosterCount,
+      attendanceCount: markedBySession.get(row.id) ?? 0,
     }));
   }
 }

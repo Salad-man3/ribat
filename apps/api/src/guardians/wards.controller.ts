@@ -1,5 +1,9 @@
 import { Controller, ForbiddenException, Get } from '@nestjs/common';
-import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import { GuardiansService } from './guardians.service';
 
 @Controller('wards')

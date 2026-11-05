@@ -19,7 +19,12 @@ export function requestIdFrom(req: {
   header?: (name: string) => string | undefined;
 }): string | undefined {
   const id = req.id;
-  return (typeof id === 'string' ? id : undefined) ?? req.requestId ?? req.header?.('x-request-id') ?? undefined;
+  return (
+    (typeof id === 'string' ? id : undefined) ??
+    req.requestId ??
+    req.header?.('x-request-id') ??
+    undefined
+  );
 }
 
 export function auditContextFromOrg(

@@ -9,30 +9,24 @@ import type {
 } from '@ribat/shared';
 import { ApiError, apiFetch } from '../api/api-fetch';
 import { Button } from './ui/button';
-import { Field, inputClass } from './ui/form';
+import { Field, SwitchField, inputClass } from './ui/form';
 import {
   applyHifzShortcut,
   isValidAyahRangeState,
   continuationRangeFromPosition,
   mergeStartManual,
-  pickEndWithUnit,
   rangeStats,
-  readStoredPickUnit,
   setEndManual,
   stepEndByPage,
   stepEndBySurah,
-  storePickUnit,
   toAyahRangeInput,
   type AyahRangeState,
-  type PickUnit,
 } from '../lib/hifz-range-shortcuts';
 import { cn } from '../lib/utils';
-import { dropQueued, enqueue, refreshKit } from '../offline/outbox';
+import { dropQueued, enqueue, localIso, refreshKit } from '../offline/outbox';
 import type { OutboxEntry } from '../offline/db';
 
 const GRADES: Grade[] = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'REPEAT'];
-const JUZ_OPTIONS = Array.from({ length: 30 }, (_, i) => i + 1);
-
 type KitMaterial = {
   materialId: string;
   kind: string;
@@ -54,7 +48,11 @@ function describePosition(
   if (material.kind === 'QURAN' && p.lastSurah && p.lastAyah) {
     const surah = SURAH_BY_NUMBER.get(p.lastSurah);
     const name = language === 'ar' ? surah?.nameAr : surah?.nameEn;
-    return t('classMode.last', { page: p.lastPageReached, surah: name, ayah: p.lastAyah });
+    return t('classMode.last', {
+      page: p.lastPageReached,
+      surah: name,
+      ayah: p.lastAyah,
+    });
   }
   return t('classMode.lastPage', { page: p.lastPageReached });
 }
@@ -70,7 +68,10 @@ function rangeSummary(
   language: string,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
-  const fromPage = pageForAyah({ surah: range.surahStart, ayah: range.ayahStart });
+  const fromPage = pageForAyah({
+    surah: range.surahStart,
+    ayah: range.ayahStart,
+  });
   const toPage = pageForAyah({ surah: range.surahEnd, ayah: range.ayahEnd });
   return t('classMode.rangeSummary', {
     fromSurah: surahLabel(range.surahStart, language),
@@ -82,9 +83,10 @@ function rangeSummary(
   });
 }
 
-function resetFromPosition(
-  pos: MemorizationSummaryResponse | undefined,
-): { range: AyahRangeState; endLocked: boolean } {
+function resetFromPosition(pos: MemorizationSummaryResponse | undefined): {
+  range: AyahRangeState;
+  endLocked: boolean;
+} {
   return { range: continuationRangeFromPosition(pos), endLocked: false };
 }
 
@@ -97,7 +99,11 @@ export function HifzLogSheet({
   syncedLogs,
   pending,
   onSaved,
+  onRefresh,
   embedded = false,
+  online = false,
+  readOnly = false,
+  capturedAt,
 }: {
   student: Student;
   courseId: string;
@@ -107,6 +113,12 @@ export function HifzLogSheet({
   syncedLogs: ClassKitTodayLog[];
   pending: OutboxEntry[];
   onSaved?: () => void;
+  /** Staff lobby: POST logs live instead of the offline outbox. */
+  online?: boolean;
+  onRefresh?: () => void;
+  /** When set (e.g. history session), the log is recorded at this instant. */
+  capturedAt?: string;
+  readOnly?: boolean;
   /** Inline on ClassSessionPage: hide duplicate header and heavy range pickers. */
   embedded?: boolean;
 }) {
@@ -117,15 +129,13 @@ export function HifzLogSheet({
   const quran = material.kind === 'QURAN';
 
   const [type, setType] = useState<'NEW' | 'REVISION'>('NEW');
-  const [recitationKindId, setRecitationKindId] = useState<string | undefined>();
+  const [recitationKindId, setRecitationKindId] = useState<
+    string | undefined
+  >();
   const [range, setRange] = useState<AyahRangeState>(() =>
     continuationRangeFromPosition(positionFor(materials[0].materialId)),
   );
   const [, setEndLocked] = useState(false);
-  const [pickUnit, setPickUnit] = useState<PickUnit>(() => readStoredPickUnit());
-  const [pickerPage, setPickerPage] = useState(1);
-  const [pickerSurah, setPickerSurah] = useState(1);
-  const [pickerJuz, setPickerJuz] = useState(30);
 
   const nextPage = Math.min(604, (position?.lastPageReached ?? 0) + 1);
   const [pages, setPages] = useState({ pageFrom: nextPage, pageTo: nextPage });
@@ -137,9 +147,6 @@ export function HifzLogSheet({
     setEndLocked(locked);
     const page = Math.min(604, (pos?.lastPageReached ?? 0) + 1);
     setPages({ pageFrom: page, pageTo: page });
-    setPickerPage(pageForAyah({ surah: next.surahStart, ayah: next.ayahStart }));
-    setPickerSurah(next.surahStart);
-    setPickerJuz(30);
     setDidntPass(false);
   }, [student.memberId, materialId]);
 
@@ -166,40 +173,45 @@ export function HifzLogSheet({
     setEndLocked(true);
   };
 
-  const applyPick = (unit: PickUnit, value: number) => {
-    const next = pickEndWithUnit(unit, value, range);
-    if (next) lockAndSetRange(next);
-  };
-
-  const changePickUnit = (unit: PickUnit) => {
-    setPickUnit(unit);
-    storePickUnit(unit);
-  };
-
   const stats = quran ? rangeStats(range) : null;
 
   const save = async () => {
+    if (readOnly) return;
     setError(null);
     if (quran && !isValidAyahRangeState(range))
       return setError(t('classMode.invalidRange'));
     try {
-      await enqueue({
-        type: 'memorization.log',
-        payload: {
-          memberId: student.memberId,
-          materialId,
-          courseId,
-          type: recitationKindId ? 'NEW' : type,
-          ...(quran ? { range: toAyahRangeInput(range) } : pages),
-          ...(didntPass ? { grade: null, countsProgress: false } : { grade, countsProgress: true }),
-          mistakes,
-          ...(note.trim() ? { note: note.trim() } : {}),
-          ...(recitationKindId ? { recitationKindId } : {}),
-        },
-      });
+      const when = capturedAt ?? localIso();
+      const payload = {
+        memberId: student.memberId,
+        materialId,
+        courseId,
+        type: recitationKindId ? 'NEW' : type,
+        ...(quran ? { range: toAyahRangeInput(range) } : pages),
+        ...(didntPass
+          ? { grade: null, countsProgress: false }
+          : { grade, countsProgress: true }),
+        mistakes,
+        ...(note.trim() ? { note: note.trim() } : {}),
+        ...(recitationKindId ? { recitationKindId } : {}),
+      };
+      if (online) {
+        await apiFetch('/api/v1/memorization/logs', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...payload,
+            idempotencyKey: crypto.randomUUID(),
+            capturedAt: when,
+          }),
+        });
+        onRefresh?.();
+      } else {
+        await enqueue({ type: 'memorization.log', payload });
+      }
       if (quran) {
         if (didntPass) {
-          const { range: next, endLocked: locked } = resetFromPosition(position);
+          const { range: next, endLocked: locked } =
+            resetFromPosition(position);
           setRange(next);
           setEndLocked(locked);
         } else {
@@ -232,23 +244,13 @@ export function HifzLogSheet({
       });
       await refreshKit().catch(() => undefined);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setError(t('classMode.voidNeedsOnline'));
+      if (e instanceof ApiError && e.status === 401)
+        setError(t('classMode.voidNeedsOnline'));
       else setError(t('classMode.voidFailed'));
     } finally {
       setVoiding(false);
     }
   };
-
-  const unitBtn = (unit: PickUnit) => (
-    <Button
-      key={unit}
-      variant={pickUnit === unit ? 'primary' : 'ghost'}
-      className="w-full"
-      onClick={() => changePickUnit(unit)}
-    >
-      {t(`classMode.pickUnit.${unit}`)}
-    </Button>
-  );
 
   return (
     <div
@@ -275,7 +277,8 @@ export function HifzLogSheet({
                 type="button"
                 className="mt-2 text-xs font-semibold text-accent underline"
                 onClick={() => {
-                  const { range: next, endLocked: locked } = resetFromPosition(position);
+                  const { range: next, endLocked: locked } =
+                    resetFromPosition(position);
                   setRange(next);
                   setEndLocked(locked);
                 }}
@@ -334,65 +337,6 @@ export function HifzLogSheet({
 
       {quran ? (
         <div className="grid gap-3">
-          {embedded ? null : (
-          <div>
-            <p className="mb-2 text-sm font-medium">{t('classMode.rangeSection')}</p>
-            <div className="grid grid-cols-3 gap-2">{unitBtn('PAGE')}{unitBtn('SURAH')}{unitBtn('JUZ')}</div>
-          </div>
-          )}
-
-          {!embedded && pickUnit === 'PAGE' ? (
-            <Field label={t('classMode.pickUnit.PAGE')}>
-              <input
-                className={inputClass}
-                inputMode="numeric"
-                value={pickerPage}
-                onChange={(e) => {
-                  const page = num(e.target.value, 604);
-                  setPickerPage(page);
-                  applyPick('PAGE', page);
-                }}
-              />
-            </Field>
-          ) : null}
-
-          {!embedded && pickUnit === 'SURAH' ? (
-            <Field label={t('classMode.pickStartSurah')}>
-              <select
-                className={inputClass}
-                value={pickerSurah}
-                onChange={(e) => {
-                  const surah = Number(e.target.value);
-                  setPickerSurah(surah);
-                  applyPick('SURAH', surah);
-                }}
-              >
-                {surahOptions}
-              </select>
-            </Field>
-          ) : null}
-
-          {!embedded && pickUnit === 'JUZ' ? (
-            <Field label={t('classMode.juz')}>
-              <select
-                className={inputClass}
-                value={pickerJuz}
-                onChange={(e) => {
-                  const juz = Number(e.target.value);
-                  setPickerJuz(juz);
-                  applyPick('JUZ', juz);
-                }}
-              >
-                {JUZ_OPTIONS.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
-
-          {!embedded ? (
           <div className="grid gap-2 sm:grid-cols-2">
             <Field label={t('classMode.from')}>
               <select
@@ -413,9 +357,12 @@ export function HifzLogSheet({
                 aria-label={t('classMode.fromAyah')}
                 value={range.ayahStart}
                 onChange={(e) => {
-                  const max = SURAH_BY_NUMBER.get(range.surahStart)?.ayahCount ?? 1;
+                  const max =
+                    SURAH_BY_NUMBER.get(range.surahStart)?.ayahCount ?? 1;
                   const ayah = num(e.target.value, max);
-                  setRange(mergeStartManual(range, { surah: range.surahStart, ayah }));
+                  setRange(
+                    mergeStartManual(range, { surah: range.surahStart, ayah }),
+                  );
                 }}
               />
             </Field>
@@ -439,17 +386,20 @@ export function HifzLogSheet({
                 aria-label={t('classMode.toAyah')}
                 value={range.ayahEnd}
                 onChange={(e) => {
-                  const max = SURAH_BY_NUMBER.get(range.surahEnd)?.ayahCount ?? 1;
+                  const max =
+                    SURAH_BY_NUMBER.get(range.surahEnd)?.ayahCount ?? 1;
                   const ayah = num(e.target.value, max);
-                  const next = setEndManual(range, { surah: range.surahEnd, ayah });
+                  const next = setEndManual(range, {
+                    surah: range.surahEnd,
+                    ayah,
+                  });
                   if (next) lockAndSetRange(next);
                 }}
               />
             </Field>
           </div>
-          ) : null}
 
-          <div className={cn('grid gap-2', embedded ? 'grid-cols-1' : 'grid-cols-2')}>
+          <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -458,7 +408,9 @@ export function HifzLogSheet({
               >
                 −
               </Button>
-              <span className="flex-1 text-center text-xs font-medium">{t('classMode.stepPage')}</span>
+              <span className="flex-1 text-center text-xs font-medium">
+                {t('classMode.stepPage')}
+              </span>
               <Button
                 variant="ghost"
                 className="shrink-0 px-3"
@@ -467,7 +419,6 @@ export function HifzLogSheet({
                 +
               </Button>
             </div>
-            {embedded ? null : (
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -476,7 +427,9 @@ export function HifzLogSheet({
               >
                 −
               </Button>
-              <span className="flex-1 text-center text-xs font-medium">{t('classMode.stepSurah')}</span>
+              <span className="flex-1 text-center text-xs font-medium">
+                {t('classMode.stepSurah')}
+              </span>
               <Button
                 variant="ghost"
                 className="shrink-0 px-3"
@@ -485,32 +438,37 @@ export function HifzLogSheet({
                 +
               </Button>
             </div>
-            )}
           </div>
 
-          {!embedded ? (
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => lockAndSetRange(applyHifzShortcut('endOfPage', range))}
+              onClick={() =>
+                lockAndSetRange(applyHifzShortcut('endOfPage', range))
+              }
             >
               {t('classMode.shortcut.endOfPage')}
             </Button>
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => lockAndSetRange(applyHifzShortcut('endOfSurah', range))}
+              onClick={() =>
+                lockAndSetRange(applyHifzShortcut('endOfSurah', range))
+              }
             >
               {t('classMode.shortcut.endOfSurah')}
             </Button>
           </div>
-          ) : null}
 
           <div className="rounded-xl border border-line bg-paper px-3 py-2 text-sm">
-            <p className="font-medium">{rangeSummary(range, i18n.language, t)}</p>
+            <p className="font-medium">
+              {rangeSummary(range, i18n.language, t)}
+            </p>
             {stats ? (
-              <p className="mt-1 text-muted">{t('classMode.rangeStats', stats)}</p>
+              <p className="mt-1 text-muted">
+                {t('classMode.rangeStats', stats)}
+              </p>
             ) : null}
           </div>
         </div>
@@ -521,7 +479,9 @@ export function HifzLogSheet({
               className={inputClass}
               inputMode="numeric"
               value={pages.pageFrom}
-              onChange={(e) => setPages({ ...pages, pageFrom: num(e.target.value) })}
+              onChange={(e) =>
+                setPages({ ...pages, pageFrom: num(e.target.value) })
+              }
             />
           </Field>
           <Field label={t('classMode.toPage')}>
@@ -529,21 +489,19 @@ export function HifzLogSheet({
               className={inputClass}
               inputMode="numeric"
               value={pages.pageTo}
-              onChange={(e) => setPages({ ...pages, pageTo: num(e.target.value) })}
+              onChange={(e) =>
+                setPages({ ...pages, pageTo: num(e.target.value) })
+              }
             />
           </Field>
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-sm font-medium">
-        <input
-          type="checkbox"
-          className="size-4 accent-accent"
-          checked={didntPass}
-          onChange={(e) => setDidntPass(e.target.checked)}
-        />
-        {t('classMode.didntPass')}
-      </label>
+      <SwitchField
+        label={t('classMode.didntPass')}
+        checked={didntPass}
+        onChange={setDidntPass}
+      />
 
       {!didntPass ? (
         <div className="grid grid-cols-2 gap-2">
@@ -560,36 +518,45 @@ export function HifzLogSheet({
         </div>
       ) : null}
 
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">{t('classMode.mistakes')}</span>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            className="shrink-0 px-4"
-            aria-label={t('classMode.fewerMistakes')}
-            onClick={() => setMistakes(Math.max(0, mistakes - 1))}
-          >
-            −
-          </Button>
-          <input
-            className={cn(inputClass, 'text-center')}
-            inputMode="numeric"
-            value={mistakes}
-            onChange={(e) => setMistakes(Math.max(0, Number(e.target.value) || 0))}
-          />
-          <Button
-            variant="ghost"
-            className="shrink-0 px-4"
-            aria-label={t('classMode.moreMistakes')}
-            onClick={() => setMistakes(mistakes + 1)}
-          >
-            +
-          </Button>
+      {!didntPass ? (
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">{t('classMode.mistakes')}</span>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              className="shrink-0 px-4"
+              aria-label={t('classMode.fewerMistakes')}
+              onClick={() => setMistakes(Math.max(0, mistakes - 1))}
+            >
+              −
+            </Button>
+            <input
+              className={cn(inputClass, 'text-center')}
+              inputMode="numeric"
+              value={mistakes}
+              onChange={(e) =>
+                setMistakes(Math.max(0, Number(e.target.value) || 0))
+              }
+            />
+            <Button
+              variant="ghost"
+              className="shrink-0 px-4"
+              aria-label={t('classMode.moreMistakes')}
+              onClick={() => setMistakes(mistakes + 1)}
+            >
+              +
+            </Button>
+          </div>
         </div>
-        <Field label={t('classMode.note')}>
-          <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
-        </Field>
-      </div>
+      ) : null}
+
+      <Field label={t('classMode.note')}>
+        <input
+          className={inputClass}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      </Field>
 
       {error ? (
         <p role="alert" className="text-sm text-danger">
@@ -597,17 +564,25 @@ export function HifzLogSheet({
         </p>
       ) : null}
 
-      <Button className="w-full" onClick={() => void save()}>
-        {t('classMode.save')}
-      </Button>
+      {!readOnly ? (
+        <Button className="w-full" onClick={() => void save()}>
+          {t('classMode.save')}
+        </Button>
+      ) : null}
 
       {!embedded && (pendingLogs.length > 0 || syncedLogs.length > 0) ? (
         <div className="grid gap-1 rounded-xl border border-line bg-paper p-2 text-sm">
           <p className="font-medium">{t('classMode.todayEntries')}</p>
           {pendingLogs.map((e) => (
-            <div key={e.idempotencyKey} className="flex items-center justify-between gap-2">
+            <div
+              key={e.idempotencyKey}
+              className="flex items-center justify-between gap-2"
+            >
               <span className="text-muted">{t('classMode.pendingEntry')}</span>
-              <Button variant="ghost" onClick={() => void undoPending(e.idempotencyKey)}>
+              <Button
+                variant="ghost"
+                onClick={() => void undoPending(e.idempotencyKey)}
+              >
                 {t('classMode.undoPending')}
               </Button>
             </div>
@@ -618,7 +593,11 @@ export function HifzLogSheet({
                 {t(`classMode.type.${l.type}`)} · {l.pageFrom}–{l.pageTo}
                 {!l.countsProgress ? ` · ${t('classMode.didntPassShort')}` : ''}
               </span>
-              <Button variant="ghost" disabled={voiding} onClick={() => void voidSynced(l.id)}>
+              <Button
+                variant="ghost"
+                disabled={voiding}
+                onClick={() => void voidSynced(l.id)}
+              >
                 {t('classMode.voidLog')}
               </Button>
             </div>

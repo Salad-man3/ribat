@@ -5,10 +5,11 @@ import type { DeviceResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { Button } from '../components/ui/button';
 import { Badge, Card, ErrorText, PageHeader } from '../components/ui/form';
-import { formatDateTime } from '../lib/domain';
+import { useFormatDates } from '../lib/calendar';
 
 export function AccountDevicesPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDateTime } = useFormatDates();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const devices = useQuery({
@@ -35,7 +36,7 @@ export function AccountDevicesPage() {
       await queryClient.invalidateQueries({ queryKey: ['devices'] });
     },
   });
-  const date = (iso: string) => formatDateTime(iso, i18n.language);
+  const date = (iso: string) => formatDateTime(iso);
 
   return (
     <section className="grid gap-6">

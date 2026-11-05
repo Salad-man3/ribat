@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   CreateExcuseSchema,
   CreateHomeworkSchema,
@@ -22,7 +32,12 @@ import {
   type UpdateHomeworkTaskInput,
 } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
-import { CurrentAudit, CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentAudit,
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { OutboxService } from '../events/outbox.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -72,7 +87,8 @@ export class FamiliesController {
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
     @Param('id', id) memberId: string,
-    @Body(createZodValidationPipe(CreateAwqafExamSchema)) body: CreateAwqafExamInput,
+    @Body(createZodValidationPipe(CreateAwqafExamSchema))
+    body: CreateAwqafExamInput,
   ) {
     return this.awqaf.create(org, audit, memberId, body);
   }
@@ -84,7 +100,8 @@ export class FamiliesController {
   listExcuses(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Query(createZodValidationPipe(ListExcusesQuerySchema)) query: ListExcusesQuery,
+    @Query(createZodValidationPipe(ListExcusesQuerySchema))
+    query: ListExcusesQuery,
   ) {
     return this.excuses.list(org, audit, query);
   }
@@ -116,7 +133,8 @@ export class FamiliesController {
   @OrgRoute()
   listHomework(
     @CurrentOrg() org: OrgContext,
-    @Query(createZodValidationPipe(ListHomeworkQuerySchema)) query: ListHomeworkQuery,
+    @Query(createZodValidationPipe(ListHomeworkQuerySchema))
+    query: ListHomeworkQuery,
   ) {
     return this.homework.list(org, query.courseId);
   }
@@ -126,14 +144,18 @@ export class FamiliesController {
   assignHomework(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Body(createZodValidationPipe(CreateHomeworkSchema)) body: CreateHomeworkInput,
+    @Body(createZodValidationPipe(CreateHomeworkSchema))
+    body: CreateHomeworkInput,
   ) {
     return this.homework.create(org, audit, body);
   }
 
   @Get('homework/:id/tasks')
   @OrgRoute()
-  homeworkTasks(@CurrentOrg() org: OrgContext, @Param('id', id) homeworkId: string) {
+  homeworkTasks(
+    @CurrentOrg() org: OrgContext,
+    @Param('id', id) homeworkId: string,
+  ) {
     return this.homework.tasks(org, homeworkId);
   }
 
@@ -144,7 +166,8 @@ export class FamiliesController {
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
     @Param('id', id) taskId: string,
-    @Body(createZodValidationPipe(UpdateHomeworkTaskSchema)) body: UpdateHomeworkTaskInput,
+    @Body(createZodValidationPipe(UpdateHomeworkTaskSchema))
+    body: UpdateHomeworkTaskInput,
   ) {
     await this.homework.mark(org, audit, taskId, body.status);
   }
@@ -156,9 +179,14 @@ export class FamiliesController {
   inbox(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Query(createZodValidationPipe(ListNotificationsQuerySchema)) query: ListNotificationsQuery,
+    @Query(createZodValidationPipe(ListNotificationsQuerySchema))
+    query: ListNotificationsQuery,
   ) {
-    return this.notifications.list(org.organizationId, audit.actorIdentityId!, query);
+    return this.notifications.list(
+      org.organizationId,
+      audit.actorIdentityId!,
+      query,
+    );
   }
 
   @Post('notifications/read')
@@ -167,9 +195,14 @@ export class FamiliesController {
   async markRead(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Body(createZodValidationPipe(MarkNotificationsReadSchema)) body: MarkNotificationsReadInput,
+    @Body(createZodValidationPipe(MarkNotificationsReadSchema))
+    body: MarkNotificationsReadInput,
   ) {
-    await this.notifications.markRead(org.organizationId, audit.actorIdentityId!, body);
+    await this.notifications.markRead(
+      org.organizationId,
+      audit.actorIdentityId!,
+      body,
+    );
   }
 
   // Failed event deliveries (T411, EV-05)
@@ -183,7 +216,10 @@ export class FamiliesController {
   @Post('events/deliveries/:id/retry')
   @HttpCode(204)
   @OrgRoute('audit.read')
-  async retryDelivery(@CurrentOrg() org: OrgContext, @Param('id', id) deliveryId: string) {
+  async retryDelivery(
+    @CurrentOrg() org: OrgContext,
+    @Param('id', id) deliveryId: string,
+  ) {
     await this.outbox.retry(org.organizationId, deliveryId);
   }
 }

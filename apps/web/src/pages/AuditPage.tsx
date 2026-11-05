@@ -4,18 +4,19 @@ import type { AuditLogResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { Button } from '../components/ui/button';
 import {
-  Card,
   Empty,
   ErrorText,
+  ListPageShell,
   PageHeader,
 } from '../components/ui/form';
 import { formatAuditLine } from '../lib/format-audit-line';
-import { formatDateTime } from '../lib/domain';
+import { useFormatDates } from '../lib/calendar';
 
 const PAGE = 50;
 
 export function AuditPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDateTime } = useFormatDates();
   const audit = useInfiniteQuery({
     queryKey: ['audit'],
     initialPageParam: '',
@@ -36,7 +37,7 @@ export function AuditPage() {
         subtitle={t('audit.subtitle')}
       />
       {audit.isError ? <ErrorText error={audit.error} /> : null}
-      <Card>
+      <ListPageShell>
         {audit.isSuccess && rows.length === 0 ? (
           <Empty>{t('audit.empty')}</Empty>
         ) : null}
@@ -47,7 +48,7 @@ export function AuditPage() {
                 {formatAuditLine(row, t)}
               </p>
               <time className="mt-1 block text-xs text-muted">
-                {formatDateTime(row.createdAt, i18n.language)}
+                {formatDateTime(row.createdAt)}
               </time>
             </li>
           ))}
@@ -62,7 +63,7 @@ export function AuditPage() {
             {t('audit.loadMore')}
           </Button>
         ) : null}
-      </Card>
+      </ListPageShell>
     </section>
   );
 }

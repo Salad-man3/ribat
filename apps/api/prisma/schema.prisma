@@ -112,6 +112,11 @@ enum CourseType {
   BOTH
 }
 
+enum CourseKind {
+  HALAQA
+  ONE_OFF
+}
+
 enum CourseStatus {
   DRAFT
   ACTIVE
@@ -178,6 +183,7 @@ enum MemorizationType {
 }
 
 enum AwqafExamLevel {
+  AJZA_1
   AJZA_3
   AJZA_5
   AJZA_10
@@ -274,57 +280,56 @@ enum SyncStatus {
 // Platform and tenancy (4)
 // ---------------------------------------------------------------------------
 model Organization {
-  id                  String                @id @default(uuid()) @db.Uuid
-  name                String
-  slug                String                @unique
-  status              OrganizationStatus    @default(ACTIVE)
-  timezone            String
-  latitude            Decimal               @db.Decimal(9, 6)
-  longitude           Decimal               @db.Decimal(9, 6)
-  prayerMethod        String
-  prayerOffsets       Json                  @default("{}")
-  settings            Json                  @default("{}")
-  createdAt           DateTime              @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime              @updatedAt @db.Timestamptz(6)
-  memberships         Membership[]
-  members             Member[]
-  households          Household[]
-  guardianLinks       GuardianLink[]
-  memberNotes         MemberNote[]
-  auditLogs           AuditLog[]
-  materials           Material[]
-  programs            Program[]
-  courses             Course[]
-  courseMaterials     CourseMaterial[]
-  courseRequirements  CourseRequirement[]
-  enrollments         Enrollment[]
-  teachingAssignments TeachingAssignment[]
-  courseGroups        CourseGroup[]
-  groupMembers        GroupMember[]
-  courseSchedules     CourseSchedule[]
-  coursePauses        CoursePause[]
-  courseSessions      CourseSession[]
-  attendance          Attendance[]
-  memorizationLogs    MemorizationLog[]
-  memorizationTests   MemorizationTest[]
-  memorizationSums    MemorizationSummary[]
-  materialLogs        MaterialLog[]
-  syncMutations       SyncMutation[]
-  excuseRequests      ExcuseRequest[]
-  homework            Homework[]
-  homeworkTasks       HomeworkTask[]
-  notifications       Notification[]
-  domainEvents        DomainEvent[]
-  joinApplications        JoinApplication[]
-  customFieldDefinitions  CustomFieldDefinition[]
-  tags                    Tag[]
-  memberTags              MemberTag[]
-  announcements           Announcement[]
-  statsDaily              StatsDaily[]
-  reportCards             ReportCard[]
-  recitationKinds         RecitationKind[]
-  awqafExams              AwqafExam[]
-  awqafExamJuz            AwqafExamJuz[]
+  id                     String                  @id @default(uuid()) @db.Uuid
+  name                   String
+  slug                   String                  @unique
+  status                 OrganizationStatus      @default(ACTIVE)
+  timezone               String
+  latitude               Decimal                 @db.Decimal(9, 6)
+  longitude              Decimal                 @db.Decimal(9, 6)
+  prayerMethod           String
+  prayerOffsets          Json                    @default("{}")
+  settings               Json                    @default("{}")
+  createdAt              DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                @updatedAt @db.Timestamptz(6)
+  memberships            Membership[]
+  members                Member[]
+  households             Household[]
+  guardianLinks          GuardianLink[]
+  memberNotes            MemberNote[]
+  auditLogs              AuditLog[]
+  materials              Material[]
+  programs               Program[]
+  courses                Course[]
+  courseMaterials        CourseMaterial[]
+  courseRequirements     CourseRequirement[]
+  enrollments            Enrollment[]
+  teachingAssignments    TeachingAssignment[]
+  courseGroups           CourseGroup[]
+  groupMembers           GroupMember[]
+  courseSchedules        CourseSchedule[]
+  coursePauses           CoursePause[]
+  courseSessions         CourseSession[]
+  attendance             Attendance[]
+  memorizationLogs       MemorizationLog[]
+  memorizationTests      MemorizationTest[]
+  memorizationSums       MemorizationSummary[]
+  materialLogs           MaterialLog[]
+  syncMutations          SyncMutation[]
+  excuseRequests         ExcuseRequest[]
+  homework               Homework[]
+  homeworkTasks          HomeworkTask[]
+  notifications          Notification[]
+  domainEvents           DomainEvent[]
+  joinApplications       JoinApplication[]
+  customFieldDefinitions CustomFieldDefinition[]
+  tags                   Tag[]
+  memberTags             MemberTag[]
+  announcements          Announcement[]
+  statsDaily             StatsDaily[]
+  reportCards            ReportCard[]
+  recitationKinds        RecitationKind[]
+  awqafExams             AwqafExam[]
 
   @@index([status])
 }
@@ -345,20 +350,20 @@ model CustomFieldDefinition {
 }
 
 model JoinApplication {
-  id                     String                @id @default(uuid()) @db.Uuid
-  organizationId         String                @db.Uuid
-  kind                   JoinApplicationKind
-  status                 JoinApplicationStatus @default(PENDING)
-  phone                  String
-  firstName              String
-  fatherName             String
-  familyName             String
-  birthDate              DateTime?             @db.Date
-  wards                  Json?
-  decidedAt              DateTime?             @db.Timestamptz(6)
-  decidedByMembershipId  String?               @db.Uuid
-  createdAt              DateTime              @default(now()) @db.Timestamptz(6)
-  organization           Organization          @relation(fields: [organizationId], references: [id])
+  id                    String                @id @default(uuid()) @db.Uuid
+  organizationId        String                @db.Uuid
+  kind                  JoinApplicationKind
+  status                JoinApplicationStatus @default(PENDING)
+  phone                 String
+  firstName             String
+  fatherName            String
+  familyName            String
+  birthDate             DateTime?             @db.Date
+  wards                 Json?
+  decidedAt             DateTime?             @db.Timestamptz(6)
+  decidedByMembershipId String?               @db.Uuid
+  createdAt             DateTime              @default(now()) @db.Timestamptz(6)
+  organization          Organization          @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, status, createdAt(sort: Desc)])
   @@index([organizationId, phone, status])
@@ -582,6 +587,7 @@ model Course {
   name              String
   description       String?
   type              CourseType
+  kind              CourseKind           @default(HALAQA)
   status            CourseStatus         @default(DRAFT)
   startDate         DateTime?            @db.Date
   endDate           DateTime?            @db.Date
@@ -877,49 +883,38 @@ model MemorizationTest {
 
 /// Mosque-defined recitation labels (stored as NEW + kindId).
 model RecitationKind {
-  id             String           @id @default(uuid()) @db.Uuid
-  organizationId String           @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @db.Uuid
   name           String
-  active         Boolean          @default(true)
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  archivedAt     DateTime?        @db.Timestamptz(6)
-  organization   Organization     @relation(fields: [organizationId], references: [id])
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
+  archivedAt     DateTime?         @db.Timestamptz(6)
+  organization   Organization      @relation(fields: [organizationId], references: [id])
   logs           MemorizationLog[]
 
   @@unique([organizationId, name])
 }
 
-/// Official Awqaf sitting — one row per attempt, juz outcomes in AwqafExamJuz.
+/// Official Awqaf sitting — one row per attempt; contiguous juz range + single outcome.
 model AwqafExam {
-  id                 String           @id @default(uuid()) @db.Uuid
-  organizationId     String           @db.Uuid
-  memberId           String           @db.Uuid
-  level              AwqafExamLevel
-  takenAt            DateTime         @db.Timestamptz(6)
-  attemptNo          Int
-  notes              String?
-  recorderMemberId   String           @db.Uuid
-  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
-  organization       Organization     @relation(fields: [organizationId], references: [id])
-  member             Member           @relation("AwqafExamMember", fields: [memberId], references: [id])
-  recorder           Member           @relation("AwqafExamRecorder", fields: [recorderMemberId], references: [id])
-  juzResults         AwqafExamJuz[]
+  id               String         @id @default(uuid()) @db.Uuid
+  organizationId   String         @db.Uuid
+  memberId         String         @db.Uuid
+  level            AwqafExamLevel
+  juzFrom          Int
+  juzTo            Int
+  passed           Boolean
+  score            Int?
+  takenAt          DateTime       @db.Timestamptz(6)
+  attemptNo        Int
+  notes            String?
+  recorderMemberId String         @db.Uuid
+  createdAt        DateTime       @default(now()) @db.Timestamptz(6)
+  organization     Organization   @relation(fields: [organizationId], references: [id])
+  member           Member         @relation("AwqafExamMember", fields: [memberId], references: [id])
+  recorder         Member         @relation("AwqafExamRecorder", fields: [recorderMemberId], references: [id])
 
   @@index([organizationId, memberId, takenAt(sort: Desc)])
-}
-
-model AwqafExamJuz {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @db.Uuid
-  examId         String       @db.Uuid
-  juz            Int
-  passed         Boolean
-  score          Int?
-  exam           AwqafExam    @relation(fields: [examId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  @@unique([examId, juz])
-  @@index([organizationId, juz])
 }
 
 /// ADR-0010: derived, rewritten in the same transaction as every log and void.
@@ -946,15 +941,15 @@ model MemorizationSummary {
 
 /// ADR-0010: nightly aggregates for the statistics dashboard (NFR-10).
 model StatsDaily {
-  id             String          @id @default(uuid()) @db.Uuid
-  organizationId String          @db.Uuid
-  date           DateTime        @db.Date
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  date           DateTime       @db.Date
   scopeType      StatsScopeType
-  scopeId        String          @db.Uuid
+  scopeId        String         @db.Uuid
   metrics        Json
-  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(6)
-  organization   Organization    @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+  organization   Organization   @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, date, scopeType, scopeId])
   @@index([organizationId, date, scopeType])

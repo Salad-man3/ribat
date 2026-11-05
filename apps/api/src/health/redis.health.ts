@@ -18,7 +18,9 @@ export class RedisHealthIndicator {
       }
       return indicator.up();
     } catch (error) {
-      return indicator.down({ message: error instanceof Error ? error.message : 'unknown' });
+      return indicator.down({
+        message: error instanceof Error ? error.message : 'unknown',
+      });
     }
   }
 }

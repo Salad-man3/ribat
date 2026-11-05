@@ -19,7 +19,12 @@ import {
 } from '@ribat/shared';
 import type { OrgContext } from '../auth/org-context.guard';
 import { forbidden, notFound } from '../common/errors';
-import { addDays, dateIn, fromDateString, toDateString } from '../common/zoned-time';
+import {
+  addDays,
+  dateIn,
+  fromDateString,
+  toDateString,
+} from '../common/zoned-time';
 import { memberName } from '../courses/course.mapper';
 import { CourseAccessService } from '../courses/course-access.service';
 import { MemberAccessService } from '../families/member-access.service';
@@ -32,7 +37,6 @@ import {
   mergeTeacherMetrics,
 } from './stats-metrics';
 
-const FALLING_BEHIND_RATE = 0.5;
 const FALLING_BEHIND_MIN_MARKS = 3;
 const TOP_MEMBERS_LIMIT = 5;
 
@@ -52,7 +56,10 @@ export class StatsService {
     return org.timezone;
   }
 
-  private dateRange(to: string, days: number): { from: string; to: string; dates: string[] } {
+  private dateRange(
+    to: string,
+    days: number,
+  ): { from: string; to: string; dates: string[] } {
     const from = addDays(to, -(days - 1));
     const dates: string[] = [];
     for (let i = 0; i < days; i++) dates.push(addDays(from, i));
@@ -75,7 +82,10 @@ export class StatsService {
     return StatsMemberMetricsSchema.parse(raw);
   }
 
-  async dashboard(org: OrgContext, query: StatsDashboardQuery): Promise<StatsDashboardResponse> {
+  async dashboard(
+    org: OrgContext,
+    query: StatsDashboardQuery,
+  ): Promise<StatsDashboardResponse> {
     if (!org.permissions.includes('courses.manage')) throw forbidden();
     const tz = await this.orgTimezone(org.organizationId);
     const asOf = addDays(dateIn(new Date(), tz), -1);
@@ -111,15 +121,25 @@ export class StatsService {
       }
       if (row.scopeType === 'COURSE') {
         const prev = courseTotals.get(row.scopeId) ?? this.emptyCourseMetrics();
-        courseTotals.set(row.scopeId, mergeCourseMetrics(prev, this.parseCourseMetrics(row.metrics)));
+        courseTotals.set(
+          row.scopeId,
+          mergeCourseMetrics(prev, this.parseCourseMetrics(row.metrics)),
+        );
       }
       if (row.scopeType === 'TEACHER') {
-        const prev = teacherTotals.get(row.scopeId) ?? this.emptyTeacherMetrics();
-        teacherTotals.set(row.scopeId, mergeTeacherMetrics(prev, this.parseTeacherMetrics(row.metrics)));
+        const prev =
+          teacherTotals.get(row.scopeId) ?? this.emptyTeacherMetrics();
+        teacherTotals.set(
+          row.scopeId,
+          mergeTeacherMetrics(prev, this.parseTeacherMetrics(row.metrics)),
+        );
       }
       if (row.scopeType === 'MEMBER') {
         const prev = memberTotals.get(row.scopeId) ?? this.emptyMemberMetrics();
-        memberTotals.set(row.scopeId, mergeMemberMetrics(prev, this.parseMemberMetrics(row.metrics)));
+        memberTotals.set(
+          row.scopeId,
+          mergeMemberMetrics(prev, this.parseMemberMetrics(row.metrics)),
+        );
       }
     }
 
@@ -196,11 +216,14 @@ export class StatsService {
       .sort((a, b) => b.pagesMemorized - a.pagesMemorized)
       .slice(0, TOP_MEMBERS_LIMIT);
 
+    const rateThreshold = query.belowRate / 100;
     const fallingBehind = memberRows
       .map((m) => {
         const totals = memberTotals.get(m.id)!;
         const countable =
-          totals.attendancePresent + totals.attendanceLate + totals.attendanceAbsent;
+          totals.attendancePresent +
+          totals.attendanceLate +
+          totals.attendanceAbsent;
         const rate = attendanceRateFromCounters(totals);
         return { m, countable, rate };
       })
@@ -208,8 +231,9 @@ export class StatsService {
         (x) =>
           x.countable >= FALLING_BEHIND_MIN_MARKS &&
           x.rate !== null &&
-          x.rate < FALLING_BEHIND_RATE,
+          x.rate < rateThreshold,
       )
+      .sort((a, b) => a.rate! - b.rate!)
       .map(({ m, countable, rate }) => ({
         memberId: m.id,
         memberName: memberName(m),
@@ -229,7 +253,10 @@ export class StatsService {
     };
   }
 
-  async courseStats(org: OrgContext, courseId: string): Promise<StatsCourseResponse> {
+  async courseStats(
+    org: OrgContext,
+    courseId: string,
+  ): Promise<StatsCourseResponse> {
     await this.courses.forStaffOrTeacher(org, courseId);
     const tz = await this.orgTimezone(org.organizationId);
     const asOf = addDays(dateIn(new Date(), tz), -1);
@@ -253,7 +280,9 @@ export class StatsService {
     let totals = this.emptyCourseMetrics();
     const series = dates.map((date) => {
       const row = byDate.get(date);
-      const metrics = row ? this.parseCourseMetrics(row.metrics) : this.emptyCourseMetrics();
+      const metrics = row
+        ? this.parseCourseMetrics(row.metrics)
+        : this.emptyCourseMetrics();
       totals = mergeCourseMetrics(totals, metrics);
       return {
         date,
@@ -277,10 +306,16 @@ export class StatsService {
     };
   }
 
-  async teacherStats(org: OrgContext, teacherMemberId: string): Promise<StatsTeacherResponse> {
-    if (!isStaffContext(org) && org.memberId !== teacherMemberId) throw forbidden();
+  async teacherStats(
+    org: OrgContext,
+    teacherMemberId: string,
+  ): Promise<StatsTeacherResponse> {
+    if (!isStaffContext(org) && org.memberId !== teacherMemberId)
+      throw forbidden();
     const db = this.prisma.forOrganization(org.organizationId);
-    const teacher = await db.member.findFirst({ where: { id: teacherMemberId } });
+    const teacher = await db.member.findFirst({
+      where: { id: teacherMemberId },
+    });
     if (!teacher) throw notFound('Member');
 
     const assignments = await db.teachingAssignment.findMany({
@@ -320,7 +355,8 @@ export class StatsService {
           },
         });
         let cm = this.emptyCourseMetrics();
-        for (const row of courseRows) cm = mergeCourseMetrics(cm, this.parseCourseMetrics(row.metrics));
+        for (const row of courseRows)
+          cm = mergeCourseMetrics(cm, this.parseCourseMetrics(row.metrics));
         return {
           courseId: a.courseId,
           courseName: a.course.name,
@@ -343,7 +379,10 @@ export class StatsService {
     };
   }
 
-  async memberStats(org: OrgContext, memberId: string): Promise<StatsMemberResponse> {
+  async memberStats(
+    org: OrgContext,
+    memberId: string,
+  ): Promise<StatsMemberResponse> {
     const { member } = await this.memberAccess.relation(org, memberId);
     const tz = await this.orgTimezone(org.organizationId);
     const asOf = addDays(dateIn(new Date(), tz), -1);
@@ -362,7 +401,9 @@ export class StatsService {
     let totals = this.emptyMemberMetrics();
     const series = dates.map((date) => {
       const row = byDate.get(date);
-      const metrics = row ? this.parseMemberMetrics(row.metrics) : this.emptyMemberMetrics();
+      const metrics = row
+        ? this.parseMemberMetrics(row.metrics)
+        : this.emptyMemberMetrics();
       totals = mergeMemberMetrics(totals, metrics);
       return {
         date,

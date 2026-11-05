@@ -23,25 +23,35 @@ export class HouseholdsService {
     input: LinkSiblingInput,
     auditCtx: AuditContext,
   ): Promise<HouseholdResponse> {
-    const member = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: memberId, status: 'ACTIVE' },
-    });
-    const sibling = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: input.siblingMemberId, status: 'ACTIVE' },
-    });
+    const member = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: memberId, status: 'ACTIVE' },
+      });
+    const sibling = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: input.siblingMemberId, status: 'ACTIVE' },
+      });
     if (!member || !sibling || member.id === sibling.id) throw notFound();
 
-    const householdId = await this.resolveHouseholdId(organizationId, member, sibling);
+    const householdId = await this.resolveHouseholdId(
+      organizationId,
+      member,
+      sibling,
+    );
 
     await this.prisma.forOrganization(organizationId).member.updateMany({
       where: { id: { in: [member.id, sibling.id] } },
       data: { householdId },
     });
 
-    const members = await this.prisma.forOrganization(organizationId).member.findMany({
-      where: { householdId, status: 'ACTIVE' },
-      select: { id: true },
-    });
+    const members = await this.prisma
+      .forOrganization(organizationId)
+      .member.findMany({
+        where: { householdId, status: 'ACTIVE' },
+        select: { id: true },
+      });
 
     await this.audit.record(auditCtx, {
       action: 'household.linked',
@@ -50,9 +60,11 @@ export class HouseholdsService {
       after: { memberIds: members.map((row) => row.id) },
     });
 
-    const household = await this.prisma.forOrganization(organizationId).household.findFirst({
-      where: { id: householdId },
-    });
+    const household = await this.prisma
+      .forOrganization(organizationId)
+      .household.findFirst({
+        where: { id: householdId },
+      });
     if (!household) throw notFound();
 
     return {
@@ -63,12 +75,18 @@ export class HouseholdsService {
     };
   }
 
-  async siblingIds(organizationId: string, memberId: string, householdId: string | null): Promise<string[]> {
+  async siblingIds(
+    organizationId: string,
+    memberId: string,
+    householdId: string | null,
+  ): Promise<string[]> {
     if (!householdId) return [];
-    const rows = await this.prisma.forOrganization(organizationId).member.findMany({
-      where: { householdId, status: 'ACTIVE', id: { not: memberId } },
-      select: { id: true },
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .member.findMany({
+        where: { householdId, status: 'ACTIVE', id: { not: memberId } },
+        select: { id: true },
+      });
     return rows.map((row) => row.id);
   }
 
@@ -80,9 +98,11 @@ export class HouseholdsService {
     const existing = member.householdId ?? sibling.householdId;
     if (existing) return existing;
 
-    const created = await this.prisma.forOrganization(organizationId).household.create({
-      data: { organizationId },
-    });
+    const created = await this.prisma
+      .forOrganization(organizationId)
+      .household.create({
+        data: { organizationId },
+      });
     return created.id;
   }
 }

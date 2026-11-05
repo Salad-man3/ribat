@@ -14,7 +14,9 @@ import type {
 import { apiFetch } from '../../api/api-fetch';
 import { courseKey } from '../../api/courses';
 import { MemberCombobox } from '../../components/MemberCombobox';
+import { MemberNameLink } from '../../components/MemberNameLink';
 import { Button } from '../../components/ui/button';
+import { NavButton } from '../../components/ui/nav-button';
 import {
   Badge,
   Card,
@@ -116,7 +118,12 @@ export function TeachersSection({ course, staff, writable }: SectionProps) {
             key={row.id}
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-paper px-3 py-2 text-sm"
           >
-            <span className="font-medium">{row.teacherName}</span>
+            <MemberNameLink
+              memberId={row.teacherMemberId}
+              className="font-medium"
+            >
+              {row.teacherName}
+            </MemberNameLink>
             <span className="flex items-center gap-2">
               <Badge tone={row.role === 'LEAD' ? 'accent' : 'neutral'}>
                 {t(`teachers.role.${row.role}`)}
@@ -230,7 +237,9 @@ export function StudentsSection({ course, staff, writable }: SectionProps) {
             key={row.id}
             className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-paper"
           >
-            <span>{row.memberName}</span>
+            <MemberNameLink memberId={row.memberId}>
+              {row.memberName}
+            </MemberNameLink>
             {canEdit ? (
               <button
                 type="button"
@@ -272,12 +281,20 @@ export function StudentsSection({ course, staff, writable }: SectionProps) {
         </div>
       ) : null}
       {canEdit ? (
-        <MemberPicker
-          exclude={new Set(active.map((row) => row.memberId))}
-          onPick={(memberId) => enroll.mutate(memberId)}
-          label={t('students.enroll')}
-          pending={enroll.isPending}
-        />
+        <>
+          <NavButton
+            to="/staff/placement"
+            className="mt-3 inline-block text-sm font-semibold text-accent"
+          >
+            {t('placement.title')}
+          </NavButton>
+          <MemberPicker
+            exclude={new Set(active.map((row) => row.memberId))}
+            onPick={(memberId) => enroll.mutate(memberId)}
+            label={t('students.enroll')}
+            pending={enroll.isPending}
+          />
+        </>
       ) : null}
       {enroll.isError ? <ErrorText error={enroll.error} /> : null}
       {withdraw.isError ? <ErrorText error={withdraw.error} /> : null}

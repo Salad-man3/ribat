@@ -15,7 +15,8 @@ export const STAFF_ADMIN_PERMISSIONS: S1Permission[] = [
 ];
 
 /** Permissions the sheikh may assign to org-admin role or tags (PERM-01). */
-export const ASSIGNABLE_STAFF_PERMISSIONS: S1Permission[] = STAFF_ADMIN_PERMISSIONS;
+export const ASSIGNABLE_STAFF_PERMISSIONS: S1Permission[] =
+  STAFF_ADMIN_PERMISSIONS;
 
 export type PermissionGrantOptions = {
   /** When null/undefined, ORG_ADMIN receives the full default staff set. */
@@ -53,7 +54,8 @@ export function permissionsFor(
 
   if (role === 'ORG_ADMIN') {
     const orgAdmin =
-      options.orgAdminPermissions === undefined || options.orgAdminPermissions === null
+      options.orgAdminPermissions === undefined ||
+      options.orgAdminPermissions === null
         ? STAFF_ADMIN_PERMISSIONS
         : options.orgAdminPermissions;
     for (const key of orgAdmin) {
@@ -76,13 +78,13 @@ export function canUseAdminView(
   return permissionsFor(role, 'ADMIN', options).length > 0;
 }
 
-export const AssignableStaffPermissionsSchema = S1PermissionSchema.array().superRefine(
-  (keys, ctx) => {
+export const AssignableStaffPermissionsSchema =
+  S1PermissionSchema.array().superRefine((keys, ctx) => {
     if (keys.includes('memberships.manage_org_admin')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'memberships.manage_org_admin cannot be granted on a role or tag',
+        message:
+          'memberships.manage_org_admin cannot be granted on a role or tag',
       });
     }
-  },
-);
+  });

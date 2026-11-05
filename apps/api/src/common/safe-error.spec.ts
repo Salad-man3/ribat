@@ -3,7 +3,9 @@ import { safeErrorStack, safeErrorSummary } from './safe-error';
 describe('safeError (NFR-08)', () => {
   it('drops the arguments Prisma prints in its message', () => {
     const error = Object.assign(
-      new Error('\nInvalid `prisma.member.create()` invocation:\n{ data: { firstName: "Layla", phone: "+963999001040" } }'),
+      new Error(
+        '\nInvalid `prisma.member.create()` invocation:\n{ data: { firstName: "Layla", phone: "+963999001040" } }',
+      ),
       { name: 'PrismaClientKnownRequestError', code: 'P2002' },
     );
     const text = safeErrorStack(error);
@@ -14,6 +16,8 @@ describe('safeError (NFR-08)', () => {
   });
 
   it('keeps our own one-line messages', () => {
-    expect(safeErrorSummary(new Error('No handler named notify.x'))).toBe('Error: No handler named notify.x');
+    expect(safeErrorSummary(new Error('No handler named notify.x'))).toBe(
+      'Error: No handler named notify.x',
+    );
   });
 });

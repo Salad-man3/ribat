@@ -7,7 +7,12 @@ import { StatsJobsModule } from './stats-jobs.module';
 import { StatsService } from './stats.service';
 
 @Module({
-  imports: [AuthModule, CoursesModule, StatsJobsModule, forwardRef(() => FamiliesModule)],
+  imports: [
+    AuthModule,
+    CoursesModule,
+    StatsJobsModule,
+    forwardRef(() => FamiliesModule),
+  ],
   controllers: [StatsController],
   providers: [StatsService],
   exports: [StatsService],

@@ -10,19 +10,32 @@ import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/api-exception.filter';
 import { drainCapturedLogs } from '../src/logging/logging.module';
 import { hashSecret } from '../src/auth/credentials';
-import { CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE } from '../src/auth/session-cookie';
+import {
+  CSRF_COOKIE,
+  CSRF_HEADER,
+  SESSION_COOKIE,
+} from '../src/auth/session-cookie';
 import {
   loginAs,
   removeAuthFixtures,
   type AuthenticatedSession,
 } from './fixtures/auth-session';
-import { removeTwoOrganizations, twoOrganizations } from './fixtures/organizations';
+import {
+  removeTwoOrganizations,
+  twoOrganizations,
+} from './fixtures/organizations';
 
 const E2E_CSRF_PHONE = '+963944000107';
 const E2E_CSRF_PASSWORD = 'longenough';
 
-function parseSetCookies(setCookie: string[] | string | undefined): Record<string, string> {
-  const lines = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+function parseSetCookies(
+  setCookie: string[] | string | undefined,
+): Record<string, string> {
+  const lines = Array.isArray(setCookie)
+    ? setCookie
+    : setCookie
+      ? [setCookie]
+      : [];
   const out: Record<string, string> = {};
   for (const line of lines) {
     const [pair] = line.split(';');
@@ -64,9 +77,13 @@ function isCapturedLog(value: unknown): value is CapturedLog {
   return typeof value === 'object' && value !== null;
 }
 
-function findRequestLog(lines: unknown[], requestId: string): CapturedLog | undefined {
+function findRequestLog(
+  lines: unknown[],
+  requestId: string,
+): CapturedLog | undefined {
   return lines.find(
-    (line): line is CapturedLog => isCapturedLog(line) && line.requestId === requestId,
+    (line): line is CapturedLog =>
+      isCapturedLog(line) && line.requestId === requestId,
   );
 }
 
@@ -105,7 +122,10 @@ describe('API (e2e)', () => {
 
   describe('Health', () => {
     it('GET /api/v1/health/live', () => {
-      return request(app.getHttpServer()).get('/api/v1/health/live').expect(200).expect({ status: 'ok' });
+      return request(app.getHttpServer())
+        .get('/api/v1/health/live')
+        .expect(200)
+        .expect({ status: 'ok' });
     });
   });
 
@@ -139,7 +159,9 @@ describe('API (e2e)', () => {
     it('generates an id when the header is missing', async () => {
       drainCapturedLogs();
 
-      const response = await request(app.getHttpServer()).get('/api/v1/health/live').expect(200);
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/health/live')
+        .expect(200);
       const requestId = response.headers['x-request-id'];
 
       expect(requestId).toMatch(UUID);
@@ -212,7 +234,9 @@ describe('API (e2e)', () => {
     });
 
     afterAll(async () => {
-      await prisma.authSession.deleteMany({ where: { identityId: csrfIdentityId } });
+      await prisma.authSession.deleteMany({
+        where: { identityId: csrfIdentityId },
+      });
       await prisma.identity.deleteMany({ where: { id: csrfIdentityId } });
     });
 
@@ -223,7 +247,9 @@ describe('API (e2e)', () => {
         .expect(201);
 
       const setCookie = login.headers['set-cookie'];
-      const lines = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
+      const lines = Array.isArray(setCookie)
+        ? setCookie
+        : [setCookie].filter(Boolean);
       const csrfLine = lines.find((line) => line.startsWith(`${CSRF_COOKIE}=`));
       expect(csrfLine).toBeDefined();
       expect(csrfLine!.toLowerCase()).not.toContain('httponly');
@@ -492,13 +518,17 @@ describe('API (e2e)', () => {
           .get('/api/v1/auth/me')
           .set('cookie', sheikh.cookie)
           .expect(200);
-        expect(sheikhMe.body.permissions).toContain('memberships.manage_org_admin');
+        expect(sheikhMe.body.permissions).toContain(
+          'memberships.manage_org_admin',
+        );
 
         const adminMe = await request(app.getHttpServer())
           .get('/api/v1/auth/me')
           .set('cookie', admin.cookie)
           .expect(200);
-        expect(adminMe.body.permissions).not.toContain('memberships.manage_org_admin');
+        expect(adminMe.body.permissions).not.toContain(
+          'memberships.manage_org_admin',
+        );
       } finally {
         await removeAuthFixtures(prisma, [admin.identityId]);
       }
@@ -523,8 +553,20 @@ describe('API (e2e)', () => {
     const staffPassword = 'longenough';
 
     it('org admin cannot grant ORG_ADMIN access', async () => {
-      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH', staffPassword);
-      const admin = await loginAs(prisma, app, demoOrgId, 'ORG_ADMIN', staffPassword);
+      const sheikh = await loginAs(
+        prisma,
+        app,
+        demoOrgId,
+        'SHEIKH',
+        staffPassword,
+      );
+      const admin = await loginAs(
+        prisma,
+        app,
+        demoOrgId,
+        'ORG_ADMIN',
+        staffPassword,
+      );
       try {
         const created = await request(app.getHttpServer())
           .post('/api/v1/members')
@@ -545,7 +587,13 @@ describe('API (e2e)', () => {
     });
 
     it('sheikh can grant member access and list memberships', async () => {
-      const sheikh = await loginAs(prisma, app, demoOrgId, 'SHEIKH', staffPassword);
+      const sheikh = await loginAs(
+        prisma,
+        app,
+        demoOrgId,
+        'SHEIKH',
+        staffPassword,
+      );
       try {
         const created = await request(app.getHttpServer())
           .post('/api/v1/members')
@@ -564,12 +612,22 @@ describe('API (e2e)', () => {
         expect(access.body.setupCode).toMatch(/^[A-Z0-9]{8}$/);
         expect(access.body.membershipId).toMatch(UUID);
 
+        const regrant = await request(app.getHttpServer())
+          .post(`/api/v1/members/${created.body.id}/access`)
+          .set('cookie', sheikh.cookie)
+          .set(sheikh.csrfHeader, sheikh.csrf)
+          .send({ role: 'ORG_ADMIN' })
+          .expect(201);
+        expect(regrant.body.membershipId).toBe(access.body.membershipId);
+
         const listed = await request(app.getHttpServer())
           .get('/api/v1/memberships')
           .set('cookie', sheikh.cookie)
           .expect(200);
 
-        const ids = listed.body.map((row: { memberId: string | null }) => row.memberId);
+        const ids = listed.body.map(
+          (row: { memberId: string | null }) => row.memberId,
+        );
         expect(ids).toContain(created.body.id);
 
         const grantedIdentity = await prisma.identity.findUnique({
@@ -619,7 +677,9 @@ describe('API (e2e)', () => {
           .set('cookie', guardian.cookie)
           .expect(200);
 
-        expect(wards.body.map((row: { id: string }) => row.id)).toContain(ward.body.id);
+        expect(wards.body.map((row: { id: string }) => row.id)).toContain(
+          ward.body.id,
+        );
       } finally {
         await removeAuthFixtures(prisma, [sheikh.identityId]);
       }
@@ -648,7 +708,10 @@ describe('API (e2e)', () => {
           .set('cookie', guardian.cookie)
           .expect(403);
       } finally {
-        await removeAuthFixtures(prisma, [sheikh.identityId, guardian.identityId]);
+        await removeAuthFixtures(prisma, [
+          sheikh.identityId,
+          guardian.identityId,
+        ]);
       }
     });
   });
@@ -677,7 +740,9 @@ describe('API (e2e)', () => {
           .send({ siblingMemberId: b.body.id })
           .expect(201);
 
-        expect(linked.body.memberIds).toEqual(expect.arrayContaining([a.body.id, b.body.id]));
+        expect(linked.body.memberIds).toEqual(
+          expect.arrayContaining([a.body.id, b.body.id]),
+        );
 
         const detail = await request(app.getHttpServer())
           .get(`/api/v1/members/${a.body.id}`)
@@ -758,7 +823,9 @@ describe('API (e2e)', () => {
     });
 
     afterEach(async () => {
-      await prisma.auditLog.deleteMany({ where: { organizationId: demoOrgId } });
+      await prisma.auditLog.deleteMany({
+        where: { organizationId: demoOrgId },
+      });
       await removeAuthFixtures(prisma, [sheikh.identityId]);
     });
 
@@ -796,7 +863,8 @@ describe('API (e2e)', () => {
 
       const row = listed.body.find(
         (entry: { action: string; entityId: string }) =>
-          entry.action === 'member.created' && entry.entityId === created.body.id,
+          entry.action === 'member.created' &&
+          entry.entityId === created.body.id,
       );
       expect(row).toBeDefined();
       expect(row.after).toEqual({

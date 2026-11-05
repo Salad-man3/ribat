@@ -22,7 +22,8 @@ export class AnnouncementsController {
   send(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Body(createZodValidationPipe(CreateAnnouncementSchema)) body: CreateAnnouncementInput,
+    @Body(createZodValidationPipe(CreateAnnouncementSchema))
+    body: CreateAnnouncementInput,
   ) {
     return this.announcements.create(org, audit, body);
   }

@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useSearchParams } from 'react-router';
+import { useLocation, useParams, useSearchParams } from 'react-router';
 import { SURAH_BY_NUMBER } from '@ribat/quran-data';
-import type { ClassKit, MemorizationSummaryResponse } from '@ribat/shared';
+import type {
+  AttendanceStatus,
+  ClassKit,
+  MemorizationSummaryResponse,
+} from '@ribat/shared';
+import { presentIfUnmarked } from '../lib/class-mode-attendance';
 import { HifzLogSheet } from '../components/HifzLogSheet';
 import { NavButton } from '../components/ui/nav-button';
 import { Empty, inputClass } from '../components/ui/form';
-import { formatDate, formatTimeRange, normalizeArabic } from '../lib/domain';
+import { useFormatDates } from '../lib/calendar';
+import { formatTimeRange, normalizeArabic, today } from '../lib/domain';
+import { canEditHistorySession, isHistorySession } from '../lib/session-mode';
+import { useActiveMembership } from '../hooks/use-me';
+import { SessionHistoryChrome } from '../components/SessionHistoryChrome';
 import { cn } from '../lib/utils';
-import { db } from '../offline/db';
-import { syncNow, useLive } from '../offline/outbox';
+import { syncNow } from '../offline/outbox';
 import { SyncStatus } from '../offline/SyncStatus';
+import { ClassSessionModeNav } from '../components/ClassSessionModeNav';
+import { useClassSessionView } from './class-session/use-class-session-view';
 
 type KitSession = ClassKit['sessions'][number];
 type Student = KitSession['roster'][number];
@@ -24,7 +34,11 @@ function describePositionShort(
   if (p.lastSurah && p.lastAyah) {
     const surah = SURAH_BY_NUMBER.get(p.lastSurah);
     const name = language === 'ar' ? surah?.nameAr : surah?.nameEn;
-    return t('classMode.last', { page: p.lastPageReached, surah: name, ayah: p.lastAyah });
+    return t('classMode.last', {
+      page: p.lastPageReached,
+      surah: name,
+      ayah: p.lastAyah,
+    });
   }
   return t('classMode.lastPage', { page: p.lastPageReached });
 }
@@ -34,24 +48,16 @@ export function HifzLogPage() {
   const { id } = useParams();
   const [search, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const { formatDate } = useFormatDates();
   const [query, setQuery] = useState('');
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
-
-  const data = useLive(async () => {
-    const row = await db.kit.get('current');
-    const kit = row?.kit;
-    const session =
-      kit?.sessions.find((s) => s.id === id) ?? row?.previous?.sessions.find((s) => s.id === id);
-    const source = kit?.sessions.some((s) => s.id === id) ? kit : row?.previous;
-    const courseId = session?.courseId;
-    const pending = (await db.outbox.orderBy('queuedAt').toArray()).filter((e) => {
-      if (!courseId) return false;
-      if (e.type === 'memorization.log' || e.type === 'memorization.test')
-        return e.payload.courseId === courseId;
-      return false;
-    });
-    return { session, kit: source, pending };
-  }, [id]);
+  const location = useLocation();
+  const { can } = useActiveMembership();
+  const staffUser = can('courses.manage');
+  const courseReturn =
+    (location.state as { coursePath?: string } | undefined)?.coursePath ?? null;
+  const [editingHistory, setEditingHistory] = useState(false);
+  const { view, markOnline, refreshOnline } = useClassSessionView(id);
 
   useEffect(() => {
     if (navigator.onLine) void syncNow();
@@ -63,23 +69,48 @@ export function HifzLogPage() {
     return () => clearTimeout(timer);
   }, [savedFlash]);
 
-  if (!data) return null;
-  const { session, kit, pending } = data;
-  if (!session || !kit)
+  if (view.status === 'loading') return null;
+  if (view.status === 'missing') {
     return (
       <section className="grid gap-4">
-        <NavButton to="/teach" className="text-sm text-accent">
-          <span className="inline-block rtl:rotate-180">←</span> {t('classMode.back')}
+        <NavButton to="/staff" className="text-sm text-accent">
+          <span className="inline-block rtl:rotate-180">←</span>{' '}
+          {t('nav.staff')}
         </NavButton>
-        <Empty>{t('classMode.noKit')}</Empty>
+        <Empty>{t('classMode.noSession')}</Empty>
       </section>
     );
+  }
 
-  const materials = kit.materials.filter((m) => m.courseId === session.courseId);
+  const { session, kit, pending, mode } = view;
+  const dayToday = today();
+  const history = isHistorySession(session.date, dayToday);
+  const canEditHist = canEditHistorySession(session.date, dayToday, staffUser);
+  const readOnly = history && !editingHistory;
+  const markMode = history || mode === 'online' ? 'online' : mode;
+  const backTo = courseReturn ?? (mode === 'online' ? '/staff' : '/teach');
+  const backLabel = courseReturn
+    ? t('courses.tabSessions')
+    : mode === 'online'
+      ? t('nav.staff')
+      : t('classMode.back');
+
+  const marks = new Map<string, AttendanceStatus>();
+  for (const e of pending)
+    if (e.type === 'attendance.mark')
+      marks.set(e.payload.enrollmentId, e.payload.status);
+  const statusOf = (s: Student) =>
+    marks.get(s.enrollmentId) ?? s.attendance ?? 'none';
+
+  const materials = kit.materials.filter(
+    (m) => m.courseId === session.courseId,
+  );
   const memorization = materials.filter((m) => m.track === 'MEMORIZATION');
   const firstMat = memorization[0];
   const positionOf = (memberId: string, materialId: string) =>
-    kit.positions.find((p) => p.memberId === memberId && p.materialId === materialId);
+    kit.positions.find(
+      (p) => p.memberId === memberId && p.materialId === materialId,
+    );
 
   const pendingForMember = (memberId: string) =>
     pending.filter(
@@ -111,9 +142,22 @@ export function HifzLogPage() {
   if (!memorization.length) {
     return (
       <section className="grid gap-4">
-        <NavButton to={`/teach/${session.id}`} className="text-sm text-accent">
-          <span className="inline-block rtl:rotate-180">←</span> {t('classMode.backToAttendance')}
+        <NavButton to={backTo} className="text-sm text-accent">
+          <span className="inline-block rtl:rotate-180">←</span> {backLabel}
         </NavButton>
+        <div>
+          <h1 className="text-xl font-bold">{session.courseName}</h1>
+          <p className="text-sm text-muted">
+            {formatDate(session.date)} ·{' '}
+            {formatTimeRange(
+              session.startsAt,
+              session.endsAt,
+              i18n.language,
+              kit.timezone,
+            )}
+          </p>
+        </div>
+        <ClassSessionModeNav sessionId={session.id} />
         <Empty>{t('classMode.noMemorizationMaterial')}</Empty>
       </section>
     );
@@ -122,18 +166,31 @@ export function HifzLogPage() {
   return (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,16rem)_1fr] lg:items-start">
       <div className="grid gap-3 lg:sticky lg:top-4">
-        <NavButton to={`/teach/${session.id}`} className="text-sm text-accent">
-          <span className="inline-block rtl:rotate-180">←</span> {t('classMode.backToAttendance')}
+        <NavButton to={backTo} className="text-sm text-accent">
+          <span className="inline-block rtl:rotate-180">←</span> {backLabel}
         </NavButton>
+        {history ? (
+          <SessionHistoryChrome
+            sessionDate={session.date}
+            canEdit={canEditHist}
+            editing={editingHistory}
+            onEditingChange={setEditingHistory}
+          />
+        ) : null}
         <div>
           <h1 className="text-xl font-bold">{session.courseName}</h1>
-          <p className="text-sm text-muted">{t('classMode.hifzTitle')}</p>
-          <p className="text-xs text-muted">
-            {formatDate(session.date, i18n.language)} ·{' '}
-            {formatTimeRange(session.startsAt, session.endsAt, i18n.language, kit.timezone)}
+          <p className="text-sm text-muted">
+            {formatDate(session.date)} ·{' '}
+            {formatTimeRange(
+              session.startsAt,
+              session.endsAt,
+              i18n.language,
+              kit.timezone,
+            )}
           </p>
         </div>
-        <SyncStatus />
+        <ClassSessionModeNav sessionId={session.id} />
+        {!history && mode === 'kit' ? <SyncStatus /> : null}
         {session.roster.length > 8 ? (
           <input
             type="search"
@@ -155,13 +212,19 @@ export function HifzLogPage() {
             }}
           >
             {roster.map((s) => {
-              const pos = firstMat ? positionOf(s.memberId, firstMat.materialId) : undefined;
-              const hint = loggedToday(s.memberId) ? ` · ${t('classMode.loggedToday')}` : '';
+              const pos = firstMat
+                ? positionOf(s.memberId, firstMat.materialId)
+                : undefined;
+              const hint = loggedToday(s.memberId)
+                ? ` · ${t('classMode.loggedToday')}`
+                : '';
               return (
                 <option key={s.enrollmentId} value={s.enrollmentId}>
                   {s.name}
                   {hint}
-                  {pos?.lastPageReached ? ` (${describePositionShort(pos, i18n.language, t)})` : ''}
+                  {pos?.lastPageReached
+                    ? ` (${describePositionShort(pos, i18n.language, t)})`
+                    : ''}
                 </option>
               );
             })}
@@ -170,7 +233,9 @@ export function HifzLogPage() {
         <ul className="hidden max-h-[calc(100dvh-12rem)] gap-1 overflow-y-auto lg:grid">
           {roster.map((s) => {
             const active = selected?.enrollmentId === s.enrollmentId;
-            const pos = firstMat ? positionOf(s.memberId, firstMat.materialId) : undefined;
+            const pos = firstMat
+              ? positionOf(s.memberId, firstMat.materialId)
+              : undefined;
             return (
               <li key={s.enrollmentId}>
                 <button
@@ -188,7 +253,9 @@ export function HifzLogPage() {
                   </span>
                   <span className="block truncate text-xs text-muted">
                     {describePositionShort(pos, i18n.language, t)}
-                    {loggedToday(s.memberId) ? ` · ${t('classMode.loggedToday')}` : ''}
+                    {loggedToday(s.memberId)
+                      ? ` · ${t('classMode.loggedToday')}`
+                      : ''}
                   </span>
                 </button>
               </li>
@@ -210,10 +277,31 @@ export function HifzLogPage() {
             courseId={session.courseId}
             materials={memorization}
             recitationKinds={kit.recitationKinds}
-            positionFor={(materialId) => positionOf(selected.memberId, materialId)}
+            positionFor={(materialId) =>
+              positionOf(selected.memberId, materialId)
+            }
             syncedLogs={syncedLogsFor(selected.memberId)}
             pending={pendingForMember(selected.memberId)}
-            onSaved={() => setSavedFlash(selected.enrollmentId)}
+            online={markMode === 'online'}
+            readOnly={readOnly}
+            capturedAt={history ? session.startsAt : undefined}
+            onRefresh={refreshOnline}
+            onSaved={() => {
+              if (
+                markMode === 'online' &&
+                markOnline &&
+                statusOf(selected) === 'none'
+              ) {
+                void markOnline(selected.enrollmentId, 'PRESENT');
+              } else {
+                void presentIfUnmarked(
+                  session.id,
+                  selected.enrollmentId,
+                  statusOf(selected),
+                );
+              }
+              setSavedFlash(selected.enrollmentId);
+            }}
           />
         ) : (
           <Empty>{t('classMode.pickStudent')}</Empty>

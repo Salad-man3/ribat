@@ -7,7 +7,9 @@ import {
 
 describe('resolveWhatsappSetupTemplate', () => {
   it('uses the mosque override when present', () => {
-    expect(resolveWhatsappSetupTemplate('en', '  Code {{code}}  ')).toBe('Code {{code}}');
+    expect(resolveWhatsappSetupTemplate('en', '  Code {{code}}  ')).toBe(
+      'Code {{code}}',
+    );
   });
 
   it('falls back to the locale default', () => {
@@ -18,13 +20,16 @@ describe('resolveWhatsappSetupTemplate', () => {
   it('builds a wa.me url without importing shared helpers', () => {
     const href = whatsappSetupChatUrl(
       '+963999123456',
-      interpolateWhatsappSetupMessage(resolveWhatsappSetupTemplate('en', null), {
-        mosqueName: 'Test',
-        setupUrl: 'https://example.test/setup',
-        phone: '+963999123456',
-        code: 'AB23DEF4',
-        expires: 'soon',
-      }),
+      interpolateWhatsappSetupMessage(
+        resolveWhatsappSetupTemplate('en', null),
+        {
+          mosqueName: 'Test',
+          setupUrl: 'https://example.test/setup',
+          phone: '+963999123456',
+          code: 'AB23DEF4',
+          expires: 'soon',
+        },
+      ),
     );
     expect(href).toContain('https://wa.me/963999123456');
     expect(href).toContain('AB23DEF4');

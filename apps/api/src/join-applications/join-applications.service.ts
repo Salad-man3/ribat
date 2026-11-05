@@ -47,23 +47,30 @@ export class JoinApplicationsService {
     });
     if (pending) {
       throw new ConflictException({
-        error: { code: 'CONFLICT', message: 'An application is already pending for this phone' },
+        error: {
+          code: 'CONFLICT',
+          message: 'An application is already pending for this phone',
+        },
       });
     }
 
-    const row = await this.prisma.forOrganization(organizationId).joinApplication.create({
-      data: {
-        organizationId,
-        kind: input.kind,
-        phone: input.phone,
-        firstName: input.firstName,
-        fatherName: input.fatherName,
-        familyName: input.familyName,
-        birthDate:
-          input.kind === 'STUDENT' ? fromDateString(input.birthDate) : undefined,
-        wards: input.kind === 'GUARDIAN' ? input.wards : undefined,
-      },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.create({
+        data: {
+          organizationId,
+          kind: input.kind,
+          phone: input.phone,
+          firstName: input.firstName,
+          fatherName: input.fatherName,
+          familyName: input.familyName,
+          birthDate:
+            input.kind === 'STUDENT'
+              ? fromDateString(input.birthDate)
+              : undefined,
+          wards: input.kind === 'GUARDIAN' ? input.wards : undefined,
+        },
+      });
     return toJoinApplicationResponse(row);
   }
 
@@ -71,11 +78,13 @@ export class JoinApplicationsService {
     organizationId: string,
     query: ListJoinApplicationsQuery,
   ): Promise<JoinApplicationResponse[]> {
-    const rows = await this.prisma.forOrganization(organizationId).joinApplication.findMany({
-      where: query.status ? { status: query.status } : undefined,
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.findMany({
+        where: query.status ? { status: query.status } : undefined,
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      });
     return rows.map(toJoinApplicationResponse);
   }
 
@@ -156,7 +165,9 @@ export class JoinApplicationsService {
     return gaps;
   }
 
-  async resolvePublicOrg(slug: string): Promise<{ organizationId: string; info: PublicOrganizationJoinInfo }> {
+  async resolvePublicOrg(
+    slug: string,
+  ): Promise<{ organizationId: string; info: PublicOrganizationJoinInfo }> {
     const org = await this.prisma.platform.organization.findFirst({
       where: { slug, status: 'ACTIVE' },
       select: { id: true, slug: true, name: true },
@@ -175,14 +186,16 @@ export class JoinApplicationsService {
     auditCtx: AuditContext,
   ): Promise<JoinApplicationResponse> {
     const row = await this.findPending(organizationId, id);
-    await this.prisma.forOrganization(organizationId).joinApplication.updateMany({
-      where: { id },
-      data: {
-        status: 'REJECTED',
-        decidedAt: new Date(),
-        decidedByMembershipId: actor.membershipId,
-      },
-    });
+    await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.updateMany({
+        where: { id },
+        data: {
+          status: 'REJECTED',
+          decidedAt: new Date(),
+          decidedByMembershipId: actor.membershipId,
+        },
+      });
     const after = await this.find(organizationId, id);
     await this.audit.record(auditCtx, {
       action: 'join_application.rejected',
@@ -206,34 +219,46 @@ export class JoinApplicationsService {
     let memberId: string;
     if (app.kind === 'STUDENT') {
       if (!app.birthDate) throw notFound();
-      const member = await this.members.create(organizationId, {
-        firstName: app.firstName,
-        fatherName: app.fatherName,
-        familyName: app.familyName,
-        birthDate: app.birthDate.toISOString().slice(0, 10),
-        joinedAt,
-        phone: app.phone,
-      }, auditCtx);
+      const member = await this.members.create(
+        organizationId,
+        {
+          firstName: app.firstName,
+          fatherName: app.fatherName,
+          familyName: app.familyName,
+          birthDate: app.birthDate.toISOString().slice(0, 10),
+          joinedAt,
+          phone: app.phone,
+        },
+        auditCtx,
+      );
       memberId = member.id;
     } else {
       const wards = JoinApplicationWardSchema.array().parse(app.wards);
-      const guardian = await this.members.create(organizationId, {
-        firstName: app.firstName,
-        fatherName: app.fatherName,
-        familyName: app.familyName,
-        birthDate: joinedAt,
-        joinedAt,
-        phone: app.phone,
-      }, auditCtx);
+      const guardian = await this.members.create(
+        organizationId,
+        {
+          firstName: app.firstName,
+          fatherName: app.fatherName,
+          familyName: app.familyName,
+          birthDate: joinedAt,
+          joinedAt,
+          phone: app.phone,
+        },
+        auditCtx,
+      );
       memberId = guardian.id;
       for (const ward of wards) {
-        const wardMember = await this.members.create(organizationId, {
-          firstName: ward.firstName,
-          fatherName: ward.fatherName,
-          familyName: ward.familyName,
-          birthDate: ward.birthDate,
-          joinedAt,
-        }, auditCtx);
+        const wardMember = await this.members.create(
+          organizationId,
+          {
+            firstName: ward.firstName,
+            fatherName: ward.fatherName,
+            familyName: ward.familyName,
+            birthDate: ward.birthDate,
+            joinedAt,
+          },
+          auditCtx,
+        );
         await this.guardians.create(
           organizationId,
           wardMember.id,
@@ -257,16 +282,20 @@ export class JoinApplicationsService {
       auditCtx,
     );
 
-    await this.prisma.forOrganization(organizationId).joinApplication.updateMany({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        decidedAt: new Date(),
-        decidedByMembershipId: actor.membershipId,
-      },
-    });
+    await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.updateMany({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          decidedAt: new Date(),
+          decidedByMembershipId: actor.membershipId,
+        },
+      });
 
-    const application = toJoinApplicationResponse(await this.find(organizationId, id));
+    const application = toJoinApplicationResponse(
+      await this.find(organizationId, id),
+    );
     await this.audit.record(auditCtx, {
       action: 'join_application.approved',
       entityType: 'join_application',
@@ -278,17 +307,21 @@ export class JoinApplicationsService {
   }
 
   private async findPending(organizationId: string, id: string) {
-    const row = await this.prisma.forOrganization(organizationId).joinApplication.findFirst({
-      where: { id, status: 'PENDING' },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.findFirst({
+        where: { id, status: 'PENDING' },
+      });
     if (!row) throw notFound();
     return row;
   }
 
   private async find(organizationId: string, id: string) {
-    const row = await this.prisma.forOrganization(organizationId).joinApplication.findFirst({
-      where: { id },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .joinApplication.findFirst({
+        where: { id },
+      });
     if (!row) throw notFound();
     return row;
   }

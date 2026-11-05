@@ -4,7 +4,9 @@ import {
   type JoinApplicationResponse,
 } from '@ribat/shared';
 
-export function toJoinApplicationResponse(row: JoinApplication): JoinApplicationResponse {
+export function toJoinApplicationResponse(
+  row: JoinApplication,
+): JoinApplicationResponse {
   const wards =
     row.wards === null || row.wards === undefined
       ? null

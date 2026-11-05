@@ -16,17 +16,21 @@ import { Button } from '../components/ui/button';
 import { Badge, Empty, ErrorText, PageHeader } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 import { setupWhatsappChatUrl } from '../lib/whatsapp-setup';
+import { useCalendar } from '../lib/calendar';
 import { formatDateTime } from '../lib/domain';
 
 export function StaffAccountManagementPage() {
   const { t } = useTranslation();
+  const { calendar } = useCalendar();
   const queryClient = useQueryClient();
   const { membership, can } = useActiveMembership();
 
   const joinInfo = useQuery({
     queryKey: ['join-info'],
     queryFn: () =>
-      apiFetch<PublicOrganizationJoinInfo>('/api/v1/join-applications/join-info'),
+      apiFetch<PublicOrganizationJoinInfo>(
+        '/api/v1/join-applications/join-info',
+      ),
   });
   const pending = useQuery({
     queryKey: ['join-applications', 'PENDING'],
@@ -55,10 +59,13 @@ export function StaffAccountManagementPage() {
 
   const reject = useMutation({
     mutationFn: (id: string) =>
-      apiFetch<JoinApplicationResponse>(`/api/v1/join-applications/${id}/reject`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-      }),
+      apiFetch<JoinApplicationResponse>(
+        `/api/v1/join-applications/${id}/reject`,
+        {
+          method: 'POST',
+          body: JSON.stringify({}),
+        },
+      ),
     onSuccess: refresh,
   });
   const [justApproved, setJustApproved] = useState<{
@@ -69,33 +76,27 @@ export function StaffAccountManagementPage() {
   } | null>(null);
 
   const approve = useMutation({
-    mutationFn: ({
-      id,
-      draft,
-    }: {
-      id: string;
-      draft: Window | null;
-    }) =>
+    mutationFn: ({ id, draft }: { id: string; draft: Window | null }) =>
       apiFetch<ApproveJoinApplicationResponse>(
         `/api/v1/join-applications/${id}/approve`,
         { method: 'POST', body: JSON.stringify({}) },
       ).then((data) => ({ data, draft })),
     onSuccess: async ({ data, draft }) => {
-      const href =
-        membership
-          ? setupWhatsappChatUrl({
-              locale: membership.organizationLocale,
-              override: orgSettings.data?.whatsappSetupTemplate,
-              phone: data.application.phone,
-              mosqueName: membership.organizationName,
-              setupUrl: `${window.location.origin}/setup/password`,
-              code: data.access.setupCode,
-              expires: formatDateTime(
-                data.access.expiresAt,
-                membership.organizationLocale,
-              ),
-            })
-          : null;
+      const href = membership
+        ? setupWhatsappChatUrl({
+            locale: membership.organizationLocale,
+            override: orgSettings.data?.whatsappSetupTemplate,
+            phone: data.application.phone,
+            mosqueName: membership.organizationName,
+            setupUrl: `${window.location.origin}/setup/password`,
+            code: data.access.setupCode,
+            expires: formatDateTime(
+              data.access.expiresAt,
+              membership.organizationLocale,
+              calendar,
+            ),
+          })
+        : null;
       let whatsappOpened = false;
       if (href && draft && !draft.closed) {
         draft.location.href = href;
@@ -134,8 +135,12 @@ export function StaffAccountManagementPage() {
 
       {joinInfo.data ? (
         <div className="rounded-2xl border border-line bg-surface p-4">
-          <p className="text-sm font-medium">{t('accountMgmt.joinLinkTitle')}</p>
-          <p className="mt-1 text-sm text-muted">{t('accountMgmt.joinLinkHint')}</p>
+          <p className="text-sm font-medium">
+            {t('accountMgmt.joinLinkTitle')}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {t('accountMgmt.joinLinkHint')}
+          </p>
           {joinUrl ? (
             <p dir="ltr" className="mt-2 break-all font-mono text-sm">
               {joinUrl}
@@ -146,10 +151,14 @@ export function StaffAccountManagementPage() {
 
       {justApproved ? (
         <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4">
-          <h2 className="text-lg font-semibold">{t('accountMgmt.justApproved')}</h2>
+          <h2 className="text-lg font-semibold">
+            {t('accountMgmt.justApproved')}
+          </h2>
           <p className="font-semibold">{fullName(justApproved.app)}</p>
           {!justApproved.whatsappOpened ? (
-            <p className="text-sm text-muted">{t('accountMgmt.whatsappBlocked')}</p>
+            <p className="text-sm text-muted">
+              {t('accountMgmt.whatsappBlocked')}
+            </p>
           ) : null}
           <p className="text-xs text-muted">{t('access.codeHint')}</p>
           <p dir="ltr" className="font-mono text-lg tracking-widest">
@@ -170,7 +179,9 @@ export function StaffAccountManagementPage() {
       ) : null}
 
       <div className="grid gap-3">
-        <h2 className="text-lg font-semibold">{t('accountMgmt.pendingTitle')}</h2>
+        <h2 className="text-lg font-semibold">
+          {t('accountMgmt.pendingTitle')}
+        </h2>
         {pending.isError ? <ErrorText error={pending.error} /> : null}
         {approve.isError ? <ErrorText error={approve.error} /> : null}
         {reject.isError ? <ErrorText error={reject.error} /> : null}
@@ -218,7 +229,9 @@ export function StaffAccountManagementPage() {
                   {gap.phone}
                 </span>
               </div>
-              <Badge tone={gap.reason === 'NO_MEMBERSHIP' ? 'danger' : 'neutral'}>
+              <Badge
+                tone={gap.reason === 'NO_MEMBERSHIP' ? 'danger' : 'neutral'}
+              >
                 {t(`accountMgmt.gapReason.${gap.reason}`)}
               </Badge>
             </li>
@@ -278,7 +291,9 @@ function PendingApplicationRow({
               {t('accountMgmt.approve')}
             </Button>
           ) : (
-            <span className="text-xs text-muted">{t('accountMgmt.needGrantPerm')}</span>
+            <span className="text-xs text-muted">
+              {t('accountMgmt.needGrantPerm')}
+            </span>
           )}
         </div>
       </div>

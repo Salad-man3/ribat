@@ -15,7 +15,11 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Pass `tx` to write the audit row in the caller's transaction (SYNC-09). */
-  async record(ctx: AuditContext, event: AuditEventInput, tx?: OrgTx): Promise<void> {
+  async record(
+    ctx: AuditContext,
+    event: AuditEventInput,
+    tx?: OrgTx,
+  ): Promise<void> {
     const db = tx ?? this.prisma.forOrganization(ctx.organizationId);
     await db.auditLog.create({
       data: {
@@ -63,20 +67,28 @@ export class AuditService {
       select: { id: true, organizationId: true },
     });
     if (memberships.length !== 1) return null;
-    return { organizationId: memberships[0].organizationId, membershipId: memberships[0].id };
+    return {
+      organizationId: memberships[0].organizationId,
+      membershipId: memberships[0].id,
+    };
   }
 
-  async list(organizationId: string, query: CursorPaginationQuery): Promise<AuditLogResponse[]> {
-    const rows = await this.prisma.forOrganization(organizationId).auditLog.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: query.limit,
-      ...(query.cursor
-        ? {
-            cursor: { id: query.cursor },
-            skip: 1,
-          }
-        : {}),
-    });
+  async list(
+    organizationId: string,
+    query: CursorPaginationQuery,
+  ): Promise<AuditLogResponse[]> {
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        ...(query.cursor
+          ? {
+              cursor: { id: query.cursor },
+              skip: 1,
+            }
+          : {}),
+      });
     const maps = await this.loadNameMaps(organizationId, rows);
     return rows.map((row) => toAuditResponse(row, maps));
   }

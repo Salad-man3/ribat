@@ -4,11 +4,13 @@ import type {
   CreateRequirementInput,
   EnrollmentResponse,
   EnrollResult,
+  MoveEnrollmentResult,
+  PlacementBoard,
   RequirementResponse,
 } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
-import { notFound } from '../common/errors';
+import { badRequest, notFound } from '../common/errors';
 import { dateIn, fromDateString, toDateString } from '../common/zoned-time';
 import { PrismaService } from '../prisma/prisma.service';
 import { CourseAccessService } from './course-access.service';
@@ -276,5 +278,190 @@ export class EnrollmentsService {
       entityId: enrollmentId,
       before: { courseId, memberId: row.memberId },
     });
+  }
+
+  /** Staff placement board: active halaqat columns and members with no active enrollment. */
+  async placementBoard(organizationId: string): Promise<PlacementBoard> {
+    const db = this.prisma.forOrganization(organizationId);
+    const courses = await db.course.findMany({
+      where: {
+        OR: [
+          { status: 'ACTIVE' },
+          { enrollments: { some: { status: 'ACTIVE' } } },
+        ],
+      },
+      orderBy: { name: 'asc' },
+    });
+    const courseIds = courses.map((c) => c.id);
+    const enrollments = courseIds.length
+      ? await db.enrollment.findMany({
+          where: { courseId: { in: courseIds }, status: 'ACTIVE' },
+          include: { member: true },
+          orderBy: [
+            { member: { familyName: 'asc' } },
+            { member: { firstName: 'asc' } },
+          ],
+        })
+      : [];
+    const enrolledMemberIds = new Set(enrollments.map((e) => e.memberId));
+    const members = await db.member.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: [{ familyName: 'asc' }, { firstName: 'asc' }],
+    });
+    const byCourse = new Map<
+      string,
+      PlacementBoard['columns'][number]['students']
+    >();
+    for (const row of enrollments) {
+      const list = byCourse.get(row.courseId) ?? [];
+      list.push({
+        enrollmentId: row.id,
+        memberId: row.memberId,
+        memberName: memberName(row.member),
+      });
+      byCourse.set(row.courseId, list);
+    }
+    return {
+      columns: courses.map((c) => ({
+        courseId: c.id,
+        courseName: c.name,
+        students: byCourse.get(c.id) ?? [],
+      })),
+      unassigned: members
+        .filter((m) => !enrolledMemberIds.has(m.id))
+        .map((m) => ({ memberId: m.id, memberName: memberName(m) })),
+    };
+  }
+
+  /** Move one active enrollment to another halaqa (withdraw source, enroll destination). */
+  async move(
+    organizationId: string,
+    fromCourseId: string,
+    enrollmentId: string,
+    toCourseId: string,
+    auditCtx: AuditContext,
+  ): Promise<MoveEnrollmentResult> {
+    if (fromCourseId === toCourseId) {
+      throw badRequest('toCourseId', 'Choose a different halaqa');
+    }
+    await this.access.writable(organizationId, fromCourseId);
+    const toCourse = await this.access.writable(organizationId, toCourseId);
+    const db = this.prisma.forOrganization(organizationId);
+    const source = await db.enrollment.findFirst({
+      where: { id: enrollmentId, courseId: fromCourseId, status: 'ACTIVE' },
+      include: { member: true },
+    });
+    if (!source) throw notFound('Enrollment');
+    const memberId = source.memberId;
+    const today = await this.today(organizationId);
+    const [
+      requirements,
+      activeEnrollments,
+      completed,
+      fromCourseRow,
+      toCourseRow,
+    ] = await Promise.all([
+      db.courseRequirement.findMany({ where: { courseId: toCourseId } }),
+      db.enrollment.count({
+        where: {
+          courseId: toCourseId,
+          status: 'ACTIVE',
+          memberId: { not: memberId },
+        },
+      }),
+      db.enrollment.findMany({
+        where: { memberId, status: 'COMPLETED' },
+        select: { courseId: true },
+      }),
+      db.course.findFirstOrThrow({ where: { id: fromCourseId } }),
+      db.course.findFirstOrThrow({ where: { id: toCourseId } }),
+    ]);
+    const prerequisiteIds = requirements
+      .map((r) => requirementValue(r).courseId)
+      .filter((id): id is string => typeof id === 'string');
+    const prerequisites = prerequisiteIds.length
+      ? await db.course.findMany({
+          where: { id: { in: prerequisiteIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const program = toCourse.programId
+      ? await db.program.findFirst({ where: { id: toCourse.programId } })
+      : null;
+    const { startDate } = courseSessionWindow(toCourse, program);
+    const warnings = checkRequirements({
+      birthDate: toDateString(source.member.birthDate),
+      onDate: startDate && startDate > today ? startDate : today,
+      course: toCourse,
+      requirements: requirements.map((r) => ({
+        type: r.type,
+        value: requirementValue(r),
+        description: r.description,
+      })),
+      activeEnrollments,
+      completedCourseIds: new Set(completed.map((c) => c.courseId)),
+      courseNames: new Map(prerequisites.map((c) => [c.id, c.name])),
+    });
+
+    await db.$transaction(async (tx) => {
+      await tx.groupMember.deleteMany({ where: { enrollmentId: source.id } });
+      await tx.enrollment.updateMany({
+        where: { id: source.id },
+        data: { status: 'WITHDRAWN', endedAt: fromDateString(today) },
+      });
+      const existing = await tx.enrollment.findFirst({
+        where: { courseId: toCourseId, memberId },
+      });
+      if (existing) {
+        await tx.enrollment.updateMany({
+          where: { id: existing.id },
+          data: {
+            status: 'ACTIVE',
+            startedAt: fromDateString(today),
+            endedAt: null,
+          },
+        });
+      } else {
+        await tx.enrollment.create({
+          data: {
+            organizationId,
+            courseId: toCourseId,
+            memberId,
+            startedAt: fromDateString(today),
+          },
+        });
+      }
+    });
+
+    const [fromEnrollment, toEnrollment] = await Promise.all([
+      db.enrollment.findFirstOrThrow({
+        where: { id: source.id },
+        include: { member: true },
+      }),
+      db.enrollment.findFirstOrThrow({
+        where: { courseId: toCourseId, memberId },
+        include: { member: true },
+      }),
+    ]);
+
+    await this.audit.record(auditCtx, {
+      action: 'enrollment.moved',
+      entityType: 'enrollment',
+      entityId: toEnrollment.id,
+      after: {
+        memberId,
+        fromCourseId,
+        toCourseId,
+        fromCourseName: fromCourseRow.name,
+        toCourseName: toCourseRow.name,
+        warnings: warnings.map((w) => w.code),
+      },
+    });
+
+    return {
+      fromEnrollment: toEnrollmentResponse(fromEnrollment),
+      toEnrollment: toEnrollmentResponse(toEnrollment),
+      warnings,
+    };
   }
 }

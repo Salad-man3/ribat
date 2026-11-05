@@ -4,106 +4,110 @@ import { MembersService } from './members.service';
 import { MembersRepository } from './members.repository';
 
 const audit = { record: jest.fn() } as unknown as AuditService;
-const households = { siblingIds: jest.fn().mockResolvedValue([]) } as unknown as import('../households/households.service').HouseholdsService;
+const households = {
+  siblingIds: jest.fn().mockResolvedValue([]),
+} as unknown as import('../households/households.service').HouseholdsService;
 const prisma = {
-    forOrganization: () => ({
-        enrollment: { findMany: jest.fn().mockResolvedValue([]) },
-        teachingAssignment: { findMany: jest.fn().mockResolvedValue([]) },
-    }),
+  forOrganization: () => ({
+    enrollment: { findMany: jest.fn().mockResolvedValue([]) },
+    teachingAssignment: { findMany: jest.fn().mockResolvedValue([]) },
+  }),
 } as unknown as import('../prisma/prisma.service').PrismaService;
 const auditCtx = {
-    organizationId: '11111111-1111-1111-1111-111111111111',
-    actorIdentityId: '33333333-3333-3333-3333-333333333333',
-    actorMembershipId: '44444444-4444-4444-4444-444444444444',
+  organizationId: '11111111-1111-1111-1111-111111111111',
+  actorIdentityId: '33333333-3333-3333-3333-333333333333',
+  actorMembershipId: '44444444-4444-4444-4444-444444444444',
 };
 
 describe('MembersService', () => {
-    const organizationId = '11111111-1111-1111-1111-111111111111';
-    const memberId = '22222222-2222-2222-2222-222222222222';
+  const organizationId = '11111111-1111-1111-1111-111111111111';
+  const memberId = '22222222-2222-2222-2222-222222222222';
 
-    const member = {
-        id: memberId,
-        organizationId,
-        householdId: null,
-        firstName: 'Ahmad',
-        fatherName: 'Hassan',
-        familyName: 'Ali',
-        motherName: null,
-        birthDate: new Date('2015-03-01'),
-        phone: null,
-        address: null,
-        schoolGrade: null,
-        schoolName: null,
-        studyStatus: null,
-        university: null,
-        faculty: null,
-        universityYear: null,
-        highestEducation: null,
-        joinedAt: new Date('2024-09-01'),
-        notes: null,
-        status: 'ACTIVE' as const,
-        createdAt: new Date('2024-09-01T10:00:00.000Z'),
-        updatedAt: new Date('2024-09-01T10:00:00.000Z'),
-        archivedAt: null,
-        customValues: {},
+  const member = {
+    id: memberId,
+    organizationId,
+    householdId: null,
+    firstName: 'Ahmad',
+    fatherName: 'Hassan',
+    familyName: 'Ali',
+    motherName: null,
+    birthDate: new Date('2015-03-01'),
+    phone: null,
+    address: null,
+    schoolGrade: null,
+    schoolName: null,
+    studyStatus: null,
+    university: null,
+    faculty: null,
+    universityYear: null,
+    highestEducation: null,
+    joinedAt: new Date('2024-09-01'),
+    notes: null,
+    status: 'ACTIVE' as const,
+    createdAt: new Date('2024-09-01T10:00:00.000Z'),
+    updatedAt: new Date('2024-09-01T10:00:00.000Z'),
+    archivedAt: null,
+    customValues: {},
+  };
+
+  const customFields = {
+    sanitizeForCreate: jest.fn().mockResolvedValue({}),
+    sanitizeForUpdate: jest.fn().mockResolvedValue({}),
+  } as unknown as import('../custom-fields/custom-fields.service').CustomFieldsService;
+  const tags = {
+    tagIdsByMember: jest.fn().mockResolvedValue(new Map()),
+    tagIdsForMember: jest.fn().mockResolvedValue([]),
+    setMemberTags: jest.fn().mockResolvedValue([]),
+  } as unknown as import('../tags/tags.service').TagsService;
+
+  it('getById throws 404 for missing member', async () => {
+    const repository = {
+      findById: jest.fn().mockResolvedValue(null),
+    } as unknown as MembersRepository;
+
+    const service = new MembersService(
+      repository,
+      audit,
+      households,
+      prisma,
+      customFields,
+      tags,
+    );
+
+    const org = {
+      organizationId,
+      membershipId: auditCtx.actorMembershipId!,
+      memberId: null,
+      role: 'SHEIKH' as const,
+      activeView: 'ADMIN' as const,
+      permissions: [],
     };
+    await expect(
+      service.getById(organizationId, memberId, org),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
 
-    const customFields = {
-        sanitizeForCreate: jest.fn().mockResolvedValue({}),
-        sanitizeForUpdate: jest.fn().mockResolvedValue({}),
-    } as unknown as import('../custom-fields/custom-fields.service').CustomFieldsService;
-    const tags = {
-        tagIdsByMember: jest.fn().mockResolvedValue(new Map()),
-        tagIdsForMember: jest.fn().mockResolvedValue([]),
-        setMemberTags: jest.fn().mockResolvedValue([]),
-    } as unknown as import('../tags/tags.service').TagsService;
+  it('archive returns archived member', async () => {
+    const repository = {
+      findById: jest.fn().mockResolvedValue(member),
+      archive: jest.fn().mockResolvedValue({
+        ...member,
+        status: 'ARCHIVED',
+        archivedAt: new Date('2024-09-02T10:00:00.000Z'),
+      }),
+    } as unknown as MembersRepository;
 
-    it('getById throws 404 for missing member', async () => {
-        const repository = {
-            findById: jest.fn().mockResolvedValue(null),
-        } as unknown as MembersRepository;
+    const service = new MembersService(
+      repository,
+      audit,
+      households,
+      prisma,
+      customFields,
+      tags,
+    );
+    const result = await service.archive(organizationId, memberId, auditCtx);
 
-        const service = new MembersService(
-            repository,
-            audit,
-            households,
-            prisma,
-            customFields,
-            tags,
-        );
-
-        const org = {
-            organizationId,
-            membershipId: auditCtx.actorMembershipId!,
-            memberId: null,
-            role: 'SHEIKH' as const,
-            activeView: 'ADMIN' as const,
-            permissions: [],
-        };
-        await expect(service.getById(organizationId, memberId, org)).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('archive returns archived member', async () => {
-        const repository = {
-            findById: jest.fn().mockResolvedValue(member),
-            archive: jest.fn().mockResolvedValue({
-                ...member,
-                status: 'ARCHIVED',
-                archivedAt: new Date('2024-09-02T10:00:00.000Z'),
-            }),
-        } as unknown as MembersRepository;
-
-        const service = new MembersService(
-            repository,
-            audit,
-            households,
-            prisma,
-            customFields,
-            tags,
-        );
-        const result = await service.archive(organizationId, memberId, auditCtx);
-
-        expect(result.status).toBe('ARCHIVED');
-        expect(result.archivedAt).not.toBeNull();
-    });
+    expect(result.status).toBe('ARCHIVED');
+    expect(result.archivedAt).not.toBeNull();
+  });
 });

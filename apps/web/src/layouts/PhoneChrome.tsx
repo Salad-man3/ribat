@@ -4,16 +4,11 @@ import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Emblem } from '../components/Emblem';
 import { cn } from '../lib/utils';
-import type { NavEntry, PhoneTab } from './app-nav';
+import type { NavEntry, NavZone, PhoneTab } from './app-nav';
 import { isPhoneTabActive, mobileScreenTitleKey } from './app-nav';
+import { NavZoneHeading } from './NavZoneHeading';
 
 const iconClass = 'size-6 shrink-0';
-
-/** In-flow spacer height; must match the fixed phone header below. */
-export const phoneTopBarSpacerStyle = {
-  height:
-    'calc(max(0.5rem, env(safe-area-inset-top, 0px)) + 2.75rem + 0.5rem + 1px)',
-} as const;
 
 function IconMenu() {
   return (
@@ -40,10 +35,7 @@ function IconBell() {
 function IconLobby() {
   return (
     <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-      <path
-        fill="currentColor"
-        d="M12 3 3 10.5V20h6v-6h6v6h6v-9.5L12 3z"
-      />
+      <path fill="currentColor" d="M12 3 3 10.5V20h6v-6h6v6h6v-9.5L12 3z" />
     </svg>
   );
 }
@@ -127,6 +119,8 @@ function tabIcon(tab: PhoneTab) {
       return <IconChart />;
     case '/staff/materials':
       return <IconFolder />;
+    case '/staff/organization':
+      return <IconLobby />;
     case '/member':
     case '/guardian':
       return <IconPortal />;
@@ -147,8 +141,7 @@ const navLinkClass = (isActive: boolean, quiet?: boolean) =>
   );
 
 type NavBlock = {
-  primary: NavEntry[];
-  more: NavEntry[];
+  zones: NavZone[];
   utility: NavEntry[];
   unread: number;
   membersExpanded: boolean;
@@ -234,15 +227,22 @@ function DrawerNavEntries({
 
   return (
     <nav className="grid gap-1">
-      {renderEntries(block.primary)}
-      {block.more.length ? (
-        <div className="mt-3 grid gap-1">
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wide text-chrome-muted/90">
-            {t('nav.more')}
-          </p>
-          {renderEntries(block.more, true)}
-        </div>
-      ) : null}
+      {block.zones.map((zone, index) => {
+        const showHeading = zone.entries.length > 1 || zone.id !== 'today';
+        const headingId = `nav-zone-${zone.id}`;
+        return (
+          <section
+            key={zone.id}
+            className={index > 0 ? 'mt-2 grid gap-1' : 'grid gap-1'}
+            aria-labelledby={showHeading ? headingId : undefined}
+          >
+            {showHeading ? (
+              <NavZoneHeading id={headingId} label={t(zone.labelKey)} />
+            ) : null}
+            {renderEntries(zone.entries, zone.id === 'record')}
+          </section>
+        );
+      })}
       {block.utility.length ? (
         <div className="mt-3 grid gap-1 border-t border-white/15 pt-3">
           {renderEntries(block.utility)}
@@ -290,14 +290,10 @@ export function PhoneChrome({
   return (
     <>
       <div
-        className="md:hidden"
-        style={phoneTopBarSpacerStyle}
+        className="md:hidden h-[calc(max(0.5rem,env(safe-area-inset-top,0px))+2.75rem+0.5rem+1px)]"
         aria-hidden
       />
-      <header
-        className="fixed inset-x-0 top-0 z-40 border-b border-line bg-paper text-ink md:hidden"
-        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
-      >
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-line bg-paper text-ink pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden">
         <div className="flex min-h-11 items-center gap-2 px-3 pb-2">
           <button
             type="button"
@@ -328,8 +324,7 @@ export function PhoneChrome({
 
       {tabs.length ? (
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface md:hidden"
-          style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[max(0.25rem,env(safe-area-inset-bottom))] md:hidden"
           aria-label={t('shell.mainTabs')}
         >
           <ul className="flex">
@@ -349,7 +344,9 @@ export function PhoneChrome({
                     )}
                   >
                     {tabIcon(tab)}
-                    <span className="max-w-full truncate">{t(tab.labelKey)}</span>
+                    <span className="max-w-full truncate">
+                      {t(tab.labelKey)}
+                    </span>
                   </NavButton>
                 </li>
               );
@@ -366,18 +363,14 @@ export function PhoneChrome({
             aria-label={t('shell.closeMenu')}
             onClick={() => setDrawerOpen(false)}
           />
-          <aside
-            className="chrome-lattice absolute inset-y-0 start-0 flex w-[min(18rem,88vw)] flex-col gap-6 overflow-y-auto bg-chrome p-4 text-chrome-ink shadow-xl"
-            style={{
-              paddingTop: 'max(1rem, env(safe-area-inset-top))',
-              paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-            }}
-          >
+          <aside className="chrome-lattice absolute inset-y-0 start-0 flex w-[min(18rem,88vw)] flex-col gap-6 overflow-y-auto bg-chrome p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] text-chrome-ink shadow-xl">
             <div aria-hidden className="frieze-y absolute inset-y-0 end-0" />
             <div className="flex items-center gap-3">
               <Emblem className="size-8" />
               <div>
-                <p className="font-brand text-2xl font-semibold">{t('appName')}</p>
+                <p className="font-brand text-2xl font-semibold">
+                  {t('appName')}
+                </p>
               </div>
             </div>
             <DrawerNavEntries

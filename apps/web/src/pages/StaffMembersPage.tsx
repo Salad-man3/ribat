@@ -16,16 +16,16 @@ import { useMembers } from '../api/members';
 import { fullName } from '../components/MemberCard';
 import { MemberForm } from '../components/MemberForm';
 import { TagFilterChips } from '../components/TagsSettingsPanel';
-import { Button } from '../components/ui/button';
 import {
   Card,
   Empty,
   ErrorText,
   inputClass,
+  FilterChips,
+  ListPageShell,
   PageHeader,
   Segmented,
 } from '../components/ui/form';
-import { useActiveMembership } from '../hooks/use-me';
 import { cn } from '../lib/utils';
 
 type Tab = 'members' | 'teachers' | 'admins' | 'guardians';
@@ -149,34 +149,39 @@ function MembersTab() {
         </div>
       </details>
 
-      <Card>
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            className={cn(inputClass, 'max-w-xs flex-1')}
-            placeholder={t('members.search')}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <Segmented
-            value={filter}
-            onChange={setFilter}
-            aria-label={t('members.title')}
-            options={(['all', 'students', 'teachers'] as const).map((value) => ({
-              value,
-              label: t(`members.filter.${value}`),
-            }))}
-          />
-          <Segmented
-            value={status}
-            onChange={setStatus}
-            aria-label={t('members.title')}
-            options={(['ACTIVE', 'ARCHIVED'] as const).map((value) => ({
-              value,
-              label: t(`members.statusValue.${value}`),
-            }))}
-          />
-        </div>
+      <ListPageShell
+        toolbar={
+          <>
+            <input
+              type="search"
+              className={cn(inputClass, 'max-w-md w-full')}
+              placeholder={t('members.search')}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <FilterChips
+              value={filter}
+              onChange={setFilter}
+              aria-label={t('members.title')}
+              options={(['all', 'students', 'teachers'] as const).map(
+                (value) => ({
+                  value,
+                  label: t(`members.filter.${value}`),
+                }),
+              )}
+            />
+            <FilterChips
+              value={status}
+              onChange={setStatus}
+              aria-label={t('members.archive')}
+              options={(['ACTIVE', 'ARCHIVED'] as const).map((value) => ({
+                value,
+                label: t(`members.statusValue.${value}`),
+              }))}
+            />
+          </>
+        }
+      >
         {org.data?.tagsEnabled && tags.isSuccess ? (
           <div className="mb-4">
             <TagFilterChips
@@ -189,7 +194,7 @@ function MembersTab() {
         {members.isError ? <ErrorText error={members.error} /> : null}
         {rows.length === 0 ? <Empty>{t('members.empty')}</Empty> : null}
         <MemberRows rows={rows} />
-      </Card>
+      </ListPageShell>
     </>
   );
 }
@@ -198,7 +203,9 @@ function TeachersTab() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const members = useMembers('ACTIVE', search, true);
-  const rows = (members.data ?? []).filter((m) => (m.teaching?.length ?? 0) > 0);
+  const rows = (members.data ?? []).filter(
+    (m) => (m.teaching?.length ?? 0) > 0,
+  );
 
   return (
     <Card>
@@ -223,9 +230,6 @@ function MemberRows({
   teachingOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { can } = useActiveMembership();
-  const canEditMembers = can('members.manage');
   const org = useQuery({
     queryKey: ['organization'],
     queryFn: () => apiFetch<OrganizationResponse>('/api/v1/organization'),
@@ -236,33 +240,18 @@ function MemberRows({
     enabled: org.data?.tagsEnabled === true,
   });
   const tagName = new Map((tags.data ?? []).map((tag) => [tag.id, tag.name]));
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const archive = useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<MemberResponse>(`/api/v1/members/${id}/archive`, {
-        method: 'POST',
-      }),
-    onSuccess: async () => {
-      setConfirmId(null);
-      await queryClient.invalidateQueries({ queryKey: ['members'] });
-    },
-  });
 
   return (
     <>
-      {archive.isError ? <ErrorText error={archive.error} /> : null}
       <ul className="divide-y divide-line">
         {rows.map((member) => {
           const activeTeach = member.teaching?.filter((x) => !x.endedAt) ?? [];
           const pastTeach = member.teaching?.filter((x) => x.endedAt) ?? [];
           return (
-            <li
-              key={member.id}
-              className="flex items-center gap-2 py-1"
-            >
+            <li key={member.id} className="py-1">
               <NavButton
                 to={`/staff/members/${member.id}`}
-                className="min-w-0 flex-1 rounded-lg px-2 py-3 text-start hover:bg-paper"
+                className="block rounded-lg px-2 py-3 text-start hover:bg-paper"
               >
                 <span className="block font-medium">{fullName(member)}</span>
                 {!teachingOnly && member.studying?.length ? (
@@ -293,34 +282,6 @@ function MemberRows({
                   </span>
                 ) : null}
               </NavButton>
-              {canEditMembers && member.status === 'ACTIVE' ? (
-                <div className="flex shrink-0 flex-wrap gap-1 pe-1">
-                  {confirmId === member.id ? (
-                    <>
-                      <Button
-                        variant="danger"
-                        onClick={() => archive.mutate(member.id)}
-                        disabled={archive.isPending}
-                      >
-                        {t('members.confirmDelete')}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setConfirmId(null)}
-                      >
-                        {t('common.cancel')}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="danger"
-                      onClick={() => setConfirmId(member.id)}
-                    >
-                      {t('members.delete')}
-                    </Button>
-                  )}
-                </div>
-              ) : null}
             </li>
           );
         })}
@@ -351,8 +312,7 @@ function AdminsTab() {
     return row ? fullName(row) : '—';
   };
   const admins = useMemo(
-    () =>
-      (memberships.data ?? []).filter((row) => adminMatches(row, filter)),
+    () => (memberships.data ?? []).filter((row) => adminMatches(row, filter)),
     [memberships.data, filter],
   );
 
@@ -365,7 +325,10 @@ function AdminsTab() {
   return (
     <Card>
       <p className="mb-3 text-sm text-muted">{t('members.adminsHint')}</p>
-      <NavButton to="/staff/roles" className="text-sm font-semibold text-accent">
+      <NavButton
+        to="/staff/roles"
+        className="text-sm font-semibold text-accent"
+      >
         {t('members.manageRoles')} →
       </NavButton>
       <div className="mt-4 flex flex-wrap gap-2">

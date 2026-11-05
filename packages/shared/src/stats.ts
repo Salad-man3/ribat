@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { isoDate, uuid } from './fields.js';
 
-export const StatsScopeTypeSchema = z.enum(['ORG', 'COURSE', 'TEACHER', 'MEMBER']);
+export const StatsScopeTypeSchema = z.enum([
+  'ORG',
+  'COURSE',
+  'TEACHER',
+  'MEMBER',
+] as const);
 export type StatsScopeType = z.infer<typeof StatsScopeTypeSchema>;
 
 /** Counters stored in StatsDaily.metrics; rates are derived when serving. */
@@ -10,7 +15,9 @@ export const StatsAttendanceCountersSchema = z.object({
   attendanceLate: z.number().int().nonnegative(),
   attendanceAbsent: z.number().int().nonnegative(),
 });
-export type StatsAttendanceCounters = z.infer<typeof StatsAttendanceCountersSchema>;
+export type StatsAttendanceCounters = z.infer<
+  typeof StatsAttendanceCountersSchema
+>;
 
 export const StatsProgressCountersSchema = z.object({
   pagesMemorized: z.number().int().nonnegative(),
@@ -53,7 +60,9 @@ export function attendanceRateFromCounters(
   counters: StatsAttendanceCounters,
 ): number | null {
   const total =
-    counters.attendancePresent + counters.attendanceLate + counters.attendanceAbsent;
+    counters.attendancePresent +
+    counters.attendanceLate +
+    counters.attendanceAbsent;
   if (total === 0) return null;
   return (counters.attendancePresent + counters.attendanceLate) / total;
 }
@@ -62,7 +71,7 @@ export const StatsDailyRowSchema = z.object({
   date: isoDate,
   scopeType: StatsScopeTypeSchema,
   scopeId: uuid,
-  metrics: z.record(z.unknown()),
+  metrics: z.record(z.string(), z.unknown()),
 });
 export type StatsDailyRow = z.infer<typeof StatsDailyRowSchema>;
 
@@ -73,7 +82,9 @@ export const StatsCourseSeriesPointSchema = z.object({
   testsPassed: z.number().int().nonnegative(),
   testsTaken: z.number().int().nonnegative(),
 });
-export type StatsCourseSeriesPoint = z.infer<typeof StatsCourseSeriesPointSchema>;
+export type StatsCourseSeriesPoint = z.infer<
+  typeof StatsCourseSeriesPointSchema
+>;
 
 export const StatsCourseResponseSchema = z.object({
   courseId: uuid,
@@ -95,7 +106,9 @@ export const StatsTeacherCourseSummarySchema = z.object({
   pagesMemorized: z.number().int().nonnegative(),
   testsPassed: z.number().int().nonnegative(),
 });
-export type StatsTeacherCourseSummary = z.infer<typeof StatsTeacherCourseSummarySchema>;
+export type StatsTeacherCourseSummary = z.infer<
+  typeof StatsTeacherCourseSummarySchema
+>;
 
 export const StatsTeacherResponseSchema = z.object({
   teacherMemberId: uuid,
@@ -110,7 +123,9 @@ export const StatsTeacherResponseSchema = z.object({
 export type StatsTeacherResponse = z.infer<typeof StatsTeacherResponseSchema>;
 
 export const StatsMemberSeriesPointSchema = StatsCourseSeriesPointSchema;
-export type StatsMemberSeriesPoint = z.infer<typeof StatsMemberSeriesPointSchema>;
+export type StatsMemberSeriesPoint = z.infer<
+  typeof StatsMemberSeriesPointSchema
+>;
 
 export const StatsMemberResponseSchema = z.object({
   memberId: uuid,
@@ -133,7 +148,9 @@ export const StatsDashboardCourseRowSchema = z.object({
   testsPassed: z.number().int().nonnegative(),
   sessionsMissingAttendance: z.number().int().nonnegative(),
 });
-export type StatsDashboardCourseRow = z.infer<typeof StatsDashboardCourseRowSchema>;
+export type StatsDashboardCourseRow = z.infer<
+  typeof StatsDashboardCourseRowSchema
+>;
 
 export const StatsDashboardTeacherRowSchema = z.object({
   teacherMemberId: uuid,
@@ -142,7 +159,9 @@ export const StatsDashboardTeacherRowSchema = z.object({
   pagesMemorized: z.number().int().nonnegative(),
   loggedThisWeek: z.boolean(),
 });
-export type StatsDashboardTeacherRow = z.infer<typeof StatsDashboardTeacherRowSchema>;
+export type StatsDashboardTeacherRow = z.infer<
+  typeof StatsDashboardTeacherRowSchema
+>;
 
 export const StatsTopMemberSchema = z.object({
   memberId: uuid,
@@ -157,7 +176,9 @@ export const StatsFallingBehindMemberSchema = z.object({
   attendanceRate: z.number(),
   countableMarks: z.number().int().positive(),
 });
-export type StatsFallingBehindMember = z.infer<typeof StatsFallingBehindMemberSchema>;
+export type StatsFallingBehindMember = z.infer<
+  typeof StatsFallingBehindMemberSchema
+>;
 
 export const StatsDashboardResponseSchema = z.object({
   from: isoDate,
@@ -169,9 +190,12 @@ export const StatsDashboardResponseSchema = z.object({
   topMembers: z.array(StatsTopMemberSchema),
   fallingBehind: z.array(StatsFallingBehindMemberSchema),
 });
-export type StatsDashboardResponse = z.infer<typeof StatsDashboardResponseSchema>;
+export type StatsDashboardResponse = z.infer<
+  typeof StatsDashboardResponseSchema
+>;
 
 export const StatsDashboardQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(31).default(7),
+  belowRate: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type StatsDashboardQuery = z.infer<typeof StatsDashboardQuerySchema>;

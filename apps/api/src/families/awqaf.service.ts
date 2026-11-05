@@ -4,7 +4,7 @@ import type { AwqafExamResponse, CreateAwqafExamInput } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
 import type { OrgContext } from '../auth/org-context.guard';
-import { forbidden, notFound } from '../common/errors';
+import { forbidden } from '../common/errors';
 import { isStaffContext } from '../progress/class-scope.service';
 import { MemberAccessService } from './member-access.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,7 +22,6 @@ export class AwqafService {
     const db = this.prisma.forOrganization(org.organizationId);
     const rows = await db.awqafExam.findMany({
       where: { memberId },
-      include: { juzResults: true },
       orderBy: { takenAt: 'desc' },
     });
     return rows.map(mapExam);
@@ -53,20 +52,15 @@ export class AwqafService {
           organizationId: org.organizationId,
           memberId,
           level: input.level as AwqafExamLevel,
+          juzFrom: input.juzFrom,
+          juzTo: input.juzTo,
+          passed: input.passed,
+          score: input.score ?? null,
           takenAt,
           attemptNo,
           notes: input.notes ?? null,
           recorderMemberId: org.memberId!,
-          juzResults: {
-            create: input.juzResults.map((j) => ({
-              organizationId: org.organizationId,
-              juz: j.juz,
-              passed: j.passed,
-              score: j.score ?? null,
-            })),
-          },
         },
-        include: { juzResults: true },
       });
       await this.audit.record(
         audit,
@@ -88,24 +82,26 @@ function mapExam(row: {
   id: string;
   memberId: string;
   level: AwqafExamLevel;
+  juzFrom: number;
+  juzTo: number;
+  passed: boolean;
+  score: number | null;
   takenAt: Date;
   attemptNo: number;
   notes: string | null;
   recorderMemberId: string;
-  juzResults: { juz: number; passed: boolean; score: number | null }[];
 }): AwqafExamResponse {
   return {
     id: row.id,
     memberId: row.memberId,
     level: row.level,
+    juzFrom: row.juzFrom,
+    juzTo: row.juzTo,
+    passed: row.passed,
+    score: row.score,
     takenAt: row.takenAt.toISOString(),
     attemptNo: row.attemptNo,
     notes: row.notes,
     recorderMemberId: row.recorderMemberId,
-    juzResults: row.juzResults.map((j) => ({
-      juz: j.juz,
-      passed: j.passed,
-      score: j.score,
-    })),
   };
 }

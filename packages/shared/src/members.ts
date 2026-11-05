@@ -1,13 +1,26 @@
 import { z } from 'zod';
-import { CustomValuesInputSchema, CustomValuesSchema } from './custom-fields.js';
+import {
+  CustomValuesInputSchema,
+  CustomValuesSchema,
+} from './custom-fields.js';
 import { CursorPaginationQuerySchema } from './pagination.js';
-import { e164Phone, isoDate, isoDateTime, requiredName, uuid } from './fields.js';
+import {
+  e164Phone,
+  isoDate,
+  isoDateTime,
+  requiredName,
+  uuid,
+} from './fields.js';
 
-export const MemberStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
+export const MemberStatusSchema = z.enum(['ACTIVE', 'ARCHIVED'] as const);
 
 export type MemberStatus = z.infer<typeof MemberStatusSchema>;
 
-export const StudyStatusSchema = z.enum(['SCHOOL', 'UNIVERSITY', 'NOT_STUDYING']);
+export const StudyStatusSchema = z.enum([
+  'SCHOOL',
+  'UNIVERSITY',
+  'NOT_STUDYING',
+] as const);
 export type StudyStatus = z.infer<typeof StudyStatusSchema>;
 
 export const EducationLevelSchema = z.enum([
@@ -19,7 +32,7 @@ export const EducationLevelSchema = z.enum([
   'BACHELOR',
   'MASTER',
   'DOCTORATE',
-]);
+] as const);
 export type EducationLevel = z.infer<typeof EducationLevelSchema>;
 
 /** Levels at which a faculty or major is worth recording. */

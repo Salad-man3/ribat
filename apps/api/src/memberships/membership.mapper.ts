@@ -19,7 +19,8 @@ export function toMembershipResponse(
 ): MembershipResponse {
   const organizationSettings =
     context?.organizationSettings ?? row.organization?.settings ?? {};
-  const tagPermissionsJson = context?.tagPermissionsJson ?? row.tagPermissionsJson ?? [];
+  const tagPermissionsJson =
+    context?.tagPermissionsJson ?? row.tagPermissionsJson ?? [];
   const activeView = context?.activeView ?? 'ADMIN';
 
   return {

@@ -6,11 +6,15 @@ import { CourseAccessService } from './course-access.service';
 import { CoursesController } from './courses.controller';
 import { CoursesService } from './courses.service';
 import { EnrollmentsController } from './enrollments.controller';
+import { StaffPlacementController } from './staff-placement.controller';
 import { EnrollmentsService } from './enrollments.service';
 import { GroupsController } from './groups.controller';
 import { GroupsService } from './groups.service';
 import { ScheduleController } from './schedule.controller';
 import { ScheduleService } from './schedule.service';
+import { DoroosController } from './doroos.controller';
+import { DoroosService } from './doroos.service';
+import { SessionConflictsService } from './session-conflicts.service';
 import { SessionGeneratorService } from './session-generator.service';
 
 @Module({
@@ -18,8 +22,10 @@ import { SessionGeneratorService } from './session-generator.service';
   controllers: [
     CoursesController,
     EnrollmentsController,
+    StaffPlacementController,
     GroupsController,
     ScheduleController,
+    DoroosController,
   ],
   providers: [
     CourseAccessService,
@@ -28,7 +34,13 @@ import { SessionGeneratorService } from './session-generator.service';
     GroupsService,
     ScheduleService,
     SessionGeneratorService,
+    DoroosService,
+    SessionConflictsService,
   ],
-  exports: [SessionGeneratorService, CourseAccessService],
+  exports: [
+    SessionGeneratorService,
+    CourseAccessService,
+    SessionConflictsService,
+  ],
 })
 export class CoursesModule {}

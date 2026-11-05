@@ -29,16 +29,21 @@ export class TagsService {
 
   async assertTagsEnabled(organizationId: string): Promise<void> {
     if (!(await this.tagsEnabled(organizationId))) {
-      throw conflict('TAGS_DISABLED', 'Member tags are not enabled for this mosque');
+      throw conflict(
+        'TAGS_DISABLED',
+        'Member tags are not enabled for this mosque',
+      );
     }
   }
 
   async list(organizationId: string): Promise<TagResponse[]> {
     await this.assertTagsEnabled(organizationId);
-    const rows = await this.prisma.forOrganization(organizationId).tag.findMany({
-      where: { archivedAt: null },
-      orderBy: { name: 'asc' },
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .tag.findMany({
+        where: { archivedAt: null },
+        orderBy: { name: 'asc' },
+      });
     return rows.map(toTagResponse);
   }
 
@@ -76,7 +81,9 @@ export class TagsService {
       where: { id, archivedAt: null },
       data: {
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.permissions !== undefined ? { permissions: input.permissions } : {}),
+        ...(input.permissions !== undefined
+          ? { permissions: input.permissions }
+          : {}),
       },
     });
     const after = await this.findActive(organizationId, id);
@@ -87,7 +94,9 @@ export class TagsService {
       before: { name: before.name },
       after: {
         name: after.name,
-        ...(input.permissions !== undefined ? { permissions: input.permissions } : {}),
+        ...(input.permissions !== undefined
+          ? { permissions: input.permissions }
+          : {}),
       },
     });
     return toTagResponse(after);
@@ -107,9 +116,11 @@ export class TagsService {
     await this.prisma.forOrganization(organizationId).memberTag.deleteMany({
       where: { tagId: id },
     });
-    const after = await this.prisma.forOrganization(organizationId).tag.findFirst({
-      where: { id },
-    });
+    const after = await this.prisma
+      .forOrganization(organizationId)
+      .tag.findFirst({
+        where: { id },
+      });
     if (!after) throw notFound('Tag');
     await this.audit.record(auditCtx, {
       action: 'tag.archived',
@@ -129,10 +140,12 @@ export class TagsService {
     await this.assertTagsEnabled(organizationId);
     const unique = [...new Set(tagIds)];
     if (unique.length > 0) {
-      const found = await this.prisma.forOrganization(organizationId).tag.findMany({
-        where: { id: { in: unique }, archivedAt: null },
-        select: { id: true },
-      });
+      const found = await this.prisma
+        .forOrganization(organizationId)
+        .tag.findMany({
+          where: { id: { in: unique }, archivedAt: null },
+          select: { id: true },
+        });
       if (found.length !== unique.length) throw notFound('Tag');
     }
     const db = this.prisma.forOrganization(organizationId);
@@ -153,14 +166,19 @@ export class TagsService {
     return unique;
   }
 
-  async tagIdsByMember(organizationId: string, memberIds: string[]): Promise<Map<string, string[]>> {
+  async tagIdsByMember(
+    organizationId: string,
+    memberIds: string[],
+  ): Promise<Map<string, string[]>> {
     if (memberIds.length === 0) return new Map();
     const enabled = await this.tagsEnabled(organizationId);
     if (!enabled) return new Map(memberIds.map((id) => [id, []]));
-    const rows = await this.prisma.forOrganization(organizationId).memberTag.findMany({
-      where: { memberId: { in: memberIds } },
-      select: { memberId: true, tagId: true },
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .memberTag.findMany({
+        where: { memberId: { in: memberIds } },
+        select: { memberId: true, tagId: true },
+      });
     const map = new Map<string, string[]>();
     for (const id of memberIds) map.set(id, []);
     for (const row of rows) {
@@ -171,15 +189,20 @@ export class TagsService {
     return map;
   }
 
-  async tagIdsForMember(organizationId: string, memberId: string): Promise<string[]> {
+  async tagIdsForMember(
+    organizationId: string,
+    memberId: string,
+  ): Promise<string[]> {
     const map = await this.tagIdsByMember(organizationId, [memberId]);
     return map.get(memberId) ?? [];
   }
 
   private async findActive(organizationId: string, id: string) {
-    const row = await this.prisma.forOrganization(organizationId).tag.findFirst({
-      where: { id, archivedAt: null },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .tag.findFirst({
+        where: { id, archivedAt: null },
+      });
     if (!row) throw notFound('Tag');
     return row;
   }

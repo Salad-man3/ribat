@@ -23,7 +23,7 @@ const EMPTY_COUNTS: NotificationCategoryCounts = {
 const TYPES_FOR_CATEGORY: Record<NotificationCategory, NotificationType[]> = {
   attendance: ['ABSENCE_SUMMARY', 'ATTENDANCE_OVERRIDDEN', 'EXCUSE_DECIDED'],
   homework: ['HOMEWORK_ASSIGNED', 'HOMEWORK_MISSED'],
-  progress: ['TEST_RESULT'],
+  progress: ['TEST_RESULT', 'REPORT_CARD'],
   schedule: ['SCHEDULE_CHANGE', 'SESSION_NOT_TAKEN'],
   announcements: ['ANNOUNCEMENT'],
 };
@@ -65,7 +65,11 @@ export class NotificationsService {
       db.notification.findMany({
         where: listWhere,
         // Unread first, newest first within each.
-        orderBy: [{ readAt: { sort: 'desc', nulls: 'first' } }, { createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: [
+          { readAt: { sort: 'desc', nulls: 'first' } },
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
         take: query.limit,
         ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       }),
@@ -86,7 +90,11 @@ export class NotificationsService {
     };
   }
 
-  async markRead(organizationId: string, identityId: string, input: MarkNotificationsReadInput): Promise<void> {
+  async markRead(
+    organizationId: string,
+    identityId: string,
+    input: MarkNotificationsReadInput,
+  ): Promise<void> {
     await this.prisma.forOrganization(organizationId).notification.updateMany({
       where: {
         recipientIdentityId: identityId,

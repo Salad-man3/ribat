@@ -14,7 +14,11 @@ function leaves(tree: object, prefix = ''): { key: string; value: string }[] {
 
 /** NFR-01: every string exists in both languages. Arabic has more plural forms, so suffixes fold. */
 const fold = (list: string[]) =>
-  [...new Set(list.map((k) => k.replace(/_(zero|one|two|few|many|other)$/, '')))].sort();
+  [
+    ...new Set(
+      list.map((k) => k.replace(/_(zero|one|two|few|many|other)$/, '')),
+    ),
+  ].sort();
 
 describe('translations', () => {
   it('Arabic and English have the same keys', () => {
@@ -24,7 +28,9 @@ describe('translations', () => {
   });
 
   it('no Arabic string is left empty', () => {
-    const empty = leaves(ar).filter((l) => l.value === '').map((l) => l.key);
+    const empty = leaves(ar)
+      .filter((l) => l.value === '')
+      .map((l) => l.key);
     expect(empty).toEqual([]);
   });
 });

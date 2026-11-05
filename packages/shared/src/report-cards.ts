@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { isoDate, isoDateTime, uuid } from './fields.js';
 
-export const ReportCardStatusSchema = z.enum(['DRAFT', 'PUBLISHED']);
+export const ReportCardStatusSchema = z.enum(['DRAFT', 'PUBLISHED'] as const);
 export type ReportCardStatus = z.infer<typeof ReportCardStatusSchema>;
 
 export const ReportCardTestSummarySchema = z.object({
@@ -41,7 +41,9 @@ export type CreateReportCardInput = z.infer<typeof CreateReportCardSchema>;
 export const UpdateReportCardCommentSchema = z.object({
   teacherComment: z.string().trim().max(2000).nullable(),
 });
-export type UpdateReportCardCommentInput = z.infer<typeof UpdateReportCardCommentSchema>;
+export type UpdateReportCardCommentInput = z.infer<
+  typeof UpdateReportCardCommentSchema
+>;
 
 export const ListReportCardsQuerySchema = z.object({
   status: ReportCardStatusSchema.optional(),

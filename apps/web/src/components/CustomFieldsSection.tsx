@@ -6,7 +6,7 @@ import type {
   CustomValues,
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
-import { Field, inputClass } from './ui/form';
+import { Field, SwitchField, inputClass } from './ui/form';
 
 function activeFields(rows: CustomFieldDefinitionResponse[]) {
   return rows.filter((row) => !row.archivedAt);
@@ -36,7 +36,7 @@ export function CustomFieldsSection({
 
   const setValue = (key: string, raw: string | number | boolean) => {
     const next = { ...values };
-    if (raw === '' || raw === false) delete next[key];
+    if (raw === '') delete next[key];
     else next[key] = raw as CustomValues[string];
     onChange(next);
   };
@@ -46,19 +46,16 @@ export function CustomFieldsSection({
       <legend className="px-1 text-sm font-semibold text-ink">
         {t(titleKey)}
       </legend>
-      {fields.map((field) => (
-        <Field key={field.id} label={field.label}>
-          {field.type === 'BOOLEAN' ? (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-accent"
-                checked={Boolean(values[field.key])}
-                onChange={(e) => setValue(field.key, e.target.checked)}
-              />
-              {t('settings.extraFields.types.BOOLEAN')}
-            </label>
-          ) : (
+      {fields.map((field) =>
+        field.type === 'BOOLEAN' ? (
+          <SwitchField
+            key={field.id}
+            label={field.label}
+            checked={Boolean(values[field.key])}
+            onChange={(checked) => setValue(field.key, checked)}
+          />
+        ) : (
+          <Field key={field.id} label={field.label}>
             <input
               className={inputClass}
               type={
@@ -78,9 +75,9 @@ export function CustomFieldsSection({
                 }
               }}
             />
-          )}
-        </Field>
-      ))}
+          </Field>
+        ),
+      )}
     </fieldset>
   );
 }

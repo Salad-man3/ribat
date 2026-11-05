@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { attendanceRateFromCounters } from './stats.js';
+import {
+  attendanceRateFromCounters,
+  StatsDashboardQuerySchema,
+} from './stats.js';
 
 test('attendanceRateFromCounters matches portal semantics', () => {
   assert.equal(
@@ -10,6 +13,17 @@ test('attendanceRateFromCounters matches portal semantics', () => {
       attendanceAbsent: 1,
     }),
     0.9,
+  );
+});
+
+test('StatsDashboardQuerySchema rejects belowRate above 100', () => {
+  assert.equal(
+    StatsDashboardQuerySchema.safeParse({ belowRate: 101 }).success,
+    false,
+  );
+  assert.equal(
+    StatsDashboardQuerySchema.safeParse({ belowRate: 90, days: 30 }).success,
+    true,
   );
 });
 

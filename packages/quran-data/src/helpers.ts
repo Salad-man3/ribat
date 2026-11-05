@@ -39,7 +39,9 @@ export function validateRange(range: AyahRange): boolean {
 }
 
 export function mergeRanges(ranges: AyahRange[]): AyahRange[] {
-  const valid = ranges.filter(validateRange).sort((a, b) => compareAyah(a.start, b.start));
+  const valid = ranges
+    .filter(validateRange)
+    .sort((a, b) => compareAyah(a.start, b.start));
   const merged: AyahRange[] = [];
 
   for (const range of valid) {
@@ -65,7 +67,8 @@ export function ayahsInRange(range: AyahRange): number {
   const { start, end } = range;
   if (start.surah === end.surah) return end.ayah - start.ayah + 1;
   let count = SURAH_BY_NUMBER.get(start.surah)!.ayahCount - start.ayah + 1;
-  for (let s = start.surah + 1; s < end.surah; s++) count += SURAH_BY_NUMBER.get(s)!.ayahCount;
+  for (let s = start.surah + 1; s < end.surah; s++)
+    count += SURAH_BY_NUMBER.get(s)!.ayahCount;
   return count + end.ayah;
 }
 
@@ -83,8 +86,12 @@ export function lastAyahOnPage(page: number): AyahRef | null {
 }
 
 /** Inclusive page span → ayah range on the Madinah mushaf. */
-export function rangeForPages(pageFrom: number, pageTo: number): AyahRange | null {
-  if (pageFrom < 1 || pageTo > PAGE_STARTS.length || pageFrom > pageTo) return null;
+export function rangeForPages(
+  pageFrom: number,
+  pageTo: number,
+): AyahRange | null {
+  if (pageFrom < 1 || pageTo > PAGE_STARTS.length || pageFrom > pageTo)
+    return null;
   const end = lastAyahOnPage(pageTo);
   if (!end) return null;
   return { start: { ...PAGE_STARTS[pageFrom - 1] }, end };

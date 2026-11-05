@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { CustomValuesInputSchema, CustomValuesSchema } from './custom-fields.js';
+import {
+  CustomValuesInputSchema,
+  CustomValuesSchema,
+} from './custom-fields.js';
 import { isoDate, isoDateTime, requiredName, uuid } from './fields.js';
 
 const programFields = z.object({
@@ -12,10 +15,7 @@ const programFields = z.object({
 const datesInOrder = (value: {
   startDate?: string | null;
   endDate?: string | null;
-}) =>
-  !value.startDate ||
-  !value.endDate ||
-  value.startDate <= value.endDate;
+}) => !value.startDate || !value.endDate || value.startDate <= value.endDate;
 
 export const CreateProgramSchema = programFields.refine(datesInOrder, {
   message: 'endDate must not be before startDate',

@@ -272,7 +272,7 @@ async function seedDemo() {
 
   const courses: CourseSpec[] = [
     { name: 'حلقة تحفيظ العصر', description: 'حفظ جزء عمّ وتبارك للأولاد بين العصر والمغرب.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 7, maxAge: 16, weekdays: [0, 2, 4], from: '15:30', to: '17:30', prayer: { start: 'ASR', end: 'MAGHRIB' }, memorize: 'quran', lead: tariq, students: [ward, ...take(byAge(9, 14, 'M'), 10)] },
-    { name: 'حلقة الفجر للكبار', description: 'حفظ ومراجعة للكبار بعد صلاة الفجر.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 18, weekdays: [6, 1, 3], from: '05:15', to: '06:15', prayer: { start: 'FAJR', end: 'SUNRISE' }, memorize: 'quran', lead: teachers[1], students: [...take(adults, 7), ...take(guardians, 4)] },
+    { name: 'حلقة الفجر للكبار', description: 'حفظ ومراجعة للكبار بعد صلاة الفجر.', type: 'MEMORIZATION', location: 'المصلى الرئيسي', minAge: 18, weekdays: [6, 1, 3], from: '05:15', to: '06:15', prayer: { start: 'FAJR', end: 'SUNRISE' }, memorize: 'quran', lead: teachers[1], students: [tariq, ...take(adults, 7), ...take(guardians, 4)] },
     { name: 'حلقة البراعم', description: 'تلقين قصار السور للصغار.', type: 'MEMORIZATION', location: 'قاعة الأطفال', minAge: 5, maxAge: 8, weekdays: [6, 1, 3], from: '16:00', to: '17:00', memorize: 'quran', lead: teachers[2], students: take(byAge(5, 8), 11) },
     { name: 'حلقة الفتيات', description: 'حلقة تحفيظ للبنات يوم الجمعة والسبت.', type: 'MEMORIZATION', location: 'مصلى النساء', minAge: 9, maxAge: 15, weekdays: [5, 6], from: '10:00', to: '12:00', memorize: 'quran', lead: teachers[3], students: take(byAge(9, 14, 'F'), 11) },
     { name: 'حلقة المراجعة والتثبيت', description: 'مراجعة المحفوظ وتثبيته بين المغرب والعشاء.', type: 'MEMORIZATION', location: 'المكتبة', minAge: 12, weekdays: [0, 3], from: '18:30', to: '19:45', prayer: { start: 'MAGHRIB', end: 'ISHA' }, memorize: 'quran', lead: teachers[4], students: [...take(byAge(12, 14), 5), ...take(adults.filter((a) => a.age <= 30), 4)] },
@@ -590,13 +590,23 @@ export async function runSeed(client: PrismaClient) {
   await prisma().courseMaterial.deleteMany({});
   await prisma().guardianLink.deleteMany({});
   await prisma().memberNote.deleteMany({});
+  await prisma().announcement.deleteMany({});
+  await prisma().reportCard.deleteMany({});
+  await prisma().awqafExam.deleteMany({});
+  await prisma().statsDaily.deleteMany({});
+  await prisma().memberTag.deleteMany({});
   await prisma().accountSetupCode.deleteMany({});
   await prisma().authSession.deleteMany({});
   await prisma().membership.deleteMany({});
   await prisma().member.deleteMany({});
   await prisma().household.deleteMany({});
   await prisma().course.deleteMany({});
+  await prisma().program.deleteMany({});
   await prisma().material.deleteMany({});
+  await prisma().tag.deleteMany({});
+  await prisma().recitationKind.deleteMany({});
+  await prisma().joinApplication.deleteMany({});
+  await prisma().customFieldDefinition.deleteMany({});
   await prisma().organization.deleteMany({
     where: { slug: { in: ['demo-mosque', 'isolation-test-mosque'] } },
   });

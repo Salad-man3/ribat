@@ -4,7 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import type { ReportCardResponse } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
-import { Card, Empty, ErrorText, Field, PageHeader, inputClass } from '../components/ui/form';
+import {
+  Card,
+  Empty,
+  ErrorText,
+  Field,
+  PageHeader,
+  inputClass,
+} from '../components/ui/form';
 import { Button } from '../components/ui/button';
 import { useActiveMembership } from '../hooks/use-me';
 import { formatGregorianNumeric } from '../lib/domain';
@@ -34,12 +41,15 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
         method: 'PATCH',
         body: JSON.stringify({ teacherComment: comment || null }),
       }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['report-card', id] }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ['report-card', id] }),
   });
 
   const publish = useMutation({
     mutationFn: () =>
-      apiFetch<ReportCardResponse>(`/api/v1/report-cards/${id}/publish`, { method: 'POST' }),
+      apiFetch<ReportCardResponse>(`/api/v1/report-cards/${id}/publish`, {
+        method: 'POST',
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['report-card', id] });
       void qc.invalidateQueries({ queryKey: ['report-cards'] });
@@ -55,9 +65,10 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
   const rate =
     content.attendanceRate === null
       ? '—'
-      : new Intl.NumberFormat(i18n.language, { style: 'percent', maximumFractionDigits: 0 }).format(
-          content.attendanceRate,
-        );
+      : new Intl.NumberFormat(i18n.language, {
+          style: 'percent',
+          maximumFractionDigits: 0,
+        }).format(content.attendanceRate);
 
   const shareUrl = `${window.location.origin}${listPath}/cards/${c.id}`;
   const waUrl = reportCardWhatsappUrl(shareUrl, t('reportCards.shareMessage'));
@@ -91,7 +102,8 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
           <div>
             <dt className="text-muted">{t('reportCards.tests')}</dt>
             <dd className="font-semibold">
-              {content.tests.filter((x) => x.passed).length} / {content.tests.length}
+              {content.tests.filter((x) => x.passed).length} /{' '}
+              {content.tests.length}
             </dd>
           </div>
         </dl>
@@ -99,7 +111,10 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
           <ul className="mt-4 divide-y divide-line text-sm">
             {content.tests.map((test) => (
               <li key={test.testId} className="py-2">
-                {test.score}% · {test.passed ? t('reportCards.passed') : t('reportCards.notPassed')}
+                {test.score}% ·{' '}
+                {test.passed
+                  ? t('reportCards.passed')
+                  : t('reportCards.notPassed')}
               </li>
             ))}
           </ul>
@@ -117,11 +132,20 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
             />
           </Field>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button type="button" onClick={() => saveComment.mutate()} disabled={saveComment.isPending}>
+            <Button
+              type="button"
+              onClick={() => saveComment.mutate()}
+              disabled={saveComment.isPending}
+            >
               {t('reportCards.saveComment')}
             </Button>
             {staff ? (
-              <Button type="button" variant="ghost" onClick={() => publish.mutate()} disabled={publish.isPending}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => publish.mutate()}
+                disabled={publish.isPending}
+              >
                 {t('reportCards.publish')}
               </Button>
             ) : null}
@@ -134,7 +158,12 @@ export function ReportCardDetailPage({ listPath }: { listPath: string }) {
               <p className="whitespace-pre-wrap text-sm">{c.teacherComment}</p>
             </Card>
           ) : null}
-          <a href={waUrl} target="_blank" rel="noreferrer" className="inline-flex">
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex"
+          >
             <Button type="button">{t('reportCards.shareWhatsapp')}</Button>
           </a>
         </>

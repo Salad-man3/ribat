@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 /** E.164, the same rule Identity.phone uses. */
 export const e164Phone = z
-    .string()
-    .trim()
-    .regex(/^\+[1-9]\d{1,14}$/, 'Must be E.164 format');
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{1,14}$/, 'Must be E.164 format');
 
 export const requiredName = z.string().trim().min(1, 'Required');
 
@@ -20,15 +20,15 @@ export const latitude = z.number().gte(-90).lte(90);
 export const longitude = z.number().gte(-180).lte(180);
 
 export const ianaTimeZone = z.string().refine(
-    (value) => {
-        try {
-            Intl.DateTimeFormat(undefined, { timeZone: value });
-            return true;
-        } catch {
-            return false;
-        }
-    },
-    { message: 'Must be an IANA time zone' },
+  (value) => {
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: value });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: 'Must be an IANA time zone' },
 );
 
 /** Chosen by the person during setup. Staff never send this. */
@@ -42,9 +42,9 @@ export const currentPassword = z.string().min(1).max(128);
  * T105 must generate this alphabet.
  */
 export const setupCode = z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/, 'Invalid setup code');
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/, 'Invalid setup code');
 
 export const deviceLabel = z.string().trim().min(1).max(80);

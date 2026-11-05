@@ -171,9 +171,16 @@ export class ProgressReaderService {
       include: { course: true },
     });
     const sessionIds = sessions.map((s) => s.id);
-    const courseNameById = new Map(sessions.map((s) => [s.courseId, s.course.name]));
+    const courseNameById = new Map(
+      sessions.map((s) => [s.courseId, s.course.name]),
+    );
 
-    const [absenceRows, logRows] = await Promise.all([
+    const logWhere = {
+      loggedAt: { gte: dayStart, lt: dayEnd },
+      voidedAt: null,
+      countsProgress: true,
+    } as const;
+    const [absenceRows, logRows, memorizationLogCount] = await Promise.all([
       sessionIds.length
         ? db.attendance.findMany({
             where: { sessionId: { in: sessionIds }, status: 'ABSENT' },
@@ -186,34 +193,28 @@ export class ProgressReaderService {
           })
         : Promise.resolve([]),
       db.memorizationLog.findMany({
-        where: {
-          loggedAt: { gte: dayStart, lt: dayEnd },
-          voidedAt: null,
-          countsProgress: true,
-        },
+        where: logWhere,
         include: { member: true, course: true },
         orderBy: { loggedAt: 'desc' },
         take: 20,
       }),
+      db.memorizationLog.count({ where: logWhere }),
     ]);
 
     return {
       date,
       absenceCount: absenceRows.length,
       absences: absenceRows.map((row) => ({
+        memberId: row.enrollment.memberId,
         memberName: memberName(row.enrollment.member),
         courseName: row.session.course.name,
       })),
-      memorizationLogCount: await db.memorizationLog.count({
-        where: {
-          loggedAt: { gte: dayStart, lt: dayEnd },
-          voidedAt: null,
-          countsProgress: true,
-        },
-      }),
+      memorizationLogCount,
       memorizationLogs: logRows.map((row) => ({
+        memberId: row.memberId,
         memberName: memberName(row.member),
-        courseName: row.course?.name ?? courseNameById.get(row.courseId ?? '') ?? '',
+        courseName:
+          row.course?.name ?? courseNameById.get(row.courseId ?? '') ?? '',
         pageFrom: row.pageFrom,
         pageTo: row.pageTo,
       })),
@@ -229,9 +230,13 @@ export class ProgressReaderService {
     org: OrgContext,
     sessionId: string,
   ): Promise<SessionAttendanceResponse> {
-    const session = await this.session(org, sessionId);
-    const scope = await this.scope.forCourse(org, session.courseId, 'read');
     const db = this.prisma.forOrganization(org.organizationId);
+    const session = await db.courseSession.findFirst({
+      where: { id: sessionId },
+      include: { course: true },
+    });
+    if (!session) throw notFound('Session');
+    const scope = await this.scope.forCourse(org, session.courseId, 'read');
     const [enrollments, marks] = await Promise.all([
       db.enrollment.findMany({
         where: this.scope.enrollmentFilter(scope),
@@ -241,7 +246,12 @@ export class ProgressReaderService {
     ]);
     const markOf = new Map(marks.map((m) => [m.enrollmentId, m]));
     return {
-      session: toSession(session),
+      session: {
+        ...toSession(session),
+        courseName: session.course.name,
+        courseType: session.course.type,
+        testPassMark: session.course.testPassMark,
+      },
       roster: enrollments.sort(byName).map((e) => {
         const mark = markOf.get(e.id);
         return {
@@ -518,12 +528,23 @@ export class ProgressReaderService {
     const asTeacher: OrgContext = { ...org, permissions: [] };
     const rosterMembers = new Set<string>();
     const kitCourses = new Set<string>();
+    const courseIdsToday = [...new Set(sessions.map((s) => s.courseId))];
+    const rosterByCourse = new Map(
+      await Promise.all(
+        courseIdsToday.map(async (courseId) => {
+          const scope = await this.scope.forCourse(asTeacher, courseId, 'read');
+          const enrollments = await db.enrollment.findMany({
+            where: this.scope.enrollmentFilter(scope),
+            include: { member: true },
+          });
+          return [courseId, { scope, enrollments }] as const;
+        }),
+      ),
+    );
     for (const s of sessions) {
-      const scope = await this.scope.forCourse(asTeacher, s.courseId, 'read');
-      const enrollments = await db.enrollment.findMany({
-        where: this.scope.enrollmentFilter(scope),
-        include: { member: true },
-      });
+      const loaded = rosterByCourse.get(s.courseId);
+      if (!loaded) continue;
+      const { scope, enrollments } = loaded;
       const markOf = new Map(
         s.attendance.map((a) => [a.enrollmentId, a.status]),
       );
@@ -570,41 +591,30 @@ export class ProgressReaderService {
       .filter((l) => l.track === 'MEMORIZATION')
       .map((l) => l.materialId);
     if (rosterMembers.size && memorizationMaterials.length) {
-      const summaries = await db.memorizationSummary.findMany({
-        where: {
-          memberId: { in: [...rosterMembers] },
-          materialId: { in: memorizationMaterials },
-        },
-      });
-      kit.positions = summaries.map(toSummaryResponse);
-
       const dayStart = fromDateString(date);
       const dayEnd = fromDateString(addDays(date, 1));
-      const logs = await db.memorizationLog.findMany({
-        where: {
-          memberId: { in: [...rosterMembers] },
-          materialId: { in: memorizationMaterials },
-          voidedAt: null,
-          loggedAt: { gte: dayStart, lt: dayEnd },
-        },
-        orderBy: { loggedAt: 'asc' },
-      });
-      kit.todayLogs = logs.map((l) => ({
-        id: l.id,
-        memberId: l.memberId,
-        materialId: l.materialId,
-        type: l.type,
-        pageFrom: l.pageFrom,
-        pageTo: l.pageTo,
-        countsProgress: l.countsProgress,
-        loggedAt: l.loggedAt.toISOString(),
-      }));
-
       const quranMaterialIds = links
-        .filter((l) => l.track === 'MEMORIZATION' && l.material.kind === 'QURAN')
+        .filter(
+          (l) => l.track === 'MEMORIZATION' && l.material.kind === 'QURAN',
+        )
         .map((l) => l.materialId);
-      if (quranMaterialIds.length) {
-        const lifetimeLogs = await db.memorizationLog.findMany({
+      const [summaries, logs, lifetimeLogs, juzTests] = await Promise.all([
+        db.memorizationSummary.findMany({
+          where: {
+            memberId: { in: [...rosterMembers] },
+            materialId: { in: memorizationMaterials },
+          },
+        }),
+        db.memorizationLog.findMany({
+          where: {
+            memberId: { in: [...rosterMembers] },
+            materialId: { in: memorizationMaterials },
+            voidedAt: null,
+            loggedAt: { gte: dayStart, lt: dayEnd },
+          },
+          orderBy: { loggedAt: 'asc' },
+        }),
+        db.memorizationLog.findMany({
           where: {
             memberId: { in: [...rosterMembers] },
             materialId: { in: quranMaterialIds },
@@ -622,17 +632,57 @@ export class ProgressReaderService {
             pageFrom: true,
             pageTo: true,
             countsProgress: true,
+            loggedAt: true,
           },
-        });
+        }),
+        db.memorizationTest.findMany({
+          where: {
+            memberId: { in: [...rosterMembers] },
+            materialId: { in: quranMaterialIds },
+            scopeType: 'JUZ',
+          },
+          select: {
+            memberId: true,
+            materialId: true,
+            scopeType: true,
+            juz: true,
+            passed: true,
+            score: true,
+            attemptNo: true,
+            takenAt: true,
+          },
+        }),
+      ]);
+      kit.positions = summaries.map(toSummaryResponse);
+      kit.todayLogs = logs.map((l) => ({
+        id: l.id,
+        memberId: l.memberId,
+        materialId: l.materialId,
+        type: l.type,
+        pageFrom: l.pageFrom,
+        pageTo: l.pageTo,
+        countsProgress: l.countsProgress,
+        loggedAt: l.loggedAt.toISOString(),
+      }));
+
+      if (quranMaterialIds.length) {
         for (const materialId of quranMaterialIds) {
           for (const memberId of rosterMembers) {
             const slice = lifetimeLogs.filter(
               (l) => l.memberId === memberId && l.materialId === materialId,
             );
+            const snap = hifzMapFromData(
+              slice,
+              juzTests.filter(
+                (t) => t.memberId === memberId && t.materialId === materialId,
+              ),
+            );
             kit.memberHifzMaps.push({
               memberId,
               materialId,
-              juzMemorized: hifzMapFromData(slice, []).juzMemorized,
+              juzMemorized: snap.juzMemorized,
+              juzFills: snap.juzFills,
+              lastLog: snap.lastLog,
             });
           }
         }
@@ -645,7 +695,15 @@ export class ProgressReaderService {
         where: { sessionId: { in: sessionIds } },
         orderBy: { loggedAt: 'asc' },
       });
-      const furthest = new Map<string, { sessionId: string; materialId: string; groupId: string | null; pageTo: number }>();
+      const furthest = new Map<
+        string,
+        {
+          sessionId: string;
+          materialId: string;
+          groupId: string | null;
+          pageTo: number;
+        }
+      >();
       for (const row of materialLogs) {
         const key = `${row.sessionId}:${row.materialId}:${row.groupId ?? ''}`;
         const prev = furthest.get(key);
@@ -674,22 +732,22 @@ export class ProgressReaderService {
   ): Promise<CourseHalaqaWall> {
     const scope = await this.scope.forCourse(org, courseId, 'read');
     const db = this.prisma.forOrganization(org.organizationId);
-    const timezone = await this.timezone(org.organizationId);
+    const [timezone, enrollments, links] = await Promise.all([
+      this.timezone(org.organizationId),
+      db.enrollment.findMany({
+        where: this.scope.enrollmentFilter(scope),
+        include: { member: true },
+      }),
+      db.courseMaterial.findMany({
+        where: { courseId },
+        include: { material: true },
+        orderBy: { order: 'asc' },
+      }),
+    ]);
     const date = dateIn(now, timezone);
     const dayStart = fromDateString(date);
     const dayEnd = fromDateString(addDays(date, 1));
-
-    const enrollments = await db.enrollment.findMany({
-      where: this.scope.enrollmentFilter(scope),
-      include: { member: true },
-    });
     const memberIds = enrollments.map((e) => e.memberId);
-
-    const links = await db.courseMaterial.findMany({
-      where: { courseId },
-      include: { material: true },
-      orderBy: { order: 'asc' },
-    });
     const memorizationIds = links
       .filter((l) => l.track === 'MEMORIZATION')
       .map((l) => l.materialId);
@@ -697,15 +755,72 @@ export class ProgressReaderService {
       (l) => l.track === 'MEMORIZATION' && l.material.kind === 'QURAN',
     );
 
-    const summaries =
-      memberIds.length && memorizationIds.length
-        ? await db.memorizationSummary.findMany({
-            where: {
-              memberId: { in: memberIds },
-              materialId: { in: memorizationIds },
-            },
-          })
-        : [];
+    const explanationLinks = links.filter((l) => l.track === 'EXPLANATION');
+    const [summaries, todayLogs, lifetimeLogs, juzTests, sessionRows] =
+      await Promise.all([
+        db.memorizationSummary.findMany({
+          where: {
+            memberId: { in: memberIds },
+            materialId: { in: memorizationIds },
+          },
+        }),
+        db.memorizationLog.findMany({
+          where: {
+            courseId,
+            memberId: { in: memberIds },
+            materialId: { in: memorizationIds },
+            voidedAt: null,
+            loggedAt: { gte: dayStart, lt: dayEnd },
+          },
+        }),
+        db.memorizationLog.findMany({
+          where: {
+            memberId: { in: memberIds },
+            materialId: { in: quranLink ? [quranLink.materialId] : [] },
+            voidedAt: null,
+          },
+          select: {
+            memberId: true,
+            type: true,
+            voidedAt: true,
+            surahStart: true,
+            ayahStart: true,
+            surahEnd: true,
+            ayahEnd: true,
+            pageFrom: true,
+            pageTo: true,
+            countsProgress: true,
+            loggedAt: true,
+          },
+        }),
+        db.memorizationTest.findMany({
+          where: quranLink
+            ? {
+                memberId: { in: memberIds },
+                materialId: quranLink.materialId,
+                scopeType: 'JUZ',
+              }
+            : { id: { in: [] } },
+          select: {
+            memberId: true,
+            scopeType: true,
+            juz: true,
+            passed: true,
+            score: true,
+            attemptNo: true,
+            takenAt: true,
+          },
+        }),
+        explanationLinks.length
+          ? db.courseSession.findMany({
+              where: { courseId, status: { not: 'CANCELLED' } },
+              select: { id: true },
+            })
+          : db.courseSession.findMany({
+              where: { id: { in: [] } },
+              select: { id: true },
+            }),
+      ]);
     const summaryOf = (memberId: string) => {
       const materialId = quranLink?.materialId ?? memorizationIds[0];
       if (!materialId) return null;
@@ -715,83 +830,48 @@ export class ProgressReaderService {
       return row ? toSummaryResponse(row) : null;
     };
 
-    const todayLogs =
-      memberIds.length && memorizationIds.length
-        ? await db.memorizationLog.findMany({
-            where: {
-              courseId,
-              memberId: { in: memberIds },
-              materialId: { in: memorizationIds },
-              voidedAt: null,
-              loggedAt: { gte: dayStart, lt: dayEnd },
-            },
-          })
-        : [];
     const logCount = new Map<string, number>();
     for (const log of todayLogs) {
       logCount.set(log.memberId, (logCount.get(log.memberId) ?? 0) + 1);
     }
 
-    const juzByMember = new Map<string, number[]>();
+    const hifzByMember = new Map<string, ReturnType<typeof hifzMapFromData>>();
     if (memberIds.length && quranLink) {
-      const lifetimeLogs = await db.memorizationLog.findMany({
-        where: {
-          memberId: { in: memberIds },
-          materialId: quranLink.materialId,
-          voidedAt: null,
-        },
-        select: {
-          memberId: true,
-          type: true,
-          voidedAt: true,
-          surahStart: true,
-          ayahStart: true,
-          surahEnd: true,
-          ayahEnd: true,
-          pageFrom: true,
-          pageTo: true,
-          countsProgress: true,
-        },
-      });
       for (const memberId of memberIds) {
         const slice = lifetimeLogs.filter((l) => l.memberId === memberId);
-        juzByMember.set(
+        hifzByMember.set(
           memberId,
-          hifzMapFromData(slice, []).juzMemorized,
+          hifzMapFromData(
+            slice,
+            juzTests.filter((t) => t.memberId === memberId),
+          ),
         );
       }
     }
 
-    const explanationLinks = links.filter((l) => l.track === 'EXPLANATION');
     let explanation: CourseHalaqaWall['explanation'] = null;
-    if (explanationLinks.length) {
-      const sessionRows = await db.courseSession.findMany({
-        where: { courseId, status: { not: 'CANCELLED' } },
-        select: { id: true },
+    if (sessionRows.length) {
+      const materialLogs = await db.materialLog.findMany({
+        where: {
+          sessionId: { in: sessionRows.map((s) => s.id) },
+          materialId: { in: explanationLinks.map((l) => l.materialId) },
+        },
       });
-      if (sessionRows.length) {
-        const materialLogs = await db.materialLog.findMany({
-          where: {
-            sessionId: { in: sessionRows.map((s) => s.id) },
-            materialId: { in: explanationLinks.map((l) => l.materialId) },
-          },
-        });
-        let best: { materialId: string; pageTo: number } | null = null;
-        for (const row of materialLogs) {
-          if (!best || row.pageTo > best.pageTo)
-            best = { materialId: row.materialId, pageTo: row.pageTo };
-        }
-        if (best) {
-          const link = explanationLinks.find(
-            (l) => l.materialId === best!.materialId,
-          )!;
-          explanation = {
-            materialId: link.materialId,
-            title: link.material.title,
-            pageTo: best.pageTo,
-            totalPages: link.material.totalPages,
-          };
-        }
+      let best: { materialId: string; pageTo: number } | null = null;
+      for (const row of materialLogs) {
+        if (!best || row.pageTo > best.pageTo)
+          best = { materialId: row.materialId, pageTo: row.pageTo };
+      }
+      if (best) {
+        const link = explanationLinks.find(
+          (l) => l.materialId === best!.materialId,
+        )!;
+        explanation = {
+          materialId: link.materialId,
+          title: link.material.title,
+          pageTo: best.pageTo,
+          totalPages: link.material.totalPages,
+        };
       }
     }
 
@@ -805,7 +885,9 @@ export class ProgressReaderService {
         position: summaryOf(e.memberId),
         loggedToday: (logCount.get(e.memberId) ?? 0) > 0,
         todayLogCount: logCount.get(e.memberId) ?? 0,
-        juzMemorized: juzByMember.get(e.memberId),
+        juzMemorized: hifzByMember.get(e.memberId)?.juzMemorized,
+        juzFills: hifzByMember.get(e.memberId)?.juzFills,
+        lastLog: hifzByMember.get(e.memberId)?.lastLog ?? null,
       })),
     };
   }

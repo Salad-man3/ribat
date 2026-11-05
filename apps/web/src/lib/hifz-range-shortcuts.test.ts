@@ -20,7 +20,10 @@ describe('continuationRangeFromPosition', () => {
 
 describe('pickEndWithUnit', () => {
   it('keeps the start and sets the end to the unit', () => {
-    const current = continuationRangeFromPosition({ lastSurah: 78, lastAyah: 0 });
+    const current = continuationRangeFromPosition({
+      lastSurah: 78,
+      lastAyah: 0,
+    });
     const next = pickEndWithUnit('PAGE', 582, current);
     expect(next?.surahStart).toBe(current.surahStart);
     expect(next?.ayahStart).toBe(current.ayahStart);

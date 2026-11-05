@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { Queue, Worker, type Job } from 'bullmq';
 import type IORedis from 'ioredis';
@@ -70,9 +76,16 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker(EVENTS_QUEUE, (job) => this.process(job), {
       connection: this.workerConnection,
       concurrency: 4,
-      settings: { backoffStrategy: (attemptsMade: number) => RETRY_DELAYS_MS[attemptsMade - 1] ?? 7_200_000 },
+      settings: {
+        backoffStrategy: (attemptsMade: number) =>
+          RETRY_DELAYS_MS[attemptsMade - 1] ?? 7_200_000,
+      },
     });
-    this.worker.on('failed', (job, error) => this.logger.warn(`events job ${job?.id} failed: ${safeErrorSummary(error)}`));
+    this.worker.on('failed', (job, error) =>
+      this.logger.warn(
+        `events job ${job?.id} failed: ${safeErrorSummary(error)}`,
+      ),
+    );
 
     const orgs = await this.prisma.platform.organization.findMany({
       where: { status: 'ACTIVE' },
@@ -101,8 +114,14 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   async scheduleEvening(org: { id: string; timezone: string }) {
     await this.queue.upsertJobScheduler(
       `evening:${org.id}`,
-      { pattern: `${EveningService.MINUTE} ${EveningService.HOUR} * * *`, tz: org.timezone },
-      { name: 'evening-org', data: { organizationId: org.id } satisfies EveningJob },
+      {
+        pattern: `${EveningService.MINUTE} ${EveningService.HOUR} * * *`,
+        tz: org.timezone,
+      },
+      {
+        name: 'evening-org',
+        data: { organizationId: org.id } satisfies EveningJob,
+      },
     );
   }
 
@@ -113,7 +132,9 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
    */
   async dispatchOnce(limit = 100): Promise<number> {
     const deliveries = await this.prisma.platform.$transaction(async (tx) => {
-      const events = await tx.$queryRaw<{ id: string; type: string }[]>(Prisma.sql`
+      const events = await tx.$queryRaw<
+        { id: string; type: string }[]
+      >(Prisma.sql`
         SELECT id, type FROM "DomainEvent"
         WHERE "dispatchedAt" IS NULL
         ORDER BY "occurredAt"
@@ -122,7 +143,10 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       if (events.length === 0) return [];
       await tx.eventDelivery.createMany({
         data: events.flatMap((e) =>
-          (SUBSCRIPTIONS[e.type as EventType] ?? []).map((handler) => ({ eventId: e.id, handler })),
+          (SUBSCRIPTIONS[e.type as EventType] ?? []).map((handler) => ({
+            eventId: e.id,
+            handler,
+          })),
         ),
         skipDuplicates: true,
       });
@@ -142,7 +166,10 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   /** Deliveries still PENDING a minute after creation never got a job; give them one. */
   async sweep(): Promise<number> {
     const stuck = await this.prisma.platform.eventDelivery.findMany({
-      where: { status: 'PENDING', createdAt: { lt: new Date(Date.now() - 60_000) } },
+      where: {
+        status: 'PENDING',
+        createdAt: { lt: new Date(Date.now() - 60_000) },
+      },
       select: { id: true },
       take: 500,
     });
@@ -160,10 +187,15 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
 
   private async process(job: Job): Promise<unknown> {
     if (job.name === 'deliver') {
-      return this.deliver((job.data as DeliverJob).deliveryId, job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+      return this.deliver(
+        (job.data as DeliverJob).deliveryId,
+        job.attemptsMade + 1 >= (job.opts.attempts ?? 1),
+      );
     }
-    if (job.name === 'evening-org') return this.evening.run((job.data as EveningJob).organizationId);
-    if (job.name === 'stats-org') return this.statsRollup.run((job.data as StatsOrgJob).organizationId);
+    if (job.name === 'evening-org')
+      return this.evening.run((job.data as EveningJob).organizationId);
+    if (job.name === 'stats-org')
+      return this.statsRollup.run((job.data as StatsOrgJob).organizationId);
     throw new Error(`Unknown events job ${job.name}`);
   }
 
@@ -172,7 +204,10 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
    * transaction, so a crash re-runs the whole thing and the dedupe keys absorb it.
    * `final` turns a failure into a dead letter (EV-05).
    */
-  async deliver(deliveryId: string, final: boolean): Promise<'done' | 'skipped'> {
+  async deliver(
+    deliveryId: string,
+    final: boolean,
+  ): Promise<'done' | 'skipped'> {
     const delivery = await this.prisma.platform.eventDelivery.findUnique({
       where: { id: deliveryId },
       include: { event: true },
@@ -183,21 +218,39 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     const handler = HANDLERS[delivery.handler];
     try {
       if (!handler) throw new Error(`No handler named ${delivery.handler}`);
-      await this.prisma.forOrganization(delivery.event.organizationId).$transaction(async (tx) => {
-        await handler(tx, delivery.event, delivery.event.payload as EventPayload);
-        await tx.eventDelivery.update({
-          where: { id: deliveryId },
-          data: { status: 'DONE', attempts: { increment: 1 }, completedAt: new Date(), lastError: null },
+      await this.prisma
+        .forOrganization(delivery.event.organizationId)
+        .$transaction(async (tx) => {
+          await handler(
+            tx,
+            delivery.event,
+            delivery.event.payload as EventPayload,
+          );
+          await tx.eventDelivery.update({
+            where: { id: deliveryId },
+            data: {
+              status: 'DONE',
+              attempts: { increment: 1 },
+              completedAt: new Date(),
+              lastError: null,
+            },
+          });
         });
-      });
       return 'done';
     } catch (error) {
       const message = safeErrorSummary(error);
       await this.prisma.platform.eventDelivery.update({
         where: { id: deliveryId },
-        data: { status: final ? 'DEAD' : 'FAILED', attempts: { increment: 1 }, lastError: message },
+        data: {
+          status: final ? 'DEAD' : 'FAILED',
+          attempts: { increment: 1 },
+          lastError: message,
+        },
       });
-      if (final) this.logger.error(`dead letter: ${delivery.handler} for event ${delivery.eventId}: ${message}`);
+      if (final)
+        this.logger.error(
+          `dead letter: ${delivery.handler} for event ${delivery.eventId}: ${message}`,
+        );
       throw error;
     }
   }
@@ -229,7 +282,8 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       where: { id: deliveryId, event: { organizationId } },
     });
     if (!row) throw notFound('Delivery');
-    if (row.status !== 'DEAD' && row.status !== 'FAILED') throw conflict('Only a failed delivery can be retried');
+    if (row.status !== 'DEAD' && row.status !== 'FAILED')
+      throw conflict('Only a failed delivery can be retried');
     await this.prisma.platform.eventDelivery.update({
       where: { id: deliveryId },
       data: { status: 'PENDING', attempts: 0 },

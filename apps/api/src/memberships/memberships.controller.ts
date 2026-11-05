@@ -19,7 +19,11 @@ import {
   type UpdateMembershipInput,
 } from '@ribat/shared';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
-import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import { CurrentSession } from '../auth/session.guard';
 import type { SessionContext } from '../auth/sessions.service';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
@@ -33,7 +37,8 @@ export class MembershipsController {
   @Get()
   list(
     @CurrentOrg() org: OrgContext,
-    @Query(createZodValidationPipe(ListMembershipsQuerySchema)) query: ListMembershipsQuery,
+    @Query(createZodValidationPipe(ListMembershipsQuerySchema))
+    query: ListMembershipsQuery,
   ) {
     return this.memberships.list(org.organizationId, query);
   }
@@ -43,7 +48,8 @@ export class MembershipsController {
     @CurrentOrg() org: OrgContext,
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
-    @Body(createZodValidationPipe(CreateMembershipSchema)) body: CreateMembershipInput,
+    @Body(createZodValidationPipe(CreateMembershipSchema))
+    body: CreateMembershipInput,
   ) {
     return this.memberships.create(
       org.organizationId,
@@ -59,7 +65,8 @@ export class MembershipsController {
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(UpdateMembershipSchema)) body: UpdateMembershipInput,
+    @Body(createZodValidationPipe(UpdateMembershipSchema))
+    body: UpdateMembershipInput,
   ) {
     return this.memberships.update(
       org.organizationId,

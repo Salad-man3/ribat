@@ -9,10 +9,7 @@ import type {
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { MemberCombobox } from './MemberCombobox';
-import {
-  TimePointEditor,
-  useOrgPrayerTimes,
-} from './TimePointEditor';
+import { TimePointEditor, useOrgPrayerTimes } from './TimePointEditor';
 import { Button } from './ui/button';
 import { Field, inputClass } from './ui/form';
 import { cn } from '../lib/utils';
@@ -20,9 +17,10 @@ import { WEEKDAYS } from '../lib/domain';
 
 const TYPES: CourseType[] = ['MEMORIZATION', 'EXPLANATION', 'BOTH'];
 
+/** Placeholder times — teacher adjusts before saving the course. */
 const DEFAULT_DAY_RULE: Pick<ScheduleRule, 'start' | 'end'> = {
-  start: { anchor: 'PRAYER', prayer: 'ASR', offsetMin: 0 },
-  end: { anchor: 'PRAYER', prayer: 'MAGHRIB', offsetMin: 0 },
+  start: { anchor: 'FIXED', time: '16:00' },
+  end: { anchor: 'FIXED', time: '17:00' },
 };
 
 export type CourseFormValues = {

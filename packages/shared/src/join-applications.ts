@@ -1,12 +1,25 @@
 import { z } from 'zod';
 import { GuardianRelationSchema } from './people.js';
-import { e164Phone, isoDate, isoDateTime, requiredName, uuid } from './fields.js';
+import {
+  e164Phone,
+  isoDate,
+  isoDateTime,
+  requiredName,
+  uuid,
+} from './fields.js';
 import { SetupCodeResponseSchema } from './people.js';
 
-export const JoinApplicationKindSchema = z.enum(['STUDENT', 'GUARDIAN']);
+export const JoinApplicationKindSchema = z.enum([
+  'STUDENT',
+  'GUARDIAN',
+] as const);
 export type JoinApplicationKind = z.infer<typeof JoinApplicationKindSchema>;
 
-export const JoinApplicationStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
+export const JoinApplicationStatusSchema = z.enum([
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+] as const);
 export type JoinApplicationStatus = z.infer<typeof JoinApplicationStatusSchema>;
 
 export const JoinApplicationWardSchema = z.object({
@@ -39,12 +52,16 @@ export const CreateJoinApplicationSchema = z.discriminatedUnion('kind', [
   CreateStudentJoinApplicationSchema,
   CreateGuardianJoinApplicationSchema,
 ]);
-export type CreateJoinApplicationInput = z.infer<typeof CreateJoinApplicationSchema>;
+export type CreateJoinApplicationInput = z.infer<
+  typeof CreateJoinApplicationSchema
+>;
 
 export const ListJoinApplicationsQuerySchema = z.object({
   status: JoinApplicationStatusSchema.optional(),
 });
-export type ListJoinApplicationsQuery = z.infer<typeof ListJoinApplicationsQuerySchema>;
+export type ListJoinApplicationsQuery = z.infer<
+  typeof ListJoinApplicationsQuerySchema
+>;
 
 export const JoinApplicationResponseSchema = z.object({
   id: uuid,
@@ -60,7 +77,9 @@ export const JoinApplicationResponseSchema = z.object({
   decidedAt: isoDateTime.nullable(),
   createdAt: isoDateTime,
 });
-export type JoinApplicationResponse = z.infer<typeof JoinApplicationResponseSchema>;
+export type JoinApplicationResponse = z.infer<
+  typeof JoinApplicationResponseSchema
+>;
 
 export const ApproveJoinApplicationResponseSchema = z.object({
   application: JoinApplicationResponseSchema,
@@ -82,9 +101,14 @@ export const PublicOrganizationJoinInfoSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
 });
-export type PublicOrganizationJoinInfo = z.infer<typeof PublicOrganizationJoinInfoSchema>;
+export type PublicOrganizationJoinInfo = z.infer<
+  typeof PublicOrganizationJoinInfoSchema
+>;
 
-export const MemberAccessGapReasonSchema = z.enum(['NO_MEMBERSHIP', 'SETUP_PENDING']);
+export const MemberAccessGapReasonSchema = z.enum([
+  'NO_MEMBERSHIP',
+  'SETUP_PENDING',
+] as const);
 export type MemberAccessGapReason = z.infer<typeof MemberAccessGapReasonSchema>;
 
 export const MemberAccessGapSchema = z.object({

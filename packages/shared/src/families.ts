@@ -1,19 +1,29 @@
 import { z } from 'zod';
+import { CourseTypeSchema } from './courses.js';
 import { isoDate, isoDateTime, uuid } from './fields.js';
 import {
   AttendanceStatusSchema,
+  JuzFillSchema,
   MemorizationSummaryResponseSchema,
   MemorizationTestResponseSchema,
 } from './progress.js';
-import { NotificationCategoryCountsSchema, NotificationCategorySchema } from './notifications.js';
+import {
+  NotificationCategoryCountsSchema,
+  NotificationCategorySchema,
+} from './notifications.js';
 
 // ---------------------------------------------------------------------------
 // S4: excuses, homework, the weekly timetable, member progress, notifications.
 // ---------------------------------------------------------------------------
 
-const dateRange = <T extends { fromDate: string; toDate: string }>(v: T) => v.fromDate <= v.toDate;
+const dateRange = <T extends { fromDate: string; toDate: string }>(v: T) =>
+  v.fromDate <= v.toDate;
 
-export const ExcuseStatusSchema = z.enum(['PENDING', 'ACCEPTED', 'REJECTED']);
+export const ExcuseStatusSchema = z.enum([
+  'PENDING',
+  'ACCEPTED',
+  'REJECTED',
+] as const);
 export type ExcuseStatus = z.infer<typeof ExcuseStatusSchema>;
 
 /** WF-08: a guardian (for a ward), a member (for themselves) or staff, before or after the absence. */
@@ -25,13 +35,20 @@ export const CreateExcuseSchema = z
     toDate: isoDate,
     reason: z.string().trim().min(3).max(500),
   })
-  .refine(dateRange, { message: 'toDate must not be before fromDate', path: ['toDate'] });
+  .refine(dateRange, {
+    message: 'toDate must not be before fromDate',
+    path: ['toDate'],
+  });
 export type CreateExcuseInput = z.infer<typeof CreateExcuseSchema>;
 
-export const DecideExcuseSchema = z.object({ decision: z.enum(['ACCEPTED', 'REJECTED']) });
+export const DecideExcuseSchema = z.object({
+  decision: z.enum(['ACCEPTED', 'REJECTED'] as const),
+});
 export type DecideExcuseInput = z.infer<typeof DecideExcuseSchema>;
 
-export const ListExcusesQuerySchema = z.object({ status: ExcuseStatusSchema.optional() });
+export const ListExcusesQuerySchema = z.object({
+  status: ExcuseStatusSchema.optional(),
+});
 export type ListExcusesQuery = z.infer<typeof ListExcusesQuerySchema>;
 
 export const ExcuseResponseSchema = z.object({
@@ -49,10 +66,18 @@ export const ExcuseResponseSchema = z.object({
 });
 export type ExcuseResponse = z.infer<typeof ExcuseResponseSchema>;
 
-export const HomeworkTargetSchema = z.enum(['COURSE', 'GROUP', 'MEMBER']);
+export const HomeworkTargetSchema = z.enum([
+  'COURSE',
+  'GROUP',
+  'MEMBER',
+] as const);
 export type HomeworkTarget = z.infer<typeof HomeworkTargetSchema>;
 
-export const HomeworkTaskStatusSchema = z.enum(['ASSIGNED', 'DONE', 'MISSED']);
+export const HomeworkTaskStatusSchema = z.enum([
+  'ASSIGNED',
+  'DONE',
+  'MISSED',
+] as const);
 export type HomeworkTaskStatus = z.infer<typeof HomeworkTaskStatusSchema>;
 
 /** Decision 10.2. No points and no warnings are attached (decision 10.3). */
@@ -73,7 +98,10 @@ export const CreateHomeworkSchema = z
         : v.targetType === 'GROUP'
           ? !!v.groupId && !v.memberId
           : !!v.memberId && !v.groupId,
-    { message: 'Give the group or the member that matches the target', path: ['targetType'] },
+    {
+      message: 'Give the group or the member that matches the target',
+      path: ['targetType'],
+    },
   );
 export type CreateHomeworkInput = z.infer<typeof CreateHomeworkSchema>;
 
@@ -91,7 +119,11 @@ export const HomeworkResponseSchema = z.object({
   dueDate: isoDate,
   createdByMemberId: uuid,
   createdAt: isoDateTime,
-  counts: z.object({ ASSIGNED: z.number().int(), DONE: z.number().int(), MISSED: z.number().int() }),
+  counts: z.object({
+    ASSIGNED: z.number().int(),
+    DONE: z.number().int(),
+    MISSED: z.number().int(),
+  }),
 });
 export type HomeworkResponse = z.infer<typeof HomeworkResponseSchema>;
 
@@ -106,14 +138,19 @@ export const HomeworkTaskResponseSchema = z.object({
 });
 export type HomeworkTaskResponse = z.infer<typeof HomeworkTaskResponseSchema>;
 
-export const UpdateHomeworkTaskSchema = z.object({ status: HomeworkTaskStatusSchema });
+export const UpdateHomeworkTaskSchema = z.object({
+  status: HomeworkTaskStatusSchema,
+});
 export type UpdateHomeworkTaskInput = z.infer<typeof UpdateHomeworkTaskSchema>;
 
 // Weekly timetable (decision 16.1–16.2)
 
 export const ScheduleQuerySchema = z
   .object({ from: isoDate.optional(), to: isoDate.optional() })
-  .refine((v) => !v.from || !v.to || v.from <= v.to, { message: 'to must not be before from', path: ['to'] });
+  .refine((v) => !v.from || !v.to || v.from <= v.to, {
+    message: 'to must not be before from',
+    path: ['to'],
+  });
 export type ScheduleQuery = z.infer<typeof ScheduleQuerySchema>;
 
 export const ScheduleEntrySchema = z.object({
@@ -123,10 +160,10 @@ export const ScheduleEntrySchema = z.object({
   date: isoDate,
   startsAt: isoDateTime,
   endsAt: isoDateTime,
-  status: z.enum(['SCHEDULED', 'HELD', 'CANCELLED']),
+  status: z.enum(['SCHEDULED', 'HELD', 'CANCELLED'] as const),
   topic: z.string().nullable(),
   /** Why this session is on the caller's timetable. */
-  role: z.enum(['TEACHING', 'STUDYING', 'WARD']),
+  role: z.enum(['TEACHING', 'STUDYING', 'WARD'] as const),
   memberId: uuid,
   memberName: z.string(),
 });
@@ -153,24 +190,48 @@ export const AttendanceCountsSchema = z.object({
 });
 export type AttendanceCounts = z.infer<typeof AttendanceCountsSchema>;
 
+export const AttendanceMarkDaySchema = z.object({
+  date: isoDate,
+  courseName: z.string(),
+  status: AttendanceStatusSchema,
+});
+export type AttendanceMarkDay = z.infer<typeof AttendanceMarkDaySchema>;
+
+export const MemberProgressCourseSchema = z.object({
+  courseId: uuid,
+  courseName: z.string(),
+  type: CourseTypeSchema,
+  enrollmentStatus: z.enum(['ACTIVE', 'WITHDRAWN', 'COMPLETED'] as const),
+  attendance: AttendanceCountsSchema,
+  pagesMemorized: z.number().int(),
+  explanationPercent: z.number().int().min(0).max(100).nullable(),
+});
+export type MemberProgressCourse = z.infer<typeof MemberProgressCourseSchema>;
+
+export const MemberProgressTeachingSchema = z.object({
+  courseId: uuid,
+  courseName: z.string(),
+  type: CourseTypeSchema,
+  studentCount: z.number().int(),
+  pagesHeard: z.number().int(),
+  explanationPercent: z.number().int().min(0).max(100).nullable(),
+});
+export type MemberProgressTeaching = z.infer<
+  typeof MemberProgressTeachingSchema
+>;
+
 export const MemberProgressResponseSchema = z.object({
   memberId: uuid,
   memberName: z.string(),
-  courses: z.array(
-    z.object({
-      courseId: uuid,
-      courseName: z.string(),
-      enrollmentStatus: z.enum(['ACTIVE', 'WITHDRAWN', 'COMPLETED']),
-      attendance: AttendanceCountsSchema,
-    }),
-  ),
-  recentAttendance: z.array(
-    z.object({ date: isoDate, courseName: z.string(), status: AttendanceStatusSchema }),
-  ),
+  courses: z.array(MemberProgressCourseSchema),
+  teaching: z.array(MemberProgressTeachingSchema),
+  recentAttendance: z.array(AttendanceMarkDaySchema),
+  /** Last 90 calendar days in org timezone; same shape as recentAttendance. */
+  attendanceHistory: z.array(AttendanceMarkDaySchema),
   summaries: z.array(
     MemorizationSummaryResponseSchema.extend({
       materialTitle: z.string(),
-      materialKind: z.enum(['QURAN', 'TEXT', 'BOOK']),
+      materialKind: z.enum(['QURAN', 'TEXT', 'BOOK'] as const),
     }),
   ),
   tests: z.array(MemorizationTestResponseSchema),
@@ -189,6 +250,7 @@ export const MemberProgressResponseSchema = z.object({
   hifz: z
     .object({
       juzMemorized: z.array(z.number().int().min(1).max(30)),
+      juzFills: z.array(JuzFillSchema),
       juzTests: z.array(
         z.object({
           juz: z.number().int().min(1).max(30),
@@ -209,7 +271,9 @@ export const MemberProgressResponseSchema = z.object({
     })
     .nullable(),
 });
-export type MemberProgressResponse = z.infer<typeof MemberProgressResponseSchema>;
+export type MemberProgressResponse = z.infer<
+  typeof MemberProgressResponseSchema
+>;
 
 // Notifications (decision 15.x, SC-B-13)
 
@@ -224,7 +288,7 @@ export const NotificationTypeSchema = z.enum([
   'SESSION_NOT_TAKEN',
   'ANNOUNCEMENT',
   'REPORT_CARD',
-]);
+] as const);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
 export const NotificationResponseSchema = z.object({
@@ -232,7 +296,7 @@ export const NotificationResponseSchema = z.object({
   type: NotificationTypeSchema,
   titleKey: z.string(),
   bodyKey: z.string(),
-  params: z.record(z.unknown()),
+  params: z.record(z.string(), z.unknown()),
   entityType: z.string().nullable(),
   entityId: uuid.nullable(),
   readAt: isoDateTime.nullable(),
@@ -252,12 +316,19 @@ export const ListNotificationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   category: NotificationCategorySchema.optional(),
 });
-export type ListNotificationsQuery = z.infer<typeof ListNotificationsQuerySchema>;
+export type ListNotificationsQuery = z.infer<
+  typeof ListNotificationsQuerySchema
+>;
 
 export const MarkNotificationsReadSchema = z
-  .object({ ids: z.array(uuid).max(200).optional(), all: z.literal(true).optional() })
+  .object({
+    ids: z.array(uuid).max(200).optional(),
+    all: z.literal(true).optional(),
+  })
   .refine((v) => !!v.all !== !!v.ids, { message: 'Send ids or all, not both' });
-export type MarkNotificationsReadInput = z.infer<typeof MarkNotificationsReadSchema>;
+export type MarkNotificationsReadInput = z.infer<
+  typeof MarkNotificationsReadSchema
+>;
 
 // Failed event deliveries (T411)
 
@@ -266,10 +337,12 @@ export const FailedDeliveryResponseSchema = z.object({
   eventId: uuid,
   eventType: z.string(),
   handler: z.string(),
-  status: z.enum(['FAILED', 'DEAD']),
+  status: z.enum(['FAILED', 'DEAD'] as const),
   attempts: z.number().int(),
   lastError: z.string().nullable(),
   occurredAt: isoDateTime,
   requestId: z.string().nullable(),
 });
-export type FailedDeliveryResponse = z.infer<typeof FailedDeliveryResponseSchema>;
+export type FailedDeliveryResponse = z.infer<
+  typeof FailedDeliveryResponseSchema
+>;

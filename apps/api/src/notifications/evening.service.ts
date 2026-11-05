@@ -20,7 +20,9 @@ export class EveningService {
   constructor(private readonly prisma: PrismaService) {}
 
   async run(organizationId: string, now = new Date()) {
-    const org = await this.prisma.platform.organization.findUniqueOrThrow({ where: { id: organizationId } });
+    const org = await this.prisma.platform.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+    });
     const date = dateIn(now, org.timezone);
     return {
       date,
@@ -35,8 +37,14 @@ export class EveningService {
   async absenceSummary(organizationId: string, date: string): Promise<number> {
     const db = this.prisma.forOrganization(organizationId);
     const marks = await db.attendance.findMany({
-      where: { status: { in: ['ABSENT', 'LATE'] }, session: { date: fromDateString(date) } },
-      include: { enrollment: { include: { member: true } }, session: { include: { course: true } } },
+      where: {
+        status: { in: ['ABSENT', 'LATE'] },
+        session: { date: fromDateString(date) },
+      },
+      include: {
+        enrollment: { include: { member: true } },
+        session: { include: { course: true } },
+      },
     });
     if (marks.length === 0) return 0;
 
@@ -77,7 +85,11 @@ export class EveningService {
   }
 
   /** T410, decision 8.6: a past, not cancelled session with no attendance tells the staff. */
-  async notTakenAlert(organizationId: string, date: string, now: Date): Promise<number> {
+  async notTakenAlert(
+    organizationId: string,
+    date: string,
+    now: Date,
+  ): Promise<number> {
     const db = this.prisma.forOrganization(organizationId);
     const sessions = await db.courseSession.findMany({
       where: {
@@ -102,7 +114,11 @@ export class EveningService {
         staff.map((m) => m.identityId),
         {
           type: 'SESSION_NOT_TAKEN',
-          params: { course: s.course.name, date: toDateString(s.date), startsAt: s.startsAt.toISOString() },
+          params: {
+            course: s.course.name,
+            date: toDateString(s.date),
+            startsAt: s.startsAt.toISOString(),
+          },
           entityType: 'course_session',
           entityId: s.id,
         },
@@ -112,10 +128,16 @@ export class EveningService {
   }
 
   /** Homework still open after its due date becomes MISSED and emits `homework.missed`. */
-  async homeworkDueCheck(organizationId: string, date: string): Promise<number> {
+  async homeworkDueCheck(
+    organizationId: string,
+    date: string,
+  ): Promise<number> {
     const db = this.prisma.forOrganization(organizationId);
     const overdue = await db.homeworkTask.findMany({
-      where: { status: 'ASSIGNED', homework: { dueDate: { lt: fromDateString(date) } } },
+      where: {
+        status: 'ASSIGNED',
+        homework: { dueDate: { lt: fromDateString(date) } },
+      },
       include: { homework: true },
     });
     const enrollments = await db.enrollment.findMany({
@@ -132,12 +154,20 @@ export class EveningService {
         if (count === 0) return; // marked done meanwhile
         await emit(
           tx,
-          { organizationId, requestId: `job:evening:${date}`, actorMembershipId: null },
+          {
+            organizationId,
+            requestId: `job:evening:${date}`,
+            actorMembershipId: null,
+          },
           {
             type: 'homework.missed',
             aggregateType: 'homework',
             aggregateId: task.homeworkId,
-            payload: { homeworkId: task.homeworkId, taskId: task.id, memberId: memberOf.get(task.enrollmentId) ?? null },
+            payload: {
+              homeworkId: task.homeworkId,
+              taskId: task.id,
+              memberId: memberOf.get(task.enrollmentId) ?? null,
+            },
           },
         );
       });
@@ -146,9 +176,13 @@ export class EveningService {
 
   /** retention.prune: read notifications only; never domain data. */
   async prune(organizationId: string, now: Date): Promise<number> {
-    const { count } = await this.prisma.forOrganization(organizationId).notification.deleteMany({
-      where: { readAt: { lt: new Date(now.getTime() - RETENTION_DAYS * 86_400_000) } },
-    });
+    const { count } = await this.prisma
+      .forOrganization(organizationId)
+      .notification.deleteMany({
+        where: {
+          readAt: { lt: new Date(now.getTime() - RETENTION_DAYS * 86_400_000) },
+        },
+      });
     return count;
   }
 }

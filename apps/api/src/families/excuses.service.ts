@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { ExcuseRequest } from '@prisma/client';
-import type { CreateExcuseInput, ExcuseResponse, ListExcusesQuery } from '@ribat/shared';
+import type {
+  CreateExcuseInput,
+  ExcuseResponse,
+  ListExcusesQuery,
+} from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import { AuditService } from '../audit/audit.service';
 import type { OrgContext } from '../auth/org-context.guard';
@@ -12,8 +16,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { isStaffContext } from '../progress/class-scope.service';
 import { MemberAccessService } from './member-access.service';
 
-
-export function toExcuseResponse(row: ExcuseRequest, names: Map<string, string>, courses: Map<string, string>): ExcuseResponse {
+export function toExcuseResponse(
+  row: ExcuseRequest,
+  names: Map<string, string>,
+  courses: Map<string, string>,
+): ExcuseResponse {
   return {
     id: row.id,
     memberId: row.memberId,
@@ -38,12 +45,19 @@ export class ExcusesService {
     private readonly access: MemberAccessService,
   ) {}
 
-  async present(organizationId: string, rows: ExcuseRequest[]): Promise<ExcuseResponse[]> {
+  async present(
+    organizationId: string,
+    rows: ExcuseRequest[],
+  ): Promise<ExcuseResponse[]> {
     const db = this.prisma.forOrganization(organizationId);
     const [members, courses] = await Promise.all([
-      db.member.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.memberId))] } } }),
+      db.member.findMany({
+        where: { id: { in: [...new Set(rows.map((r) => r.memberId))] } },
+      }),
       db.course.findMany({
-        where: { id: { in: rows.flatMap((r) => (r.courseId ? [r.courseId] : [])) } },
+        where: {
+          id: { in: rows.flatMap((r) => (r.courseId ? [r.courseId] : [])) },
+        },
         select: { id: true, name: true },
       }),
     ]);
@@ -52,10 +66,18 @@ export class ExcusesService {
     return rows.map((r) => toExcuseResponse(r, names, courseNames));
   }
 
-  async create(org: OrgContext, audit: AuditContext, input: CreateExcuseInput): Promise<ExcuseResponse> {
+  async create(
+    org: OrgContext,
+    audit: AuditContext,
+    input: CreateExcuseInput,
+  ): Promise<ExcuseResponse> {
     await this.access.relation(org, input.memberId);
     const db = this.prisma.forOrganization(org.organizationId);
-    if (input.courseId && !(await db.course.findFirst({ where: { id: input.courseId } }))) throw notFound('Course');
+    if (
+      input.courseId &&
+      !(await db.course.findFirst({ where: { id: input.courseId } }))
+    )
+      throw notFound('Course');
     const row = await db.excuseRequest.create({
       data: {
         organizationId: org.organizationId,
@@ -71,22 +93,38 @@ export class ExcusesService {
       action: 'excuse.submitted',
       entityType: 'excuse',
       entityId: row.id,
-      after: { memberId: row.memberId, courseId: row.courseId, fromDate: input.fromDate, toDate: input.toDate },
+      after: {
+        memberId: row.memberId,
+        courseId: row.courseId,
+        fromDate: input.fromDate,
+        toDate: input.toDate,
+      },
     });
     return (await this.present(org.organizationId, [row]))[0];
   }
 
   /** Staff see every excuse; anyone else sees their own and their wards'. */
-  async list(org: OrgContext, audit: AuditContext, query: ListExcusesQuery): Promise<ExcuseResponse[]> {
+  async list(
+    org: OrgContext,
+    audit: AuditContext,
+    query: ListExcusesQuery,
+  ): Promise<ExcuseResponse[]> {
     const db = this.prisma.forOrganization(org.organizationId);
     const family = await this.access.family(org);
-    const mine = [family.self, ...family.wards].filter((id): id is string => !!id);
+    const mine = [family.self, ...family.wards].filter(
+      (id): id is string => !!id,
+    );
     const rows = await db.excuseRequest.findMany({
       where: {
         ...(query.status ? { status: query.status } : {}),
         ...(isStaffContext(org)
           ? {}
-          : { OR: [{ submittedByIdentityId: audit.actorIdentityId! }, { memberId: { in: mine } }] }),
+          : {
+              OR: [
+                { submittedByIdentityId: audit.actorIdentityId! },
+                { memberId: { in: mine } },
+              ],
+            }),
       },
       orderBy: { createdAt: 'desc' },
       take: 200,
@@ -101,14 +139,21 @@ export class ExcusesService {
     decision: 'ACCEPTED' | 'REJECTED',
   ): Promise<ExcuseResponse> {
     const db = this.prisma.forOrganization(org.organizationId);
-    const excuse = await db.excuseRequest.findFirst({ where: { id: excuseId } });
+    const excuse = await db.excuseRequest.findFirst({
+      where: { id: excuseId },
+    });
     if (!excuse) throw notFound('Excuse');
-    if (excuse.status !== 'PENDING') throw conflict('This excuse was already decided');
+    if (excuse.status !== 'PENDING')
+      throw conflict('This excuse was already decided');
 
     const row = await db.$transaction(async (tx) => {
       const [updated] = await tx.excuseRequest.updateManyAndReturn({
         where: { id: excuseId, status: 'PENDING' },
-        data: { status: decision, decidedByMembershipId: org.membershipId, decidedAt: new Date() },
+        data: {
+          status: decision,
+          decidedByMembershipId: org.membershipId,
+          decidedAt: new Date(),
+        },
       });
       if (!updated) throw conflict('This excuse was already decided');
 
@@ -117,14 +162,20 @@ export class ExcusesService {
         const marks = await tx.attendance.findMany({
           where: {
             status: { in: ['ABSENT', 'LATE'] },
-            enrollment: { memberId: excuse.memberId, ...(excuse.courseId ? { courseId: excuse.courseId } : {}) },
+            enrollment: {
+              memberId: excuse.memberId,
+              ...(excuse.courseId ? { courseId: excuse.courseId } : {}),
+            },
             session: { date: { gte: excuse.fromDate, lte: excuse.toDate } },
           },
           select: { id: true },
         });
         excused = marks.map((m) => m.id);
         // Marks taken later are recorded as EXCUSED at write time (ProgressWriterService).
-        await tx.attendance.updateMany({ where: { id: { in: excused } }, data: { status: 'EXCUSED' } });
+        await tx.attendance.updateMany({
+          where: { id: { in: excused } },
+          data: { status: 'EXCUSED' },
+        });
       }
       await this.audit.record(
         audit,

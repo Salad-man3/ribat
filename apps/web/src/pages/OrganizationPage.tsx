@@ -17,6 +17,7 @@ import {
 } from '../components/PrayerTimesEditor';
 import { CustomFieldsDefinitionsPanel } from '../components/CustomFieldsDefinitionsPanel';
 import { RecitationKindsPanel } from '../components/RecitationKindsPanel';
+import { TagsSettingsPanel } from '../components/TagsSettingsPanel';
 import { Button } from '../components/ui/button';
 import {
   Card,
@@ -24,8 +25,9 @@ import {
   Field,
   inputClass,
   PageHeader,
+  Segmented,
+  SwitchField,
 } from '../components/ui/form';
-import { cn } from '../lib/utils';
 
 import { PRAYER_METHODS, PRAYERS } from '../lib/domain';
 
@@ -49,57 +51,38 @@ export function OrganizationPage() {
   if (!org.data || !times.data) return <p className="text-sm text-muted">…</p>;
   return (
     <section className="grid gap-6">
-      <PageHeader
-        chrome
-        title={t('settings.title')}
-        subtitle={org.data.slug}
-      />
-      <div className="flex flex-wrap gap-2 border-b border-line pb-2">
-        {(
+      <PageHeader chrome title={t('settings.title')} subtitle={org.data.slug} />
+      <Segmented
+        value={section}
+        onChange={setSection}
+        aria-label={t('settings.title')}
+        options={(
           [
             ['mosque', 'settings.hub.mosque'],
             ['extraFields', 'settings.hub.extraFields'],
           ] as const
-        ).map(([key, labelKey]) => (
-          <button
-            key={key}
-            type="button"
-            className={cn(
-              'rounded-lg px-3 py-2 text-sm font-medium',
-              section === key
-                ? 'bg-accent/10 text-accent'
-                : 'text-muted hover:text-ink',
-            )}
-            onClick={() => setSection(key)}
-          >
-            {t(labelKey)}
-          </button>
-        ))}
-      </div>
+        ).map(([value, labelKey]) => ({
+          value,
+          label: t(labelKey),
+        }))}
+      />
       {section === 'extraFields' ? (
         <div className="grid gap-6">
+          {org.data.tagsEnabled ? <TagsSettingsPanel /> : null}
           <CustomFieldsDefinitionsPanel />
           <RecitationKindsPanel />
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2">
-            {(['general', 'messages'] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                className={cn(
-                  'rounded-lg border px-3 py-1.5 text-sm',
-                  mosqueTab === key
-                    ? 'border-accent bg-accent text-accent-ink'
-                    : 'border-line text-muted hover:text-ink',
-                )}
-                onClick={() => setMosqueTab(key)}
-              >
-                {t(`organization.tabs.${key}`)}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            value={mosqueTab}
+            onChange={setMosqueTab}
+            aria-label={t('settings.hub.mosque')}
+            options={(['general', 'messages'] as const).map((value) => ({
+              value,
+              label: t(`organization.tabs.${value}`),
+            }))}
+          />
           {mosqueTab === 'general' ? (
             <GeneralOrganizationForm org={org.data} times={times.data} />
           ) : (
@@ -130,24 +113,8 @@ function GeneralOrganizationForm({
     locale: org.locale,
     pointsEnabled: org.pointsEnabled,
     tagsEnabled: org.tagsEnabled,
+    whatsappSetupTemplate: org.whatsappSetupTemplate,
   } satisfies UpdateOrganizationInput);
-  const persistTagsEnabled = useMutation({
-    mutationFn: (tagsEnabled: boolean) =>
-      apiFetch<OrganizationResponse>('/api/v1/organization', {
-        method: 'PATCH',
-        body: JSON.stringify({ tagsEnabled }),
-      }),
-    onSuccess: async (data) => {
-      queryClient.setQueryData(['organization'], data);
-      setForm((current) => ({ ...current, tagsEnabled: data.tagsEnabled }));
-      if (data.tagsEnabled) {
-        await queryClient.invalidateQueries({ queryKey: ['tags'] });
-      }
-    },
-    onError: () => {
-      setForm((current) => ({ ...current, tagsEnabled: org.tagsEnabled }));
-    },
-  });
 
   const save = useMutation({
     mutationFn: () =>
@@ -197,40 +164,20 @@ function GeneralOrganizationForm({
               <option value="en">English</option>
             </select>
           </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="accent-accent"
+          <div className="sm:col-span-2 grid gap-2">
+            <SwitchField
+              label={t('organization.pointsEnabled')}
               checked={form.pointsEnabled}
-              onChange={(e) =>
-                setForm({ ...form, pointsEnabled: e.target.checked })
-              }
+              onChange={(pointsEnabled) => setForm({ ...form, pointsEnabled })}
             />
-            {t('organization.pointsEnabled')}
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="accent-accent"
+            <SwitchField
+              label={t('organization.tagsEnabled')}
+              hint={t('organization.tagsEnabledHint')}
               checked={form.tagsEnabled}
-              disabled={persistTagsEnabled.isPending}
-              onChange={(e) => {
-                const tagsEnabled = e.target.checked;
-                setForm({ ...form, tagsEnabled });
-                persistTagsEnabled.mutate(tagsEnabled);
-              }}
+              onChange={(tagsEnabled) => setForm({ ...form, tagsEnabled })}
             />
-            {t('organization.tagsEnabled')}
-          </label>
-          <p className="col-span-full text-xs text-muted">
-            {t('organization.tagsEnabledHint')}
-          </p>
-        </div>
-        {persistTagsEnabled.isError ? (
-          <div className="mt-2">
-            <ErrorText error={persistTagsEnabled.error} />
           </div>
-        ) : null}
+        </div>
       </Card>
 
       <Card title={t('organization.prayer')}>
@@ -330,8 +277,7 @@ function MessagesOrganizationForm({ org }: { org: OrganizationResponse }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [template, setTemplate] = useState(
-    org.whatsappSetupTemplate ??
-      defaultWhatsappSetupTemplate(org.locale),
+    org.whatsappSetupTemplate ?? defaultWhatsappSetupTemplate(org.locale),
   );
 
   const save = useMutation({
@@ -343,8 +289,7 @@ function MessagesOrganizationForm({ org }: { org: OrganizationResponse }) {
     onSuccess: async (data) => {
       queryClient.setQueryData(['organization'], data);
       setTemplate(
-        data.whatsappSetupTemplate ??
-          defaultWhatsappSetupTemplate(data.locale),
+        data.whatsappSetupTemplate ?? defaultWhatsappSetupTemplate(data.locale),
       );
     },
   });
@@ -381,9 +326,7 @@ function MessagesOrganizationForm({ org }: { org: OrganizationResponse }) {
           type="button"
           variant="ghost"
           disabled={save.isPending}
-          onClick={() =>
-            save.mutate({ whatsappSetupTemplate: null })
-          }
+          onClick={() => save.mutate({ whatsappSetupTemplate: null })}
         >
           {t('organization.messages.resetDefault')}
         </Button>

@@ -27,7 +27,9 @@ export function RouteErrorPage() {
       <p className="text-sm text-muted">{t('errors.unexpectedBody')}</p>
       {showDetails ? (
         <div className="rounded-2xl border border-line bg-surface p-4">
-          <p className="text-xs font-medium text-muted">{t('errors.devDetails')}</p>
+          <p className="text-xs font-medium text-muted">
+            {t('errors.devDetails')}
+          </p>
           <p className="mt-2 font-mono text-sm break-words">{message}</p>
           {stack ? (
             <pre

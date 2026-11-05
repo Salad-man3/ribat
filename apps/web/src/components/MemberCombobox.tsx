@@ -6,7 +6,9 @@ import { cn } from '../lib/utils';
 import { fullName } from './MemberCard';
 import { inputClass } from './ui/form';
 
-function teacherRank(teaching: { endedAt?: string | null }[] | undefined): number {
+function teacherRank(
+  teaching: { endedAt?: string | null }[] | undefined,
+): number {
   if (!teaching?.length) return 2;
   if (teaching.some((t) => !t.endedAt)) return 0;
   return 1;
@@ -44,7 +46,9 @@ export function MemberCombobox({
 
   const selected = members.data?.find((m) => m.id === value);
   const display = value
-    ? (selected ? fullName(selected) : pickedName || query)
+    ? selected
+      ? fullName(selected)
+      : pickedName || query
     : query;
 
   const pick = (member: MemberResponse) => {
@@ -119,10 +123,16 @@ export function MemberCombobox({
           className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-line bg-surface py-1 shadow-lg"
         >
           {options.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-muted">{t('members.empty')}</li>
+            <li className="px-3 py-2 text-sm text-muted">
+              {t('members.empty')}
+            </li>
           ) : (
             options.map((member, index) => (
-              <li key={member.id} role="option" aria-selected={member.id === value}>
+              <li
+                key={member.id}
+                role="option"
+                aria-selected={member.id === value}
+              >
                 <button
                   type="button"
                   className={cn(
@@ -135,7 +145,9 @@ export function MemberCombobox({
                 >
                   <span className="font-medium">{fullName(member)}</span>
                   {member.teaching?.some((row) => !row.endedAt) ? (
-                    <span className="text-xs text-muted">{t('members.teaching')}</span>
+                    <span className="text-xs text-muted">
+                      {t('members.teaching')}
+                    </span>
                   ) : null}
                 </button>
               </li>

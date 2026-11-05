@@ -17,7 +17,7 @@ import { apiFetch } from '../api/api-fetch';
 import { AnnouncementComposer } from '../components/AnnouncementComposer';
 import { Button } from '../components/ui/button';
 import { Empty, ErrorText, PageHeader } from '../components/ui/form';
-import { formatDate, formatDateTime } from '../lib/domain';
+import { useFormatDates } from '../lib/calendar';
 import { cn } from '../lib/utils';
 
 export const notificationsKey = ['notifications'];
@@ -39,15 +39,20 @@ export function useNotifications(category: NotificationCategory | null) {
 
 /** T406: rendered in the reader's language from keys and params (NFR-01). */
 export function NotificationsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDate, formatDateTime } = useFormatDates();
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<NotificationCategory | null>(null);
   const inbox = useNotifications(category);
   const counts = useNotifications(null);
   const markAll = useMutation({
     mutationFn: () =>
-      apiFetch('/api/v1/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: notificationsKey }),
+      apiFetch('/api/v1/notifications/read', {
+        method: 'POST',
+        body: JSON.stringify({ all: true }),
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: notificationsKey }),
   });
 
   return (
@@ -57,7 +62,11 @@ export function NotificationsPage() {
         title={t('notifications.title')}
         actions={
           inbox.data?.unread ? (
-            <Button variant="ghost" onClick={() => markAll.mutate()} disabled={markAll.isPending}>
+            <Button
+              variant="ghost"
+              onClick={() => markAll.mutate()}
+              disabled={markAll.isPending}
+            >
               {t('notifications.markAll')}
             </Button>
           ) : null
@@ -69,7 +78,9 @@ export function NotificationsPage() {
           type="button"
           className={cn(
             'rounded-full border px-3 py-1 text-sm',
-            category === null ? 'border-accent bg-accent/10 text-accent' : 'border-line text-muted',
+            category === null
+              ? 'border-accent bg-accent/10 text-accent'
+              : 'border-line text-muted',
           )}
           onClick={() => setCategory(null)}
         >
@@ -84,7 +95,9 @@ export function NotificationsPage() {
               type="button"
               className={cn(
                 'rounded-full border px-3 py-1 text-sm',
-                category === key ? 'border-accent bg-accent/10 text-accent' : 'border-line text-muted',
+                category === key
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-line text-muted',
               )}
               onClick={() => setCategory(key)}
             >
@@ -95,13 +108,25 @@ export function NotificationsPage() {
         })}
       </div>
       {inbox.isError ? <ErrorText error={inbox.error} /> : null}
-      {inbox.data?.items.length === 0 ? <Empty>{t('notifications.empty')}</Empty> : null}
+      {inbox.data?.items.length === 0 ? (
+        <Empty>{t('notifications.empty')}</Empty>
+      ) : null}
       <ul className="grid gap-2">
         {(inbox.data?.items ?? []).map((n) => {
-          const day = (v: unknown) => (typeof v === 'string' ? formatDate(v, i18n.language) : v);
+          const day = (v: unknown) =>
+            typeof v === 'string' ? formatDate(v) : v;
           const items = Array.isArray(n.params.items)
-            ? (n.params.items as { student: string; course: string; status: string }[])
-                .map((i) => `${i.student} — ${i.course}: ${t(`classMode.status.${i.status}`)}`)
+            ? (
+                n.params.items as {
+                  student: string;
+                  course: string;
+                  status: string;
+                }[]
+              )
+                .map(
+                  (i) =>
+                    `${i.student} — ${i.course}: ${t(`classMode.status.${i.status}`)}`,
+                )
                 .join('\n')
             : undefined;
           const announcementTitle =
@@ -121,9 +146,22 @@ export function NotificationsPage() {
             dueDate: day(n.params.dueDate),
             fromDate: day(n.params.fromDate),
             toDate: day(n.params.toDate),
-            status: typeof n.params.status === 'string' ? t(`classMode.status.${n.params.status}`) : undefined,
-            decision: typeof n.params.decision === 'string' ? t(`excuses.status.${n.params.decision}`) : undefined,
-            result: n.params.passed === undefined ? undefined : t(n.params.passed ? 'notifications.passed' : 'notifications.failed'),
+            status:
+              typeof n.params.status === 'string'
+                ? t(`classMode.status.${n.params.status}`)
+                : undefined,
+            decision:
+              typeof n.params.decision === 'string'
+                ? t(`excuses.status.${n.params.decision}`)
+                : undefined,
+            result:
+              n.params.passed === undefined
+                ? undefined
+                : t(
+                    n.params.passed
+                      ? 'notifications.passed'
+                      : 'notifications.failed',
+                  ),
           };
           const titleText = announcementTitle ?? t(n.titleKey, params);
           const bodyText = announcementBody ?? t(n.bodyKey, params);
@@ -137,7 +175,9 @@ export function NotificationsPage() {
             >
               <p className="font-semibold">{titleText}</p>
               <p className="whitespace-pre-line text-sm">{bodyText}</p>
-              <p className="text-xs text-muted">{formatDateTime(n.createdAt, i18n.language)}</p>
+              <p className="text-xs text-muted">
+                {formatDateTime(n.createdAt)}
+              </p>
             </li>
           );
         })}

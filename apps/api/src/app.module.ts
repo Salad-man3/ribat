@@ -26,6 +26,7 @@ import { TagsModule } from './tags/tags.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { StatsModule } from './stats/stats.module';
 import { ReportCardsModule } from './report-cards/report-cards.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -57,9 +58,10 @@ import { ReportCardsModule } from './report-cards/report-cards.module';
     AnnouncementsModule,
     StatsModule,
     ReportCardsModule,
+    ExportModule,
     JobsModule,
     AuthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule { }
+export class AppModule {}

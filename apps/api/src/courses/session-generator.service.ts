@@ -36,7 +36,7 @@ export class SessionGeneratorService {
   ): Promise<{ created: number; removed: number }> {
     const db = this.prisma.forOrganization(organizationId);
     const course = await db.course.findFirst({ where: { id: courseId } });
-    if (!course) return { created: 0, removed: 0 };
+    if (!course || course.kind === 'ONE_OFF') return { created: 0, removed: 0 };
 
     const program = course.programId
       ? await db.program.findFirst({ where: { id: course.programId } })

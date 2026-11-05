@@ -1,4 +1,4 @@
-import { type ZodError, type ZodSchema } from 'zod';
+import { type ZodError, type ZodType } from 'zod';
 import type { ApiErrorBody } from './errors.js';
 
 export type ValidationDetails = Record<string, string[]>;
@@ -7,7 +7,10 @@ export function zodErrorToDetails(error: ZodError): ValidationDetails {
   return error.flatten().fieldErrors as ValidationDetails;
 }
 
-export function formatValidationError(error: ZodError, requestId?: string): ApiErrorBody {
+export function formatValidationError(
+  error: ZodError,
+  requestId?: string,
+): ApiErrorBody {
   const details = zodErrorToDetails(error);
   return {
     error: {
@@ -19,12 +22,12 @@ export function formatValidationError(error: ZodError, requestId?: string): ApiE
   };
 }
 
-export function parseBody<T>(schema: ZodSchema<T>, value: unknown): T {
+export function parseBody<T>(schema: ZodType<T>, value: unknown): T {
   return schema.parse(value);
 }
 
 export function safeParseBody<T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   value: unknown,
 ): { success: true; data: T } | { success: false; error: ZodError } {
   const result = schema.safeParse(value);

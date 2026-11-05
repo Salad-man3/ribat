@@ -10,31 +10,51 @@ import type {
 import { apiFetch } from '../api/api-fetch';
 import { MemberCombobox } from '../components/MemberCombobox';
 import { StatCard } from '../components/StatCard';
-import { Badge, Card, Empty, ErrorText, Field, PageHeader, inputClass } from '../components/ui/form';
+import {
+  Badge,
+  Card,
+  Empty,
+  ErrorText,
+  Field,
+  PageHeader,
+  Segmented,
+  inputClass,
+} from '../components/ui/form';
 import { Button } from '../components/ui/button';
 import { useActiveMembership } from '../hooks/use-me';
 import { formatGregorianNumeric } from '../lib/domain';
 
 function formatRate(rate: number | null | undefined, locale: string): string {
   if (rate === null || rate === undefined) return '—';
-  return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(rate);
+  return new Intl.NumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(rate);
 }
+
+const BELOW_RATE_OPTIONS = [50, 60, 70, 80, 90] as const;
 
 export function ReportsPage() {
   const { t, i18n } = useTranslation();
   const { can, membership } = useActiveMembership();
   const memberId = membership?.memberId;
   const isStaff = can('courses.manage');
+  const [reportDays, setReportDays] = useState<7 | 30>(7);
+  const [belowRate, setBelowRate] = useState(50);
 
   const dashboard = useQuery({
-    queryKey: ['stats-dashboard'],
-    queryFn: () => apiFetch<StatsDashboardResponse>('/api/v1/stats/dashboard'),
+    queryKey: ['stats-dashboard', reportDays, belowRate],
+    queryFn: () =>
+      apiFetch<StatsDashboardResponse>(
+        `/api/v1/stats/dashboard?days=${reportDays}&belowRate=${belowRate}`,
+      ),
     enabled: isStaff,
   });
 
   const teacher = useQuery({
     queryKey: ['stats-teacher', memberId],
-    queryFn: () => apiFetch<StatsTeacherResponse>(`/api/v1/stats/teachers/${memberId}`),
+    queryFn: () =>
+      apiFetch<StatsTeacherResponse>(`/api/v1/stats/teachers/${memberId}`),
     enabled: !isStaff && !!memberId,
   });
 
@@ -59,7 +79,14 @@ export function ReportsPage() {
       {error ? <ErrorText error={error} /> : null}
 
       {isStaff && dashboard.data ? (
-        <StaffReports data={dashboard.data} locale={i18n.language} />
+        <StaffReports
+          data={dashboard.data}
+          locale={i18n.language}
+          reportDays={reportDays}
+          onReportDaysChange={setReportDays}
+          belowRate={belowRate}
+          onBelowRateChange={setBelowRate}
+        />
       ) : null}
 
       {!isStaff && teacher.data ? (
@@ -77,7 +104,21 @@ export function ReportsPage() {
   );
 }
 
-function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: string }) {
+function StaffReports({
+  data,
+  locale,
+  reportDays,
+  onReportDaysChange,
+  belowRate,
+  onBelowRateChange,
+}: {
+  data: StatsDashboardResponse;
+  locale: string;
+  reportDays: 7 | 30;
+  onReportDaysChange: (days: 7 | 30) => void;
+  belowRate: number;
+  onBelowRateChange: (rate: number) => void;
+}) {
   const { t } = useTranslation();
   const m = data.mosque;
   const rate = formatRate(
@@ -101,21 +142,35 @@ function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: 
 
   return (
     <>
-      <p className="text-xs text-muted">
-        {t('stats.asOf', {
-          date: formatGregorianNumeric(data.asOf),
-          from: formatGregorianNumeric(data.from),
-          to: formatGregorianNumeric(data.to),
-        })}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted">
+          {t('stats.asOf', {
+            date: formatGregorianNumeric(data.asOf),
+            from: formatGregorianNumeric(data.from),
+            to: formatGregorianNumeric(data.to),
+          })}
+        </p>
+        <Segmented
+          value={String(reportDays)}
+          onChange={(v) => onReportDaysChange(Number(v) as 7 | 30)}
+          aria-label={t('stats.reportWindow')}
+          options={[
+            { value: '7', label: t('stats.window7') },
+            { value: '30', label: t('stats.window30') },
+          ]}
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label={t('stats.activeMembers')} value={m.activeMembers} />
         <StatCard label={t('stats.activeCourses')} value={m.activeCourses} />
         <StatCard label={t('stats.activeTeachers')} value={m.activeTeachers} />
-        <StatCard label={t('stats.pendingApplications')} value={m.pendingJoinApplications} />
+        <StatCard
+          label={t('stats.pendingApplications')}
+          value={m.pendingJoinApplications}
+        />
         <StatCard label={t('stats.attendanceRate')} value={rate} />
-        <StatCard label={t('stats.pagesThisWeek')} value={m.pagesMemorized} />
+        <StatCard label={t('stats.pagesInPeriod')} value={m.pagesMemorized} />
         <StatCard label={t('stats.testsPassed')} value={m.testsPassed} />
       </div>
 
@@ -129,15 +184,30 @@ function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: 
                 <h3 className="text-sm font-semibold text-muted">{program}</h3>
                 <ul className="mt-2 divide-y divide-line">
                   {courses.map((c) => (
-                    <li key={c.courseId} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                      <Link to={`/staff/courses/${c.courseId}`} className="font-medium hover:text-accent">
+                    <li
+                      key={c.courseId}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2"
+                    >
+                      <Link
+                        to={`/staff/courses/${c.courseId}`}
+                        className="font-medium hover:text-accent"
+                      >
                         {c.courseName}
                       </Link>
                       <div className="flex flex-wrap gap-2 text-xs text-muted">
-                        <span>{t('stats.attendanceRate')}: {formatRate(c.attendanceRate, locale)}</span>
-                        <span>{t('stats.pagesShort', { count: c.pagesMemorized })}</span>
+                        <span>
+                          {t('stats.attendanceRate')}:{' '}
+                          {formatRate(c.attendanceRate, locale)}
+                        </span>
+                        <span>
+                          {t('stats.pagesShort', { count: c.pagesMemorized })}
+                        </span>
                         {c.sessionsMissingAttendance > 0 ? (
-                          <Badge tone="danger">{t('stats.missingAttendance', { count: c.sessionsMissingAttendance })}</Badge>
+                          <Badge tone="danger">
+                            {t('stats.missingAttendance', {
+                              count: c.sessionsMissingAttendance,
+                            })}
+                          </Badge>
                         ) : null}
                       </div>
                     </li>
@@ -152,28 +222,47 @@ function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: 
       <Card title={t('stats.attention')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <h3 className="text-sm font-semibold">{t('stats.teachersNotLogging')}</h3>
+            <h3 className="text-sm font-semibold">
+              {t('stats.teachersNotLogging')}
+            </h3>
             <ul className="mt-2 text-sm">
               {data.teachers.filter((x) => !x.loggedThisWeek).length === 0 ? (
                 <li className="text-muted">{t('stats.allTeachersLogged')}</li>
               ) : (
                 data.teachers
                   .filter((x) => !x.loggedThisWeek)
-                  .map((x) => (
-                    <li key={x.teacherMemberId}>{x.teacherName}</li>
-                  ))
+                  .map((x) => <li key={x.teacherMemberId}>{x.teacherName}</li>)
               )}
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold">{t('stats.fallingBehind')}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold">
+                {t('stats.fallingBelow', { rate: belowRate })}
+              </h3>
+              <select
+                className={`${inputClass} w-auto py-1 text-xs`}
+                value={belowRate}
+                onChange={(e) => onBelowRateChange(Number(e.target.value))}
+                aria-label={t('stats.belowRateFilter')}
+              >
+                {BELOW_RATE_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {t('stats.belowRateOption', { rate: r })}
+                  </option>
+                ))}
+              </select>
+            </div>
             <ul className="mt-2 text-sm">
               {data.fallingBehind.length === 0 ? (
                 <li className="text-muted">{t('stats.noFallingBehind')}</li>
               ) : (
                 data.fallingBehind.map((x) => (
                   <li key={x.memberId}>
-                    <Link to={`/staff/members/${x.memberId}`} className="hover:text-accent">
+                    <Link
+                      to={`/staff/members/${x.memberId}`}
+                      className="hover:text-accent"
+                    >
                       {x.memberName}
                     </Link>
                     {' · '}
@@ -191,7 +280,10 @@ function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: 
           <ol className="list-decimal ps-5 text-sm">
             {data.topMembers.map((x) => (
               <li key={x.memberId}>
-                <Link to={`/staff/members/${x.memberId}`} className="hover:text-accent">
+                <Link
+                  to={`/staff/members/${x.memberId}`}
+                  className="hover:text-accent"
+                >
                   {x.memberName}
                 </Link>
                 {' — '}
@@ -205,13 +297,22 @@ function StaffReports({ data, locale }: { data: StatsDashboardResponse; locale: 
   );
 }
 
-function TeacherReports({ data, locale }: { data: StatsTeacherResponse; locale: string }) {
+function TeacherReports({
+  data,
+  locale,
+}: {
+  data: StatsTeacherResponse;
+  locale: string;
+}) {
   const { t } = useTranslation();
   const totals = data.totals;
   const rate = formatRate(
-    totals.attendancePresent + totals.attendanceLate + totals.attendanceAbsent > 0
+    totals.attendancePresent + totals.attendanceLate + totals.attendanceAbsent >
+      0
       ? (totals.attendancePresent + totals.attendanceLate) /
-          (totals.attendancePresent + totals.attendanceLate + totals.attendanceAbsent)
+          (totals.attendancePresent +
+            totals.attendanceLate +
+            totals.attendanceAbsent)
       : null,
     locale,
   );
@@ -227,16 +328,23 @@ function TeacherReports({ data, locale }: { data: StatsTeacherResponse; locale: 
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label={t('stats.attendanceRate')} value={rate} />
-        <StatCard label={t('stats.pagesThisWeek')} value={totals.pagesMemorized} />
+        <StatCard
+          label={t('stats.pagesThisWeek')}
+          value={totals.pagesMemorized}
+        />
         <StatCard label={t('stats.loggedDays')} value={data.loggedDays} />
       </div>
       <Card title={t('stats.myHalaqas')}>
         <ul className="divide-y divide-line">
           {data.courses.map((c) => (
-            <li key={c.courseId} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
+            <li
+              key={c.courseId}
+              className="flex flex-wrap justify-between gap-2 py-2 text-sm"
+            >
               <span className="font-medium">{c.courseName}</span>
               <span className="text-muted">
-                {formatRate(c.attendanceRate, locale)} · {t('stats.pagesShort', { count: c.pagesMemorized })}
+                {formatRate(c.attendanceRate, locale)} ·{' '}
+                {t('stats.pagesShort', { count: c.pagesMemorized })}
               </span>
             </li>
           ))}
@@ -246,7 +354,13 @@ function TeacherReports({ data, locale }: { data: StatsTeacherResponse; locale: 
   );
 }
 
-function ReportCardsPanel({ cards, staff }: { cards: ReportCardResponse[]; staff: boolean }) {
+function ReportCardsPanel({
+  cards,
+  staff,
+}: {
+  cards: ReportCardResponse[];
+  staff: boolean;
+}) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [memberId, setMemberId] = useState('');
@@ -284,10 +398,22 @@ function ReportCardsPanel({ cards, staff }: { cards: ReportCardResponse[]; staff
             <MemberCombobox value={memberId} onChange={setMemberId} />
           </Field>
           <Field label={t('reportCards.periodStart')}>
-            <input type="date" className={inputClass} value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} required />
+            <input
+              type="date"
+              className={inputClass}
+              value={periodStart}
+              onChange={(e) => setPeriodStart(e.target.value)}
+              required
+            />
           </Field>
           <Field label={t('reportCards.periodEnd')}>
-            <input type="date" className={inputClass} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} required />
+            <input
+              type="date"
+              className={inputClass}
+              value={periodEnd}
+              onChange={(e) => setPeriodEnd(e.target.value)}
+              required
+            />
           </Field>
           <div className="flex items-end">
             <Button type="submit" disabled={create.isPending || !memberId}>
@@ -300,10 +426,18 @@ function ReportCardsPanel({ cards, staff }: { cards: ReportCardResponse[]; staff
 
       <div className="grid gap-4">
         {drafts.length > 0 ? (
-          <ReportCardList items={drafts} label={t('reportCards.drafts')} staff={staff} />
+          <ReportCardList
+            items={drafts}
+            label={t('reportCards.drafts')}
+            staff={staff}
+          />
         ) : null}
         {published.length > 0 ? (
-          <ReportCardList items={published} label={t('reportCards.published')} staff={staff} />
+          <ReportCardList
+            items={published}
+            label={t('reportCards.published')}
+            staff={staff}
+          />
         ) : null}
         {cards.length === 0 ? <Empty>{t('reportCards.empty')}</Empty> : null}
       </div>
@@ -327,14 +461,22 @@ function ReportCardList({
       <h3 className="text-sm font-semibold">{label}</h3>
       <ul className="mt-2 divide-y divide-line">
         {items.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-            <Link to={`${base}/${c.id}`} className="font-medium hover:text-accent">
+          <li
+            key={c.id}
+            className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+          >
+            <Link
+              to={`${base}/${c.id}`}
+              className="font-medium hover:text-accent"
+            >
               {c.memberName}
               {c.courseName ? ` · ${c.courseName}` : ''}
             </Link>
             <span className="text-xs text-muted">
               {c.periodStart} – {c.periodEnd}
-              {c.status === 'DRAFT' ? ` · ${t('reportCards.statusDraft')}` : null}
+              {c.status === 'DRAFT'
+                ? ` · ${t('reportCards.statusDraft')}`
+                : null}
             </span>
           </li>
         ))}

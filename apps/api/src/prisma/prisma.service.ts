@@ -1,4 +1,10 @@
-import { Inject, Injectable, Optional, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Optional,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from './create-prisma-client';
 import { organizationScopeExtension } from './organization-scope';
@@ -30,7 +36,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$queryRaw.bind(this.client);
   }
 
-  /** Identity, AuthSession, AccountSetupCode, and the caller's own memberships. */
+  /**
+   * Unscoped client — use only when org context is missing or cross-org work is intentional.
+   *
+   * Allowed: Identity, AuthSession, AccountSetupCode; Organization bootstrap/settings;
+   * cross-org jobs and EventDelivery; membership resolution by identityId (login / org context).
+   *
+   * Forbidden: routine CRUD on tenant rows when the request already has OrgContext — use
+   * forOrganization instead.
+   */
   get platform(): PrismaClient {
     return this.client;
   }

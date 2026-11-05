@@ -1,7 +1,10 @@
 import type { CourseFormValues } from '../components/CourseForm';
 import { apiFetch } from '../api/api-fetch';
 
-export async function saveCourseExtras(courseId: string, values: CourseFormValues) {
+export async function saveCourseExtras(
+  courseId: string,
+  values: CourseFormValues,
+) {
   if (values.teacherMemberId) {
     await apiFetch(`/api/v1/courses/${courseId}/teachers`, {
       method: 'POST',

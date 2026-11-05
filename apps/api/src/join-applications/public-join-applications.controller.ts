@@ -17,7 +17,9 @@ export class PublicJoinApplicationsController {
 
   @Get(':slug/join')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  async joinPage(@Param('slug') slug: string): Promise<PublicOrganizationJoinInfo> {
+  async joinPage(
+    @Param('slug') slug: string,
+  ): Promise<PublicOrganizationJoinInfo> {
     const { info } = await this.joinApplications.resolvePublicOrg(slug);
     return PublicOrganizationJoinInfoSchema.parse(info);
   }
@@ -26,10 +28,15 @@ export class PublicJoinApplicationsController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async apply(
     @Param('slug') slug: string,
-    @Body(createZodValidationPipe(CreateJoinApplicationSchema)) body: CreateJoinApplicationInput,
+    @Body(createZodValidationPipe(CreateJoinApplicationSchema))
+    body: CreateJoinApplicationInput,
   ): Promise<PublicJoinApplicationCreated> {
-    const { organizationId } = await this.joinApplications.resolvePublicOrg(slug);
-    const created = await this.joinApplications.createPublic(organizationId, body);
+    const { organizationId } =
+      await this.joinApplications.resolvePublicOrg(slug);
+    const created = await this.joinApplications.createPublic(
+      organizationId,
+      body,
+    );
     return PublicJoinApplicationCreatedSchema.parse({ id: created.id });
   }
 }

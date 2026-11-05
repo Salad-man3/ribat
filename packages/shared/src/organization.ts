@@ -26,10 +26,10 @@ export const PrayerMethodSchema = z.enum([
   'Singapore',
   'Tehran',
   'Turkey',
-]);
+] as const);
 export type PrayerMethod = z.infer<typeof PrayerMethodSchema>;
 
-export const LocaleSchema = z.enum(['ar', 'en']);
+export const LocaleSchema = z.enum(['ar', 'en'] as const);
 
 export const PrayerNameSchema = z.enum([
   'fajr',
@@ -38,7 +38,7 @@ export const PrayerNameSchema = z.enum([
   'asr',
   'maghrib',
   'isha',
-]);
+] as const);
 
 const offsetMinutes = z.number().int().gte(-180).lte(180);
 
@@ -52,7 +52,10 @@ export const PrayerOffsetsSchema = z.object({
 });
 export type PrayerOffsets = z.infer<typeof PrayerOffsetsSchema>;
 
-export const OrganizationStatusSchema = z.enum(['ACTIVE', 'SUSPENDED']);
+export const OrganizationStatusSchema = z.enum([
+  'ACTIVE',
+  'SUSPENDED',
+] as const);
 
 const sheikhSchema = z.object({
   firstName: requiredName,
@@ -90,7 +93,9 @@ export const SetupOrganizationResponseSchema = z.object({
   setupCode,
   setupCodeExpiresAt: isoDateTime,
 });
-export type SetupOrganizationResponse = z.infer<typeof SetupOrganizationResponseSchema>;
+export type SetupOrganizationResponse = z.infer<
+  typeof SetupOrganizationResponseSchema
+>;
 
 export const OrganizationResponseSchema = z.object({
   id: uuid,

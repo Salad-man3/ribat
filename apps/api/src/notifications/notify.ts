@@ -4,7 +4,10 @@ import type { OrgTx } from '../prisma/prisma.service';
 type Db = Pick<OrgTx, 'membership' | 'guardianLink' | 'notification'>;
 
 /** The logins that act as these members. A guardian with no login simply gets nothing (decision 14.3). */
-export async function identitiesOf(db: Db, memberIds: string[]): Promise<string[]> {
+export async function identitiesOf(
+  db: Db,
+  memberIds: string[],
+): Promise<string[]> {
   if (memberIds.length === 0) return [];
   const rows = await db.membership.findMany({
     where: { memberId: { in: memberIds }, status: 'ACTIVE' },
@@ -14,7 +17,10 @@ export async function identitiesOf(db: Db, memberIds: string[]): Promise<string[
 }
 
 /** Each member plus their guardians (decision 15.2). */
-export async function withGuardians(db: Db, memberIds: string[]): Promise<string[]> {
+export async function withGuardians(
+  db: Db,
+  memberIds: string[],
+): Promise<string[]> {
   if (memberIds.length === 0) return [];
   const links = await db.guardianLink.findMany({
     where: { wardMemberId: { in: memberIds } },

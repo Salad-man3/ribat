@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { router } from './routes/router';
+import { CalendarProvider } from './lib/calendar';
 
 const queryClient = new QueryClient();
 
@@ -18,8 +19,10 @@ function LanguageSync() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageSync />
-      <RouterProvider router={router} />
+      <CalendarProvider>
+        <LanguageSync />
+        <RouterProvider router={router} />
+      </CalendarProvider>
     </QueryClientProvider>
   );
 }

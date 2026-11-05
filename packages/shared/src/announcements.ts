@@ -10,8 +10,10 @@ export const AnnouncementTargetTypeSchema = z.enum([
   'TAGS',
   'PROGRAMS',
   'ROLES',
-]);
-export type AnnouncementTargetType = z.infer<typeof AnnouncementTargetTypeSchema>;
+] as const);
+export type AnnouncementTargetType = z.infer<
+  typeof AnnouncementTargetTypeSchema
+>;
 
 export const CreateAnnouncementSchema = z
   .object({

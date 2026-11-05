@@ -31,7 +31,11 @@ import { GuardiansService } from '../guardians/guardians.service';
 import { HouseholdsService } from '../households/households.service';
 import { MemberNotesService } from '../notes/member-notes.service';
 import { auditContextFromOrg, requestIdFrom } from '../audit/audit-context';
-import { CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import { CurrentSession } from '../auth/session.guard';
 import type { SessionContext } from '../auth/sessions.service';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
@@ -56,7 +60,8 @@ export class MembersController {
   @OrgRoute('members.manage')
   list(
     @CurrentOrg() org: OrgContext,
-    @Query(createZodValidationPipe(ListMembersQuerySchema)) query: ListMembersQuery,
+    @Query(createZodValidationPipe(ListMembersQuerySchema))
+    query: ListMembersQuery,
   ) {
     return this.membersService.list(org.organizationId, query, org);
   }
@@ -69,7 +74,11 @@ export class MembersController {
     @Req() req: Request,
     @Body(createZodValidationPipe(CreateMemberSchema)) body: CreateMemberInput,
   ) {
-    return this.membersService.create(org.organizationId, body, this.auditCtx(org, session, req));
+    return this.membersService.create(
+      org.organizationId,
+      body,
+      this.auditCtx(org, session, req),
+    );
   }
 
   @Get(':id')
@@ -106,12 +115,19 @@ export class MembersController {
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membersService.archive(org.organizationId, id, this.auditCtx(org, session, req));
+    return this.membersService.archive(
+      org.organizationId,
+      id,
+      this.auditCtx(org, session, req),
+    );
   }
 
   @Get(':id/guardians')
   @OrgRoute('members.manage')
-  listGuardians(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string) {
+  listGuardians(
+    @CurrentOrg() org: OrgContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.guardiansService.list(org.organizationId, id);
   }
 
@@ -122,7 +138,8 @@ export class MembersController {
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(CreateGuardianLinkSchema)) body: CreateGuardianLinkInput,
+    @Body(createZodValidationPipe(CreateGuardianLinkSchema))
+    body: CreateGuardianLinkInput,
   ) {
     return this.guardiansService.create(
       org.organizationId,
@@ -141,12 +158,20 @@ export class MembersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Param('linkId', ParseUUIDPipe) linkId: string,
   ) {
-    await this.guardiansService.remove(org.organizationId, id, linkId, this.auditCtx(org, session, req));
+    await this.guardiansService.remove(
+      org.organizationId,
+      id,
+      linkId,
+      this.auditCtx(org, session, req),
+    );
   }
 
   @Get(':id/notes')
   @OrgRoute()
-  listNotes(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string) {
+  listNotes(
+    @CurrentOrg() org: OrgContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.memberNotesService.list(org.organizationId, id, org);
   }
 
@@ -157,7 +182,8 @@ export class MembersController {
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(CreateMemberNoteSchema)) body: CreateMemberNoteInput,
+    @Body(createZodValidationPipe(CreateMemberNoteSchema))
+    body: CreateMemberNoteInput,
   ) {
     return this.memberNotesService.create(
       org.organizationId,
@@ -192,7 +218,8 @@ export class MembersController {
     @CurrentSession() session: SessionContext,
     @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(GrantMemberAccessSchema)) body: GrantMemberAccessInput,
+    @Body(createZodValidationPipe(GrantMemberAccessSchema))
+    body: GrantMemberAccessInput,
   ) {
     return this.membershipsService.grantMemberAccess(
       org.organizationId,

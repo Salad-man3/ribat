@@ -8,7 +8,7 @@ import type {
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { fromMinutes, toMinutes } from '../lib/domain';
-import { inputClass } from './ui/form';
+import { Field, inputClass } from './ui/form';
 
 export const PRAYER_ANCHORS: Prayer[] = [
   'FAJR',
@@ -100,18 +100,19 @@ export function TimePointEditor({
             }
           />
         ) : (
-          <input
-            type="number"
-            dir="ltr"
-            step={5}
-            aria-label={t('schedule.offset')}
-            title={t('schedule.offset')}
-            className={`${inputClass} w-20`}
-            value={value.offsetMin}
-            onChange={(e) =>
-              onChange({ ...value, offsetMin: Number(e.target.value) })
-            }
-          />
+          <Field label={t('schedule.offset')} className="w-auto min-w-[7rem]">
+            <input
+              type="number"
+              dir="ltr"
+              step={5}
+              aria-label={t('schedule.offset')}
+              className={`${inputClass} w-full`}
+              value={value.offsetMin}
+              onChange={(e) =>
+                onChange({ ...value, offsetMin: Number(e.target.value) })
+              }
+            />
+          </Field>
         )}
       </div>
       {value.anchor === 'PRAYER' && preview ? (

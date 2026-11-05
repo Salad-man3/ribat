@@ -15,7 +15,9 @@ type QuickLogTarget = {
 };
 
 /** One tap after attendance: today's continuation range with a default grade. */
-export async function quickMemorizationLog(target: QuickLogTarget): Promise<boolean> {
+export async function quickMemorizationLog(
+  target: QuickLogTarget,
+): Promise<boolean> {
   const { memberId, courseId, materialId, materialKind, position } = target;
   if (materialKind === 'QURAN') {
     const range = continuationRangeFromPosition(position);

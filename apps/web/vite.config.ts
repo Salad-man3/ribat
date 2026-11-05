@@ -7,7 +7,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(root, '../..');
-const quranDataEntry = path.resolve(repoRoot, 'packages/quran-data/src/index.ts');
+const quranDataEntry = path.resolve(
+  repoRoot,
+  'packages/quran-data/src/index.ts',
+);
 
 export default defineConfig({
   resolve: {
@@ -58,7 +61,9 @@ export default defineConfig({
   // class mode can run the same Zod schemas and Quran maths offline (SYNC-07).
   optimizeDeps: { include: ['@ribat/shared'], exclude: ['@ribat/quran-data'] },
   build: {
-    commonjsOptions: { include: [/packages\/(shared|quran-data)\//, /node_modules/] },
+    commonjsOptions: {
+      include: [/packages\/(shared|quran-data)\//, /node_modules/],
+    },
   },
   server: {
     fs: { allow: [repoRoot] },

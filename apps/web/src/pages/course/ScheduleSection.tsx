@@ -23,7 +23,8 @@ import {
   Field,
   inputClass,
 } from '../../components/ui/form';
-import { formatDate, formatTimeRange, today, WEEKDAYS } from '../../lib/domain';
+import { useFormatDates } from '../../lib/calendar';
+import { formatTimeRange, today, WEEKDAYS } from '../../lib/domain';
 import { NavButton } from '../../components/ui/nav-button';
 import type { SectionProps } from './types';
 
@@ -34,6 +35,7 @@ export function ScheduleSection({
   canOpenClass,
 }: SectionProps) {
   const { t, i18n } = useTranslation();
+  const { formatDate } = useFormatDates();
   const orgTimes = useOrgPrayerTimes();
   const sessions = useQuery({
     queryKey: courseKey(course.id, 'sessions'),
@@ -72,16 +74,20 @@ export function ScheduleSection({
         ) : null}
         <ul className="grid max-h-[28rem] gap-1 overflow-y-auto text-sm">
           {(sessions.data ?? []).map((s) => {
-            const isToday =
-              s.date === today() && s.status !== 'CANCELLED';
+            const isToday = s.date === today() && s.status !== 'CANCELLED';
             return (
               <li
                 key={s.id}
                 className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-paper"
               >
-                <span>{formatDate(s.date, i18n.language)}</span>
+                <span>{formatDate(s.date)}</span>
                 <span className="flex items-center gap-2 tabular-nums text-muted">
-                  {formatTimeRange(s.startsAt, s.endsAt, i18n.language, timeZone)}
+                  {formatTimeRange(
+                    s.startsAt,
+                    s.endsAt,
+                    i18n.language,
+                    timeZone,
+                  )}
                   {isToday && canOpenClass ? (
                     <NavButton
                       to={`/teach/${s.id}`}
@@ -272,7 +278,8 @@ function PausesCard({
   course: SectionProps['course'];
   canEdit: boolean;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatDate } = useFormatDates();
   const queryClient = useQueryClient();
   const key = courseKey(course.id, 'pauses');
   const pauses = useQuery({
@@ -323,8 +330,7 @@ function PausesCard({
             className="flex flex-wrap justify-between gap-2 rounded-lg bg-paper px-3 py-2"
           >
             <span>
-              {formatDate(p.fromDate, i18n.language)} –{' '}
-              {formatDate(p.toDate, i18n.language)}
+              {formatDate(p.fromDate)} – {formatDate(p.toDate)}
               {p.reason ? (
                 <span className="ms-2 text-muted">· {p.reason}</span>
               ) : null}

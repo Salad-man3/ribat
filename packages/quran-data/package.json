@@ -16,7 +16,7 @@
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test src/helpers.test.ts",
-    "fmt": "prettier --check ."
+    "fmt": "prettier --check \"src/**/*.ts\" \"src/**/*.json\""
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

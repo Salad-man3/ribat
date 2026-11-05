@@ -13,10 +13,10 @@ import { useMaterials } from '../api/courses';
 import { Button } from '../components/ui/button';
 import {
   Badge,
-  Card,
   ErrorText,
   Field,
   inputClass,
+  ListPageShell,
   PageHeader,
 } from '../components/ui/form';
 
@@ -153,13 +153,13 @@ export function MaterialsPage() {
           </div>
         </form>
       </details>
-      <Card>
+      <ListPageShell>
         <ul className="divide-y divide-line">
           {(materials.data ?? []).map((m) => (
             <MaterialRow key={m.id} material={m} onChanged={refresh} />
           ))}
         </ul>
-      </Card>
+      </ListPageShell>
     </section>
   );
 }

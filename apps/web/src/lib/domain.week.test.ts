@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { lobbyWeekDates, weekBoundsSaturdayFirst } from './domain';
+import {
+  lobbyWeekDates,
+  saturdayWeekBounds,
+  weekBoundsSaturdayFirst,
+} from './domain';
 
 describe('weekBoundsSaturdayFirst', () => {
   it('starts on Saturday and runs seven days', () => {
@@ -12,5 +16,11 @@ describe('weekBoundsSaturdayFirst', () => {
     expect(days[0].weekday).toBe(6);
     expect(days[0].date).toBe('2026-10-24');
     expect(days[6].weekday).toBe(5);
+  });
+
+  it('saturdayWeekBounds exposes Sat–Fri column order', () => {
+    const { from, days } = saturdayWeekBounds('2026-10-26');
+    expect(from).toBe('2026-10-24');
+    expect(days).toEqual(lobbyWeekDates(from).map((d) => d.date));
   });
 });

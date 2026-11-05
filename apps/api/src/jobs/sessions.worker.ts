@@ -48,7 +48,9 @@ export class SessionsWorker implements OnModuleInit, OnModuleDestroy {
       },
     );
     this.worker.on('failed', (job, error) =>
-      this.logger.error(`job ${job?.name} ${job?.id} failed: ${safeErrorSummary(error)}`),
+      this.logger.error(
+        `job ${job?.name} ${job?.id} failed: ${safeErrorSummary(error)}`,
+      ),
     );
 
     // Re-register every organization's nightly run, so new orgs and timezone changes

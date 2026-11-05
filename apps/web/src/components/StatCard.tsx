@@ -19,7 +19,9 @@ export function StatCard({
       <p className="mt-1 text-3xl font-semibold tabular-nums">
         {display}
         {suffix && value !== undefined && value !== null ? (
-          <span className="ms-1 text-base font-normal text-muted">{suffix}</span>
+          <span className="ms-1 text-base font-normal text-muted">
+            {suffix}
+          </span>
         ) : null}
       </p>
     </div>

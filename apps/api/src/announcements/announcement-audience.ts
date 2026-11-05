@@ -127,7 +127,8 @@ export async function resolveAnnouncementMemberIds(
         for (const e of enrollments) allowed.add(e.memberId);
       }
       const filtered = targetIds.filter((id) => allowed.has(id));
-      if (filtered.length !== targetIds.length) throw forbidden('Some members are outside your classes');
+      if (filtered.length !== targetIds.length)
+        throw forbidden('Some members are outside your classes');
       return filtered;
     }
     case 'PROGRAMS': {
@@ -155,7 +156,9 @@ export async function resolveAnnouncementMemberIds(
       if (targetIds.length === 0) return [];
       const memberships = await db.membership.findMany({
         where: {
-          role: { in: targetIds as ('SHEIKH' | 'ORG_ADMIN' | 'MEMBER' | 'GUARDIAN')[] },
+          role: {
+            in: targetIds as ('SHEIKH' | 'ORG_ADMIN' | 'MEMBER' | 'GUARDIAN')[],
+          },
           status: 'ACTIVE',
           memberId: { not: null },
         },
@@ -163,7 +166,9 @@ export async function resolveAnnouncementMemberIds(
       });
       return [
         ...new Set(
-          memberships.map((m) => m.memberId).filter((id): id is string => id !== null),
+          memberships
+            .map((m) => m.memberId)
+            .filter((id): id is string => id !== null),
         ),
       ];
     }
@@ -245,7 +250,9 @@ export async function resolveAnnouncementMemberIdsForDelivery(
       if (targetIds.length === 0) return [];
       const memberships = await db.membership.findMany({
         where: {
-          role: { in: targetIds as ('SHEIKH' | 'ORG_ADMIN' | 'MEMBER' | 'GUARDIAN')[] },
+          role: {
+            in: targetIds as ('SHEIKH' | 'ORG_ADMIN' | 'MEMBER' | 'GUARDIAN')[],
+          },
           status: 'ACTIVE',
           memberId: { not: null },
         },
@@ -253,7 +260,9 @@ export async function resolveAnnouncementMemberIdsForDelivery(
       });
       return [
         ...new Set(
-          memberships.map((m) => m.memberId).filter((id): id is string => id !== null),
+          memberships
+            .map((m) => m.memberId)
+            .filter((id): id is string => id !== null),
         ),
       ];
     }

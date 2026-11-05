@@ -42,17 +42,22 @@ export class MembershipsService {
     private readonly tags: TagsService,
   ) {}
 
-  async list(organizationId: string, query: ListMembershipsQuery): Promise<MembershipResponse[]> {
-    const rows = await this.prisma.forOrganization(organizationId).membership.findMany({
-      where: {
-        role: query.role,
-        status: query.status,
-      },
-      include: membershipInclude,
-      orderBy: { createdAt: 'desc' },
-      take: query.limit,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  async list(
+    organizationId: string,
+    query: ListMembershipsQuery,
+  ): Promise<MembershipResponse[]> {
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .membership.findMany({
+        where: {
+          role: query.role,
+          status: query.status,
+        },
+        include: membershipInclude,
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      });
     const memberIds = rows
       .map((row) => row.memberId)
       .filter((id): id is string => id !== null);
@@ -75,27 +80,28 @@ export class MembershipsService {
   ): Promise<MembershipResponse> {
     this.assertCanAssign(actor, input.role);
 
-    const member = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: input.memberId, status: 'ACTIVE' },
-    });
+    const member = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: input.memberId, status: 'ACTIVE' },
+      });
     if (!member?.phone) throw notFound();
 
     const identity = await this.identities.ensureIdentity(member.phone);
-    const existing = await this.prisma.platform.membership.findUnique({
-      where: {
-        identityId_organizationId: {
-          identityId: identity.id,
-          organizationId,
-        },
-      },
+    const db = this.prisma.forOrganization(organizationId);
+    const existing = await db.membership.findFirst({
+      where: { identityId: identity.id },
     });
     if (existing) {
       throw new ConflictException({
-        error: { code: 'CONFLICT', message: 'Membership already exists for this member' },
+        error: {
+          code: 'CONFLICT',
+          message: 'Membership already exists for this member',
+        },
       });
     }
 
-    const row = await this.prisma.forOrganization(organizationId).membership.create({
+    const row = await db.membership.create({
       data: {
         organizationId,
         identityId: identity.id,
@@ -123,10 +129,11 @@ export class MembershipsService {
     input: UpdateMembershipInput,
     auditCtx: AuditContext,
   ): Promise<MembershipResponse> {
-
-    const before = await this.prisma.forOrganization(organizationId).membership.findFirst({
-      where: { id },
-    });
+    const before = await this.prisma
+      .forOrganization(organizationId)
+      .membership.findFirst({
+        where: { id },
+      });
     if (!before) throw notFound();
 
     if (before.role === 'SHEIKH') {
@@ -143,19 +150,23 @@ export class MembershipsService {
       throw forbidden();
     }
 
-    const row = await this.prisma.forOrganization(organizationId).membership.updateMany({
-      where: { id },
-      data: {
-        role: input.role,
-        status: input.status,
-      },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .membership.updateMany({
+        where: { id },
+        data: {
+          role: input.role,
+          status: input.status,
+        },
+      });
     if (row.count === 0) throw notFound();
 
-    const after = await this.prisma.forOrganization(organizationId).membership.findFirst({
-      where: { id },
-      include: membershipInclude,
-    });
+    const after = await this.prisma
+      .forOrganization(organizationId)
+      .membership.findFirst({
+        where: { id },
+        include: membershipInclude,
+      });
     if (!after) throw notFound();
 
     if (input.status === 'SUSPENDED' && before.status === 'ACTIVE') {
@@ -182,35 +193,44 @@ export class MembershipsService {
   ) {
     this.assertCanAssign(actor, role);
 
-    const member = await this.prisma.forOrganization(organizationId).member.findFirst({
-      where: { id: memberId, status: 'ACTIVE' },
-    });
+    const member = await this.prisma
+      .forOrganization(organizationId)
+      .member.findFirst({
+        where: { id: memberId, status: 'ACTIVE' },
+      });
     if (!member?.phone) throw notFound();
 
     const ensured = await this.identities.ensureIdentity(member.phone);
 
-    const membership = await this.prisma.platform.membership.upsert({
-      where: {
-        identityId_organizationId: {
-          identityId: ensured.id,
-          organizationId,
-        },
-      },
-      create: {
-        organizationId,
-        identityId: ensured.id,
-        memberId: member.id,
-        role,
-        status: 'ACTIVE',
-      },
-      update: {
-        memberId: member.id,
-        role,
-        status: 'ACTIVE',
-      },
+    const db = this.prisma.forOrganization(organizationId);
+    const existing = await db.membership.findFirst({
+      where: { identityId: ensured.id },
     });
+    if (existing) {
+      await db.membership.updateMany({
+        where: { id: existing.id },
+        data: { memberId: member.id, role, status: 'ACTIVE' },
+      });
+    } else {
+      await db.membership.create({
+        data: {
+          organizationId,
+          identityId: ensured.id,
+          memberId: member.id,
+          role,
+          status: 'ACTIVE',
+        },
+      });
+    }
+    const membership = await db.membership.findFirst({
+      where: { identityId: ensured.id },
+    });
+    if (!membership) throw notFound();
 
-    const issued = await this.identities.issueSetupCode(ensured.id, actor.membershipId);
+    const issued = await this.identities.issueSetupCode(
+      ensured.id,
+      actor.membershipId,
+    );
 
     await this.audit.record(auditCtx, {
       action: 'membership.access_granted',
@@ -233,13 +253,17 @@ export class MembershipsService {
     actor: OrgContext,
     auditCtx: AuditContext,
   ) {
-
-    const membership = await this.prisma.forOrganization(organizationId).membership.findFirst({
-      where: { memberId, status: 'ACTIVE' },
-    });
+    const membership = await this.prisma
+      .forOrganization(organizationId)
+      .membership.findFirst({
+        where: { memberId, status: 'ACTIVE' },
+      });
     if (!membership) throw notFound();
 
-    const issued = await this.identities.issueSetupCode(membership.identityId, actor.membershipId);
+    const issued = await this.identities.issueSetupCode(
+      membership.identityId,
+      actor.membershipId,
+    );
 
     await this.audit.record(auditCtx, {
       action: 'membership.setup_code_reset',

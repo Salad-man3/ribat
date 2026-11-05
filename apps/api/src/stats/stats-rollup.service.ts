@@ -14,7 +14,12 @@ import {
 } from '@ribat/shared';
 import { Queue } from 'bullmq';
 import type IORedis from 'ioredis';
-import { addDays, dateIn, fromDateString, toDateString } from '../common/zoned-time';
+import {
+  addDays,
+  dateIn,
+  fromDateString,
+  toDateString,
+} from '../common/zoned-time';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import { EVENTS_QUEUE } from '../events/events-queue';
@@ -90,7 +95,10 @@ export class StatsRollupService implements OnModuleInit {
       await this.queue.upsertJobScheduler(
         `stats:${org.id}`,
         { pattern: '0 3 * * *', tz: org.timezone },
-        { name: 'stats-org', data: { organizationId: org.id } satisfies StatsOrgJob },
+        {
+          name: 'stats-org',
+          data: { organizationId: org.id } satisfies StatsOrgJob,
+        },
       );
     } catch (error) {
       this.logger.warn(
@@ -100,17 +108,28 @@ export class StatsRollupService implements OnModuleInit {
   }
 
   /** Roll up yesterday if the ORG row is missing (deploy catch-up). */
-  async catchUp(organizationId: string, timezone: string, now = new Date()): Promise<void> {
+  async catchUp(
+    organizationId: string,
+    timezone: string,
+    now = new Date(),
+  ): Promise<void> {
     const yesterday = addDays(dateIn(now, timezone), -1);
     const db = this.prisma.forOrganization(organizationId);
     const existing = await db.statsDaily.findFirst({
-      where: { date: fromDateString(yesterday), scopeType: 'ORG', scopeId: organizationId },
+      where: {
+        date: fromDateString(yesterday),
+        scopeType: 'ORG',
+        scopeId: organizationId,
+      },
       select: { id: true },
     });
     if (!existing) await this.rollupDay(organizationId, yesterday);
   }
 
-  async run(organizationId: string, now = new Date()): Promise<{ date: string; scopes: number }> {
+  async run(
+    organizationId: string,
+    now = new Date(),
+  ): Promise<{ date: string; scopes: number }> {
     const org = await this.prisma.platform.organization.findUniqueOrThrow({
       where: { id: organizationId },
       select: { timezone: true },
@@ -184,7 +203,10 @@ export class StatsRollupService implements OnModuleInit {
       }),
       db.materialLog.findMany({
         where: { session: { date: dateValue } },
-        select: { loggedByMemberId: true, session: { select: { courseId: true } } },
+        select: {
+          loggedByMemberId: true,
+          session: { select: { courseId: true } },
+        },
       }),
     ]);
 
@@ -240,7 +262,8 @@ export class StatsRollupService implements OnModuleInit {
     for (const session of sessions) {
       const cm = courseMetrics.get(session.courseId) ?? initCourse();
       cm.sessionsHeld += 1;
-      if (!sessionsWithAttendance.has(session.id)) cm.sessionsMissingAttendance += 1;
+      if (!sessionsWithAttendance.has(session.id))
+        cm.sessionsMissingAttendance += 1;
       courseMetrics.set(session.courseId, cm);
     }
 
@@ -347,26 +370,59 @@ export class StatsRollupService implements OnModuleInit {
     StatsOrgMetricsSchema.parse(orgMetrics);
 
     const writes: Promise<void>[] = [
-      writeStatsDailyRow(db, organizationId, dateValue, 'ORG', organizationId, orgMetrics),
+      writeStatsDailyRow(
+        db,
+        organizationId,
+        dateValue,
+        'ORG',
+        organizationId,
+        orgMetrics,
+      ),
     ];
 
     for (const [scopeId, metrics] of courseMetrics) {
       StatsCourseMetricsSchema.parse(metrics);
-      writes.push(writeStatsDailyRow(db, organizationId, dateValue, 'COURSE', scopeId, metrics));
+      writes.push(
+        writeStatsDailyRow(
+          db,
+          organizationId,
+          dateValue,
+          'COURSE',
+          scopeId,
+          metrics,
+        ),
+      );
     }
 
     for (const [scopeId, metrics] of teacherMetrics) {
       StatsTeacherMetricsSchema.parse(metrics);
-      writes.push(writeStatsDailyRow(db, organizationId, dateValue, 'TEACHER', scopeId, metrics));
+      writes.push(
+        writeStatsDailyRow(
+          db,
+          organizationId,
+          dateValue,
+          'TEACHER',
+          scopeId,
+          metrics,
+        ),
+      );
     }
 
     for (const [scopeId, metrics] of memberMetrics) {
       StatsMemberMetricsSchema.parse(metrics);
-      writes.push(writeStatsDailyRow(db, organizationId, dateValue, 'MEMBER', scopeId, metrics));
+      writes.push(
+        writeStatsDailyRow(
+          db,
+          organizationId,
+          dateValue,
+          'MEMBER',
+          scopeId,
+          metrics,
+        ),
+      );
     }
 
     for (const op of writes) await op;
     return writes.length;
   }
 }
-

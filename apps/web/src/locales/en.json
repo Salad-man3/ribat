@@ -13,15 +13,26 @@
     "organization": "Settings",
     "devices": "Devices",
     "member": "My portal",
+    "profile": "My profile",
     "guardian": "Family portal",
     "courses": "Halaqas & programs",
+    "doroos": "Single dars",
+    "calendar": "Calendar",
     "materials": "Materials",
     "teach": "Class mode",
     "notifications": "Notifications",
     "excuses": "Excuses",
     "events": "Failed events",
+    "support": "Contact hosting",
     "reports": "Reports & stats",
     "more": "More",
+    "zone": {
+      "today": "Today",
+      "people": "People",
+      "teaching": "Teaching",
+      "mosque": "Mosque",
+      "record": "Record"
+    },
     "tab": {
       "courses": "Halaqas",
       "reports": "Reports",
@@ -38,6 +49,13 @@
     "pendingApplications": "Pending applications",
     "attendanceRate": "Attendance rate",
     "pagesThisWeek": "Pages this week",
+    "pagesInPeriod": "Pages in period",
+    "reportWindow": "Report window",
+    "window7": "7 days",
+    "window30": "30 days",
+    "fallingBelow": "Students below {{rate}}% attendance",
+    "belowRateFilter": "Attendance threshold",
+    "belowRateOption": "Below {{rate}}%",
     "pagesShort": "{{count}} pages",
     "testsPassed": "Tests passed",
     "byHalaqa": "By halaqa",
@@ -131,6 +149,9 @@
     "weekSchedule": "This week's lessons",
     "weekScheduleEmpty": "No scheduled sessions this week.",
     "weekDayEmpty": "No sessions",
+    "weekPrev": "Previous week",
+    "weekNext": "Next week",
+    "weekThis": "This week",
     "openClass": "Open class",
     "quickAccess": "Quick access",
     "membersHint": "Add students, record guardians, siblings and notes.",
@@ -145,14 +166,33 @@
     "todayMemorization": "{{count}} recitations logged today",
     "todayMemorizationEmpty": "No recitation logged yet today.",
     "todayMemorizationLine": "{{name}} · {{course}} · p. {{from}}–{{to}}",
+    "todayMemorizationSuffix": " · {{course}} · p. {{from}}–{{to}}",
     "todayAbsenceLine": "{{name}} · {{course}}",
     "reviewJoinApplications": "Review {{count}} join requests"
   },
+  "memberOverview": {
+    "studying": "Studying",
+    "teaching": "Teaching",
+    "noStudying": "Not enrolled in any halaqa.",
+    "noTeaching": "Not teaching any halaqa.",
+    "attendance": "Attendance rate",
+    "students": "Students",
+    "pagesMemorized": "{{count}} pages memorized",
+    "pagesHeard": "{{count}} pages recited to them",
+    "explanationPercent": "{{pct}}% of the book"
+  },
   "member": {
     "homeTitle": "My portal",
+    "profileTitle": "My profile",
     "account": "My account",
     "teaching": "Courses I teach",
-    "todayHalaqa": "Today's halaqa"
+    "todayHalaqa": "Today's halaqa",
+    "todayTitle": "Today",
+    "todayTeach": "Circles I teach",
+    "todayStudy": "Circles I study",
+    "todayTeachEmpty": "No teaching sessions today.",
+    "todayStudyEmpty": "No study sessions today.",
+    "studyNoAttendance": "No attendance recorded for this circle yet."
   },
   "guardian": {
     "homeTitle": "Your children",
@@ -169,6 +209,9 @@
     "createTitle": "Add member",
     "create": "Create member",
     "editTitle": "Edit member",
+    "tabHifz": "Hifz & tags",
+    "tabAttendance": "Attendance",
+    "tabFamily": "Family",
     "search": "Search by name or phone",
     "empty": "No members match.",
     "noPhone": "no phone",
@@ -209,8 +252,14 @@
       "DOCTORATE": "Doctorate"
     },
     "year": {
-      "1": "Year 1", "2": "Year 2", "3": "Year 3", "4": "Year 4",
-      "5": "Year 5", "6": "Year 6", "7": "Year 7", "8": "Year 8"
+      "1": "Year 1",
+      "2": "Year 2",
+      "3": "Year 3",
+      "4": "Year 4",
+      "5": "Year 5",
+      "6": "Year 6",
+      "7": "Year 7",
+      "8": "Year 8"
     },
     "notes": "Notes",
     "statusValue": {
@@ -336,6 +385,7 @@
       "ACTIVE": "Active",
       "SUSPENDED": "Suspended"
     },
+    "applyAccessChange": "Apply change",
     "filterAll": "All",
     "filterByTag": "Tag",
     "orgAdminPrivileges": "Admin privileges",
@@ -368,6 +418,19 @@
       "mosque": "Mosque settings",
       "extraFields": "Extra fields"
     },
+    "hosting": {
+      "capacityTitle": "Member capacity (hosting)",
+      "seats": "{{count}} of {{limit}} members",
+      "nearCap": "You are near the member limit. Contact your host to raise the cap.",
+      "atCap": "Member limit reached. Add seats before enrolling new members.",
+      "writesSuspended": "Write access is paused for billing. Read and export still work.",
+      "upgradeHint": "Suggested upgrade: up to {{limit}} members — {{rate}} {{currency}} per member per month (estimate).",
+      "dataTitle": "Export & import data",
+      "dataHint": "Excel workbook you can keep or re-upload to this mosque or a new one.",
+      "export": "Download Excel",
+      "import": "Upload Excel",
+      "importDone": "Import finished: {{summary}}"
+    },
     "extraFields": {
       "title": "Extra fields",
       "hint": "Optional fields shown when adding or editing records.",
@@ -396,7 +459,8 @@
     "title": "Mosque settings",
     "tabs": {
       "general": "General",
-      "messages": "Messages"
+      "messages": "Messages",
+      "hosting": "Hosting & data"
     },
     "messages": {
       "whatsappTitle": "WhatsApp setup message",
@@ -591,7 +655,27 @@
     "unexpectedTitle": "Something went wrong",
     "unexpectedBody": "Reload the page or go back to the lobby. If this keeps happening, tell the mosque office.",
     "reload": "Reload",
-    "devDetails": "Developer details (dev only)"
+    "devDetails": "Developer details (dev only)",
+    "reportProblem": "Report this problem"
+  },
+  "support": {
+    "title": "Contact Ribat hosting",
+    "subtitle": "Request a feature, report a bug, or ask a question. The operator team replies here.",
+    "newRequest": "New message",
+    "kind": {
+      "feature": "Feature request",
+      "bug": "Bug report",
+      "question": "Question",
+      "other": "Other"
+    },
+    "subjectPlaceholder": "Subject",
+    "bodyPlaceholder": "Describe what you need…",
+    "send": "Send",
+    "pickThread": "Select a conversation or start a new one.",
+    "unread": "New reply",
+    "replyPlaceholder": "Add a follow-up…",
+    "reply": "Send",
+    "backStaff": "Back to lobby"
   },
   "prayer": {
     "city": "City",
@@ -628,6 +712,15 @@
     "create": "New course",
     "createHint": "New courses start as drafts. Add teachers, students and a schedule, then make it active.",
     "todaySession": "Today's session",
+    "todayTitle": "Today",
+    "noSessionToday": "No lesson scheduled for today.",
+    "startDars": "Start a dars",
+    "startDarsConfirmTitle": "Start a dars?",
+    "startDarsConfirmBody": "There is no scheduled lesson for {{name}} today. Start one anyway?",
+    "startDarsConfirmAction": "Start",
+    "tabSessions": "Sessions",
+    "tabPeople": "People & materials",
+    "tabPlan": "Schedule & homework",
     "name": "Name",
     "typeLabel": "Type",
     "typeCard": {
@@ -729,6 +822,25 @@
     "oneOnly": "Turn on \"several teachers\" to add another.",
     "add": "Add teacher"
   },
+  "placement": {
+    "title": "Student placement",
+    "hint": "Pick a halaqa, then transfer students or drag them onto another halaqa on a wide screen.",
+    "unassigned": "Unassigned",
+    "moveTo": "Move to…",
+    "transfer": "Transfer",
+    "transferStudent": "Transfer {{name}}",
+    "chooseHalaqa": "Choose halaqa",
+    "current": "current",
+    "removeFromHalaqa": "Remove from halaqa",
+    "searchHalaqat": "Search halaqat",
+    "searchAllStudents": "Search all students",
+    "inHalaqa": "In {{name}}",
+    "confirmWarnings": "Move {{name}} anyway?",
+    "moved": "Moved",
+    "undo": "Undo",
+    "withdrawn": "Removed from halaqa",
+    "search": "Search in this halaqa"
+  },
   "students": {
     "title": "Students",
     "empty": "No students enrolled.",
@@ -778,7 +890,15 @@
     "title": "Next four weeks",
     "refresh": "Refresh",
     "onlyActive": "Sessions are generated while the course is active.",
-    "empty": "No sessions yet."
+    "empty": "No sessions yet.",
+    "from": "From",
+    "to": "To",
+    "statusHeld": "Held",
+    "statusCancelled": "Cancelled",
+    "statusMarked": "Marked",
+    "statusScheduled": "Scheduled",
+    "viewHistory": "View",
+    "attendanceFraction": "{{marked}} / {{total}} marked"
   },
   "schedule": {
     "title": "Weekly schedule",
@@ -818,15 +938,23 @@
     "title": "Class mode",
     "today": "Today's classes",
     "noKit": "Class mode needs one connection first to download today's classes.",
+    "historyBanner": "Past session — {{date}}",
+    "historyEdit": "Edit",
+    "historyViewOnly": "View only",
+    "noSession": "Could not load this class. Check your connection or open it from the lobby again.",
     "noSessions": "No classes for you today.",
     "refresh": "Refresh",
     "back": "All classes",
+    "sessionMode": "Session task",
+    "overview": "Members",
+    "backToRoster": "Back to members",
     "students": "{{count}} students",
     "markAllPresent": "Mark all present",
     "log": "Log",
     "hifz": "Recitation",
     "quickLog": "Quick log",
     "logRecitation": "Adjust recitation",
+    "recordRecitation": "Record recitation",
     "hifzTitle": "Recitation log",
     "attendance": "Attendance",
     "backToAttendance": "Back to attendance",
@@ -851,8 +979,10 @@
     },
     "save": "Save",
     "cancel": "Cancel",
-    "last": "Last: page {{page}}, {{surah}} {{ayah}}",
-    "lastPage": "Last: page {{page}}",
+    "last": "Progress: page {{page}}, {{surah}} {{ayah}}",
+    "lastPage": "Progress: page {{page}}",
+    "lastRecitation": "{{type}} · {{fromSurah}} {{from}}–{{toSurah}} {{to}} · p. {{pageFrom}}–{{pageTo}} · {{date}}",
+    "lastRecitationPages": "{{type}} · p. {{pageFrom}}–{{pageTo}} · {{date}}",
     "noPosition": "No progress yet",
     "queuedLogs": "{{count}} queued",
     "status": {
@@ -958,6 +1088,7 @@
   "family": {
     "week": "This week",
     "noClasses": "No classes this week.",
+    "noClassesThisDay": "Nothing scheduled this day.",
     "role": {
       "TEACHING": "Teaching",
       "STUDYING": "Studying",
@@ -1108,28 +1239,44 @@
     "REPORT_CARD": {
       "title": "Report card published",
       "body": "{{student}} · {{course}} · {{periodStart}} – {{periodEnd}}"
+    },
+    "SUPPORT_REPLY": {
+      "title": "Reply from Ribat hosting",
+      "body": "{{subject}}"
     }
   },
   "hifz": {
     "mapTitle": "Quran memorization map",
-    "mapHint": "Filled ajza are fully memorized (new + initial logs). Ring shows the latest in-class juz test.",
+    "mapHint": "Each page fills its juz. Green was memorized here, gray was known before joining, gold is a passed juz test.",
     "juzMemorized": "Juz {{juz}} memorized",
-    "juzEmpty": "Juz {{juz}} not complete",
+    "juzEmpty": "Juz {{juz}} not started",
+    "juzFill": "Juz {{juz}}: {{newPages}} pages here, {{initialPages}} before joining, of {{totalPages}}",
+    "juzCertified": "Juz {{juz}} certified",
     "juzTestTooltip": "Juz {{juz}}: score {{score}}, {{passed, select, true {passed} other {not passed}}}",
     "awqafTooltip": "Awqaf juz {{juz}} ({{level}}): {{passed, select, true {passed} other {failed}}}",
     "legendMemorized": "Memorized",
+    "legendMosque": "Memorized here",
+    "legendPrior": "Before joining",
+    "legendCertified": "Certified",
     "legendTestPass": "Latest test",
     "legendAwqaf": "Awqaf exam",
     "initialTitle": "Starting level",
     "initialHint": "Record what the student already knew before this mosque (staff only).",
     "addInitial": "Add starting level",
     "awqafTitle": "Official Awqaf exams",
-    "awqafHint": "Separate from in-class juz tests. Each sitting keeps every juz result.",
+    "awqafHint": "Separate from in-class juz tests.",
+    "awqafOneResultHint": "One sitting has one pass/fail and one score for the whole range.",
     "awqafLevel": "Exam level",
     "passed": "Passed",
     "yes": "Yes",
     "no": "No",
     "recordAwqaf": "Record exam",
+    "awqafPickJuz": "Choose a contiguous range of {{count}} juz.",
+    "awqafJuzFrom": "From juz",
+    "awqafJuzTo": "To juz",
+    "awqafJuzRange": "Juz {{from}}–{{to}}",
+    "awqafRangeInvalid": "The range must cover exactly {{count}} juz in a row.",
+    "awqafJuzList": "Juz {{juz}}",
     "recentLogs": "Recent memorization",
     "noLogs": "No logs yet.",
     "halaqaWallTitle": "Today's halaqa",
@@ -1138,12 +1285,47 @@
     "kindName": "Type name",
     "noKinds": "No custom types yet.",
     "level": {
+      "AJZA_1": "1 juz",
       "AJZA_3": "3 ajza",
       "AJZA_5": "5 ajza",
       "AJZA_10": "10 ajza",
       "AJZA_15": "15 ajza",
       "KHATMAH": "Khatmah"
     }
+  },
+  "calendar": {
+    "useHijri": "Use Hijri dates",
+    "useGregorian": "Use Gregorian dates"
+  },
+  "attendanceGrid": {
+    "title": "Attendance calendar",
+    "window": "Time range",
+    "days30": "30 days",
+    "days90": "90 days",
+    "rate": "Rate: {{rate}}",
+    "empty": "No attendance marks in this range."
+  },
+  "doroos": {
+    "title": "Single dars",
+    "subtitle": "One-off lessons with a custom roster.",
+    "listTitle": "Upcoming and recent",
+    "empty": "No single dars yet.",
+    "create": "New dars",
+    "oneOff": "One-off session",
+    "attended": "Who attended",
+    "assigned": "Who is assigned",
+    "noStudents": "No students assigned.",
+    "teacher": "Teacher",
+    "pickTeacher": "Choose a teacher",
+    "memberIdsHint": "Student member IDs (space-separated)",
+    "memberIdsPlaceholder": "Optional UUIDs",
+    "conflicts": "{{count}} scheduling overlap(s) — you can still save."
+  },
+  "staffCalendar": {
+    "title": "Calendar",
+    "subtitle": "All halaqas and dars in one week view.",
+    "filterHalaqa": "Halaqa",
+    "allSessions": "Everyone"
   },
   "theme": {
     "button": "Theme",

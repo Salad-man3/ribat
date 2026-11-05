@@ -20,7 +20,9 @@ export function educationLine(member: MemberResponse, t: TFunction) {
             t('members.universityStudent'),
             member.university,
             member.faculty,
-            member.universityYear ? t(`members.year.${member.universityYear}`) : null,
+            member.universityYear
+              ? t(`members.year.${member.universityYear}`)
+              : null,
           ]
         : member.studyStatus === 'NOT_STUDYING' && member.highestEducation
           ? [

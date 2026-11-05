@@ -52,7 +52,9 @@ export class RecitationKindsService {
     audit: AuditContext,
   ): Promise<RecitationKindResponse> {
     const db = this.prisma.forOrganization(organizationId);
-    const existing = await db.recitationKind.findFirst({ where: { id: kindId } });
+    const existing = await db.recitationKind.findFirst({
+      where: { id: kindId },
+    });
     if (!existing) throw notFound('Recitation kind');
     const row = await db.recitationKind.update({
       where: { id: kindId },

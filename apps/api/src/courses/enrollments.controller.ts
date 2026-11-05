@@ -11,8 +11,10 @@ import {
 import {
   CreateRequirementSchema,
   EnrollSchema,
+  MoveEnrollmentSchema,
   type CreateRequirementInput,
   type EnrollInput,
+  type MoveEnrollmentInput,
 } from '@ribat/shared';
 import type { AuditContext } from '../audit/audit-context';
 import {
@@ -114,6 +116,25 @@ export class EnrollmentsController {
       org.organizationId,
       courseId,
       enrollmentId,
+      audit,
+    );
+  }
+
+  @Post('enrollments/:enrollmentId/move')
+  @OrgRoute('courses.manage')
+  move(
+    @CurrentOrg() org: OrgContext,
+    @CurrentAudit() audit: AuditContext,
+    @Param('id', id) courseId: string,
+    @Param('enrollmentId', id) enrollmentId: string,
+    @Body(createZodValidationPipe(MoveEnrollmentSchema))
+    body: MoveEnrollmentInput,
+  ) {
+    return this.enrollments.move(
+      org.organizationId,
+      courseId,
+      enrollmentId,
+      body.toCourseId,
       audit,
     );
   }

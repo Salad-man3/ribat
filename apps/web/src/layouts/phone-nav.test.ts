@@ -6,21 +6,20 @@ const allPerms = (_: S1Permission) => true;
 const noPerms = (_: S1Permission) => false;
 
 describe('phoneTabsFromNav', () => {
-  it('staff with full permissions returns five tabs in lobby order', () => {
+  it('staff with full permissions returns four zone tabs', () => {
     const entries = navFor('ORG_ADMIN', 'ADMIN', allPerms);
     const tabs = phoneTabsFromNav(entries);
     expect(tabs.map((t) => t.matchPrefix)).toEqual([
       '/staff',
       '/staff/members',
       '/staff/courses',
-      '/staff/reports',
-      '/staff/materials',
+      '/staff/organization',
     ]);
   });
 
-  it('never returns more than five tabs', () => {
+  it('never returns more than four staff tabs', () => {
     const entries = navFor('ORG_ADMIN', 'ADMIN', allPerms);
-    expect(phoneTabsFromNav(entries).length).toBeLessThanOrEqual(5);
+    expect(phoneTabsFromNav(entries).length).toBeLessThanOrEqual(4);
   });
 
   it('drops tabs the role cannot reach instead of backfilling', () => {
@@ -29,7 +28,6 @@ describe('phoneTabsFromNav', () => {
     expect(tabs.map((t) => t.matchPrefix)).toEqual([
       '/staff',
       '/staff/courses',
-      '/staff/reports',
     ]);
   });
 

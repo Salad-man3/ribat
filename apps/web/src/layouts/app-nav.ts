@@ -9,12 +9,22 @@ export type NavGroupItem = {
 };
 export type NavEntry = NavLinkItem | NavGroupItem;
 
+export type NavZoneId = 'today' | 'people' | 'teaching' | 'mosque' | 'record';
+
+export type NavZone = {
+  id: NavZoneId;
+  labelKey: string;
+  entries: NavEntry[];
+};
+
 export type PhoneTab = {
   to: string;
   matchPrefix: string;
   labelKey: string;
   /** NavLink `end` for exact match (lobby home). */
   end?: boolean;
+  /** Path prefixes that keep this tab highlighted (e.g. teaching hub). */
+  alsoActiveUnder?: string[];
 };
 
 type TabRoute = {
@@ -22,77 +32,112 @@ type TabRoute = {
   labelKey: string;
   matchPrefix?: string;
   end?: boolean;
+  alsoActiveUnder?: string[];
 };
 
+/** Four bottom tabs: Today, People, Teaching, Mosque. Everything else is in the menu drawer. */
 const STAFF_TAB_ROUTES: TabRoute[] = [
   { path: '/staff', labelKey: 'nav.staff', end: true },
-  { path: '/staff/members', labelKey: 'nav.members', matchPrefix: '/staff/members' },
-  { path: '/staff/courses', labelKey: 'nav.tab.courses', matchPrefix: '/staff/courses' },
-  { path: '/staff/reports', labelKey: 'nav.tab.reports', matchPrefix: '/staff/reports' },
-  { path: '/staff/materials', labelKey: 'nav.materials', matchPrefix: '/staff/materials' },
+  {
+    path: '/staff/members',
+    labelKey: 'nav.zone.people',
+    matchPrefix: '/staff/members',
+    alsoActiveUnder: ['/staff/roles'],
+  },
+  {
+    path: '/staff/courses',
+    labelKey: 'nav.tab.courses',
+    matchPrefix: '/staff/courses',
+    alsoActiveUnder: [
+      '/staff/reports',
+      '/staff/materials',
+      '/staff/excuses',
+      '/staff/programs',
+    ],
+  },
+  {
+    path: '/staff/organization',
+    labelKey: 'nav.zone.mosque',
+    matchPrefix: '/staff/organization',
+  },
 ];
 
 const MEMBER_TAB_ROUTES: TabRoute[] = [
   { path: '/member', labelKey: 'nav.member', matchPrefix: '/member' },
   { path: '/teach', labelKey: 'nav.tab.teach', matchPrefix: '/teach' },
-  { path: '/teach/reports', labelKey: 'nav.tab.reports', matchPrefix: '/teach/reports' },
+  {
+    path: '/teach/reports',
+    labelKey: 'nav.tab.reports',
+    matchPrefix: '/teach/reports',
+  },
 ];
 
 const GUARDIAN_TAB_ROUTES: TabRoute[] = [
   { path: '/guardian', labelKey: 'nav.guardian', matchPrefix: '/guardian' },
-  { path: '/notifications', labelKey: 'nav.notifications', matchPrefix: '/notifications' },
+  {
+    path: '/notifications',
+    labelKey: 'nav.notifications',
+    matchPrefix: '/notifications',
+  },
 ];
 
 const OFFLINE_TAB_ROUTES: TabRoute[] = [
   { path: '/teach', labelKey: 'nav.tab.teach', matchPrefix: '/teach' },
 ];
 
-const MAX_PHONE_TABS = 5;
+const MAX_PHONE_TABS = 4;
 
-const STAFF_MORE_PATHS = new Set([
+const TEACHING_PATH_PREFIXES = [
+  '/staff/courses',
+  '/staff/reports',
   '/staff/materials',
-  '/staff/roles',
   '/staff/excuses',
-  '/staff/audit',
-  '/staff/events',
-  '/staff/organization',
-]);
+  '/staff/programs',
+];
 
-function isStaffMoreEntry(entry: NavEntry): boolean {
-  return entry.kind === 'link' && STAFF_MORE_PATHS.has(entry.to);
-}
+const PEOPLE_PATH_PREFIXES = ['/staff/members', '/staff/roles'];
 
-/** Daily staff links first; settings and audit tucked under “More”. */
-export function splitNavEntries(entries: NavEntry[]): {
-  primary: NavEntry[];
-  more: NavEntry[];
-} {
-  const primary: NavEntry[] = [];
-  const more: NavEntry[] = [];
-  for (const entry of entries) {
-    if (isStaffMoreEntry(entry)) more.push(entry);
-    else primary.push(entry);
-  }
-  return { primary, more };
-}
-
-/** Which links a viewer sees. The API enforces the same rules; this only hides dead ends. */
-export function navFor(
+/** Staff sidebar / drawer zones — same grouping on desktop and phone menu. */
+export function navZonesFor(
   role: MembershipRole,
   activeView: ActiveView | null,
   can: (permission: S1Permission) => boolean,
-): NavEntry[] {
-  if (role === 'GUARDIAN')
-    return [{ kind: 'link', to: '/guardian', label: 'nav.guardian' }];
-  if (role === 'MEMBER' || activeView === 'MEMBER')
+): NavZone[] {
+  if (role === 'GUARDIAN') {
     return [
-      { kind: 'link', to: '/member', label: 'nav.member' },
-      { kind: 'link', to: '/teach', label: 'nav.teach' },
-      { kind: 'link', to: '/teach/reports', label: 'nav.reports' },
+      {
+        id: 'today',
+        labelKey: 'nav.zone.today',
+        entries: [{ kind: 'link', to: '/guardian', label: 'nav.guardian' }],
+      },
     ];
-  const staff: NavEntry[] = [{ kind: 'link', to: '/staff', label: 'nav.staff' }];
+  }
+  if (role === 'MEMBER' || activeView === 'MEMBER') {
+    return [
+      {
+        id: 'today',
+        labelKey: 'nav.zone.today',
+        entries: [
+          { kind: 'link', to: '/member', label: 'nav.member' },
+          { kind: 'link', to: '/member/profile', label: 'nav.profile' },
+          { kind: 'link', to: '/teach', label: 'nav.teach' },
+          { kind: 'link', to: '/teach/reports', label: 'nav.reports' },
+        ],
+      },
+    ];
+  }
+
+  const zones: NavZone[] = [
+    {
+      id: 'today',
+      labelKey: 'nav.zone.today',
+      entries: [{ kind: 'link', to: '/staff', label: 'nav.staff' }],
+    },
+  ];
+
+  const people: NavEntry[] = [];
   if (can('members.manage')) {
-    staff.push({
+    people.push({
       kind: 'group',
       label: 'nav.members',
       matchPrefix: '/staff/members',
@@ -102,27 +147,84 @@ export function navFor(
       ],
     });
   }
+  if (can('memberships.manage')) {
+    people.push({ kind: 'link', to: '/staff/roles', label: 'nav.roles' });
+  }
+  if (people.length) {
+    zones.push({ id: 'people', labelKey: 'nav.zone.people', entries: people });
+  }
+
+  const teaching: NavEntry[] = [];
   if (can('courses.manage')) {
-    staff.push({ kind: 'link', to: '/staff/courses', label: 'nav.courses' });
-    staff.push({ kind: 'link', to: '/staff/reports', label: 'nav.reports' });
+    teaching.push({
+      kind: 'link',
+      to: '/staff/placement',
+      label: 'placement.title',
+    });
+    teaching.push({ kind: 'link', to: '/staff/courses', label: 'nav.courses' });
+    teaching.push({ kind: 'link', to: '/staff/doroos', label: 'nav.doroos' });
+    teaching.push({
+      kind: 'link',
+      to: '/staff/calendar',
+      label: 'nav.calendar',
+    });
+    teaching.push({ kind: 'link', to: '/staff/reports', label: 'nav.reports' });
   }
   if (can('materials.manage')) {
-    staff.push({ kind: 'link', to: '/staff/materials', label: 'nav.materials' });
-  }
-  if (can('memberships.manage')) {
-    staff.push({ kind: 'link', to: '/staff/roles', label: 'nav.roles' });
+    teaching.push({
+      kind: 'link',
+      to: '/staff/materials',
+      label: 'nav.materials',
+    });
   }
   if (can('members.manage')) {
-    staff.push({ kind: 'link', to: '/staff/excuses', label: 'nav.excuses' });
+    teaching.push({ kind: 'link', to: '/staff/excuses', label: 'nav.excuses' });
   }
-  if (can('audit.read')) {
-    staff.push({ kind: 'link', to: '/staff/audit', label: 'nav.audit' });
-    staff.push({ kind: 'link', to: '/staff/events', label: 'nav.events' });
+  if (teaching.length) {
+    zones.push({
+      id: 'teaching',
+      labelKey: 'nav.zone.teaching',
+      entries: teaching,
+    });
   }
+
   if (can('organization.manage')) {
-    staff.push({ kind: 'link', to: '/staff/organization', label: 'nav.organization' });
+    zones.push({
+      id: 'mosque',
+      labelKey: 'nav.zone.mosque',
+      entries: [
+        { kind: 'link', to: '/staff/organization', label: 'nav.organization' },
+      ],
+    });
   }
-  return staff;
+
+  const record: NavEntry[] = [];
+  if (can('audit.read')) {
+    record.push({ kind: 'link', to: '/staff/audit', label: 'nav.audit' });
+    record.push({ kind: 'link', to: '/staff/events', label: 'nav.events' });
+  }
+  if (record.length) {
+    zones.push({ id: 'record', labelKey: 'nav.more', entries: record });
+  }
+
+  return zones;
+}
+
+/** Flat nav list (zones in order) for titles and reach checks. */
+export function navFor(
+  role: MembershipRole,
+  activeView: ActiveView | null,
+  can: (permission: S1Permission) => boolean,
+): NavEntry[] {
+  return navZonesFor(role, activeView, can).flatMap((z) => z.entries);
+}
+
+/** @deprecated Use navZonesFor. Kept for tests migrating off primary/more split. */
+export function splitNavEntries(entries: NavEntry[]): {
+  primary: NavEntry[];
+  more: NavEntry[];
+} {
+  return { primary: entries, more: [] };
 }
 
 export function flattenNavLinks(
@@ -159,6 +261,15 @@ export function canReachPath(entries: NavEntry[], path: string): boolean {
         l.matchPrefix === '/staff/members' || l.to.startsWith('/staff/members'),
     );
   }
+  if (path === '/staff/organization') {
+    return flat.some((l) => l.to === '/staff/organization');
+  }
+  if (TEACHING_PATH_PREFIXES.includes(path)) {
+    return flat.some((l) => TEACHING_PATH_PREFIXES.includes(l.to));
+  }
+  if (path === '/staff/roles') {
+    return flat.some((l) => l.to === '/staff/roles');
+  }
   if (path === '/teach') {
     return flat.some((l) => l.to === '/teach');
   }
@@ -192,6 +303,7 @@ export function phoneTabsFromNav(entries: NavEntry[]): PhoneTab[] {
       matchPrefix: route.matchPrefix ?? route.path,
       labelKey: route.labelKey,
       end: route.end,
+      alsoActiveUnder: route.alsoActiveUnder,
     }));
 }
 
@@ -213,8 +325,23 @@ export function mobileScreenTitleKey(
       matches.push({ prefix: child.to, labelKey: child.label });
     }
   }
-  // Programs live under courses nav.
   if (pathname.startsWith('/staff/programs')) {
+    const courses = matches.find((m) => m.prefix === '/staff/courses');
+    if (courses) return courses.labelKey;
+  }
+  if (
+    PEOPLE_PATH_PREFIXES.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    )
+  ) {
+    const people = matches.find((m) => m.prefix === '/staff/members');
+    if (people) return 'nav.zone.people';
+  }
+  if (
+    TEACHING_PATH_PREFIXES.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    )
+  ) {
     const courses = matches.find((m) => m.prefix === '/staff/courses');
     if (courses) return courses.labelKey;
   }
@@ -227,7 +354,8 @@ export function mobileScreenTitleKey(
     if (prefix === '/teach') {
       if (
         pathname === '/teach' ||
-        (pathname.startsWith('/teach/') && !pathname.startsWith('/teach/reports'))
+        (pathname.startsWith('/teach/') &&
+          !pathname.startsWith('/teach/reports'))
       ) {
         return labelKey;
       }
@@ -240,13 +368,39 @@ export function mobileScreenTitleKey(
   return null;
 }
 
-export function isPhoneTabActive(pathname: string, tab: PhoneTab): boolean {
-  if (tab.matchPrefix === '/teach' && tab.to === '/teach') {
-    return (
-      pathname === '/teach' ||
-      (pathname.startsWith('/teach/') && !pathname.startsWith('/teach/reports'))
-    );
+function pathnameUnderTab(pathname: string, tab: PhoneTab): boolean {
+  const prefixes = [tab.matchPrefix, ...(tab.alsoActiveUnder ?? [])];
+  for (const prefix of prefixes) {
+    if (prefix === '/staff') {
+      if (pathname === '/staff') return true;
+      continue;
+    }
+    if (prefix === '/teach' && tab.to === '/teach') {
+      if (
+        pathname === '/teach' ||
+        (pathname.startsWith('/teach/') &&
+          !pathname.startsWith('/teach/reports'))
+      ) {
+        return true;
+      }
+      continue;
+    }
+    if (prefix === '/member' && tab.to === '/member') {
+      if (pathname === '/member') return true;
+      if (
+        pathname.startsWith('/member/') &&
+        !pathname.startsWith('/member/profile')
+      ) {
+        return true;
+      }
+      continue;
+    }
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
   }
+  return false;
+}
+
+export function isPhoneTabActive(pathname: string, tab: PhoneTab): boolean {
   if (tab.end) return pathname === tab.to;
-  return pathname === tab.matchPrefix || pathname.startsWith(`${tab.matchPrefix}/`);
+  return pathnameUnderTab(pathname, tab);
 }

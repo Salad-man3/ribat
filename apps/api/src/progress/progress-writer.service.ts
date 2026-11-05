@@ -23,7 +23,7 @@ import {
   isUniqueViolation,
   notFound,
 } from '../common/errors';
-import { dateIn } from '../common/zoned-time';
+import { addDays, dateIn } from '../common/zoned-time';
 import { PrismaService, type OrgTx } from '../prisma/prisma.service';
 import {
   ClassScopeService,
@@ -35,7 +35,9 @@ import { writeSummary } from './memorization-summary';
 import {
   clampCapturedAt,
   incomingAttendanceWins,
+  teacherMayEditSession,
   teacherMayWriteSession,
+  TEACHER_PAST_SESSION_EDIT_DAYS,
 } from './policy';
 import { toAttendanceResponse, toTestResponse } from './progress.mapper';
 
@@ -274,11 +276,15 @@ export class ProgressWriterService {
     if (session.status === 'CANCELLED')
       throw conflict('This session was cancelled');
     const scope = await this.courseScope(w, session.courseId);
+    const tz = await this.timezone(w);
     if (
       !scope.staff &&
-      !teacherMayWriteSession(at, session, await this.timezone(w))
+      !teacherMayWriteSession(at, session, tz) &&
+      !teacherMayEditSession(w.now, session, tz)
     )
-      throw forbidden('Teachers can change a class only on its day');
+      throw forbidden(
+        `Teachers can change a class on its day or within ${TEACHER_PAST_SESSION_EDIT_DAYS} days after`,
+      );
     return { session, scope };
   }
 
@@ -453,7 +459,11 @@ export class ProgressWriterService {
       `enrollment:${p.courseId}:${p.memberId}`,
       () =>
         db.enrollment.findFirst({
-          where: { courseId: p.courseId, memberId: p.memberId, status: 'ACTIVE' },
+          where: {
+            courseId: p.courseId,
+            memberId: p.memberId,
+            status: 'ACTIVE',
+          },
         }),
       'Enrollment',
     );
@@ -547,6 +557,16 @@ export class ProgressWriterService {
     if (p.courseId) {
       const courseId = p.courseId;
       const scope = await this.courseScope(w, courseId);
+      if (!scope.staff) {
+        const tz = await this.timezone(w);
+        const logDay = dateIn(at, tz);
+        const today = dateIn(w.now, tz);
+        const oldest = addDays(today, -TEACHER_PAST_SESSION_EDIT_DAYS);
+        if (logDay > today || logDay < oldest)
+          throw forbidden(
+            `Teachers can log for dates within the last ${TEACHER_PAST_SESSION_EDIT_DAYS} days`,
+          );
+      }
       await this.assertCourseMaterial(w, courseId, p.materialId);
       const enrollment = await this.row(
         w,
@@ -569,7 +589,8 @@ export class ProgressWriterService {
       });
       if (!kind) throw notFound('Recitation kind');
       recitationKindId = kind.id;
-      if (p.type !== 'NEW') throw badRequest('type', 'Custom kinds log as new memorization');
+      if (p.type !== 'NEW')
+        throw badRequest('type', 'Custom kinds log as new memorization');
     }
 
     const span = resolveSpan(material.kind, material.totalPages, p);

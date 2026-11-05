@@ -10,7 +10,7 @@ export const ApiErrorCodeSchema = z.enum([
   'RATE_LIMITED',
   'UNAVAILABLE',
   'INTERNAL_ERROR',
-]);
+] as const);
 
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 
@@ -18,7 +18,7 @@ export const ApiErrorBodySchema = z.object({
   error: z.object({
     code: ApiErrorCodeSchema,
     message: z.string(),
-    details: z.record(z.unknown()).optional(),
+    details: z.record(z.string(), z.unknown()).optional(),
   }),
   requestId: z.string().optional(),
 });

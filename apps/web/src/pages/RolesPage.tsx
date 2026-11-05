@@ -10,24 +10,22 @@ import {
   type S1Permission,
   type TagResponse,
   type UpdateMembershipInput,
-  type UpdateOrganizationInput,
-  type UpdateTagInput,
 } from '@ribat/shared';
 import { apiFetch } from '../api/api-fetch';
 import { useMembers } from '../api/members';
 import { useMe } from '../hooks/use-me';
 import { fullName } from '../components/MemberCard';
-import { TagFilterChips, TagsSettingsPanel } from '../components/TagsSettingsPanel';
+import { TagFilterChips } from '../components/TagsSettingsPanel';
 import { Button } from '../components/ui/button';
 import {
   Badge,
   Card,
   ErrorText,
   inputClass,
+  FilterChips,
   PageHeader,
 } from '../components/ui/form';
 import { STAFF_PERMISSION_OPTIONS } from '../lib/staff-template-permissions';
-import { cn } from '../lib/utils';
 
 const ASSIGNABLE: AssignableRole[] = ['ORG_ADMIN', 'MEMBER', 'GUARDIAN'];
 const STATUSES: MembershipStatus[] = ['ACTIVE', 'SUSPENDED'];
@@ -94,8 +92,9 @@ export function RolesPage() {
   const [tagFilter, setTagFilter] = useState<string>('all');
   const canListTags = me.data?.permissions.includes('members.manage') ?? false;
   const [orgAdminPerms, setOrgAdminPerms] = useState<S1Permission[]>([]);
-  const [editingTagId, setEditingTagId] = useState<string | null>(null);
-  const [tagDraftPerms, setTagDraftPerms] = useState<S1Permission[]>([]);
+  const [draft, setDraft] = useState<
+    Record<string, { role?: AssignableRole; status?: MembershipStatus }>
+  >({});
 
   const organization = useQuery({
     queryKey: ['organization'],
@@ -142,17 +141,13 @@ export function RolesPage() {
   const filteredRows = useMemo(
     () =>
       (memberships.data ?? []).filter(
-        (row) =>
-          matchesFilter(row, filter) && matchesTagFilter(row, tagFilter),
+        (row) => matchesFilter(row, filter) && matchesTagFilter(row, tagFilter),
       ),
     [memberships.data, filter, tagFilter],
   );
 
   const update = useMutation({
-    mutationFn: ({
-      id,
-      ...patch
-    }: { id: string } & UpdateMembershipInput) =>
+    mutationFn: ({ id, ...patch }: { id: string } & UpdateMembershipInput) =>
       apiFetch<MembershipResponse>(`/api/v1/memberships/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(patch),
@@ -167,23 +162,10 @@ export function RolesPage() {
         method: 'PATCH',
         body: JSON.stringify({
           orgAdminPermissions: permissions,
-        } satisfies UpdateOrganizationInput),
+        }),
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['organization'] });
-      await queryClient.invalidateQueries({ queryKey: ['memberships'] });
-    },
-  });
-
-  const updateTag = useMutation({
-    mutationFn: ({ id, ...body }: { id: string } & UpdateTagInput) =>
-      apiFetch<TagResponse>(`/api/v1/tags/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      }),
-    onSuccess: async () => {
-      setEditingTagId(null);
-      await queryClient.invalidateQueries({ queryKey: ['tags'] });
       await queryClient.invalidateQueries({ queryKey: ['memberships'] });
     },
   });
@@ -206,7 +188,9 @@ export function RolesPage() {
 
       {canManagePrivileges ? (
         <Card title={t('roles.orgAdminPrivileges')}>
-          <p className="mb-3 text-sm text-muted">{t('roles.orgAdminPrivilegesHint')}</p>
+          <p className="mb-3 text-sm text-muted">
+            {t('roles.orgAdminPrivilegesHint')}
+          </p>
           {saveOrgAdminPerms.isError ? (
             <ErrorText error={saveOrgAdminPerms.error} />
           ) : null}
@@ -222,94 +206,16 @@ export function RolesPage() {
         </Card>
       ) : null}
 
-      {canListTags && tagsFeatureOn ? <TagsSettingsPanel /> : null}
-
-      {canManagePrivileges && tagsFeatureOn && tags.isSuccess ? (
-        <Card title={t('roles.tagPrivileges')}>
-          <p className="mb-3 text-sm text-muted">{t('roles.tagPrivilegesHint')}</p>
-          {updateTag.isError ? <ErrorText error={updateTag.error} /> : null}
-          <ul className="divide-y divide-line">
-            {(tags.data ?? []).map((tag) => (
-              <li key={tag.id} className="py-3">
-                {editingTagId === tag.id ? (
-                  <div className="grid gap-3">
-                    <p className="font-medium">{tag.name}</p>
-                    <PermissionPicker
-                      value={tagDraftPerms}
-                      onChange={setTagDraftPerms}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        disabled={updateTag.isPending}
-                        onClick={() =>
-                          updateTag.mutate({
-                            id: tag.id,
-                            permissions: tagDraftPerms,
-                          })
-                        }
-                      >
-                        {t('common.save')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setEditingTagId(null)}
-                      >
-                        {t('common.cancel')}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium">{tag.name}</p>
-                      <p className="mt-1 text-xs text-muted">
-                        {tag.permissions.length
-                          ? tag.permissions
-                              .map((p) =>
-                                t(`permissions.${p}`, { defaultValue: p }),
-                              )
-                              .join(' · ')
-                          : t('roles.noPrivileges')}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingTagId(tag.id);
-                        setTagDraftPerms(tag.permissions);
-                      }}
-                    >
-                      {t('common.edit')}
-                    </Button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
-
       <div className="grid gap-3">
-        <div className="flex flex-wrap gap-2">
-          {filterChips.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium',
-                filter === chip.id
-                  ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-line text-muted',
-              )}
-              onClick={() => setFilter(chip.id)}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips
+          value={filter}
+          onChange={setFilter}
+          aria-label={t('roles.title')}
+          options={filterChips.map((chip) => ({
+            value: chip.id,
+            label: chip.label,
+          }))}
+        />
         {tagsFeatureOn && tags.isSuccess ? (
           <TagFilterChips
             tags={tags.data ?? []}
@@ -321,84 +227,129 @@ export function RolesPage() {
 
       {update.isError ? <ErrorText error={update.error} /> : null}
       {filteredRows.length > 0 || tagFilter === 'all' ? (
-      <Card>
-        <ul className="divide-y divide-line">
-          {filteredRows.map((row) => (
-            <li
-              key={row.id}
-              className="flex flex-wrap items-center justify-between gap-3 py-3"
-            >
-              <div>
-                {row.memberId ? (
-                  <NavButton
-                    to={`/staff/members/${row.memberId}`}
-                    className="font-medium hover:text-accent"
-                  >
-                    {nameOf(row.memberId)}
-                  </NavButton>
-                ) : (
-                  <span className="font-medium">—</span>
-                )}
-                {row.status === 'SUSPENDED' ? (
-                  <span className="ms-2">
-                    <Badge tone="danger">
-                      {t('roles.statusValue.SUSPENDED')}
-                    </Badge>
-                  </span>
-                ) : null}
-                {row.role === 'ORG_ADMIN' || row.role === 'SHEIKH' ? (
-                  <p className="mt-1 text-xs text-muted">
-                    {t(`roles.${row.role}`)}
-                  </p>
-                ) : null}
-              </div>
-              {row.role === 'SHEIKH' ? (
-                <Badge tone="accent">{t('roles.SHEIKH')}</Badge>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    aria-label={t('roles.label')}
-                    className={`${inputClass} w-auto`}
-                    value={row.role}
-                    disabled={update.isPending}
-                    onChange={(e) =>
-                      update.mutate({
-                        id: row.id,
-                        role: e.target.value as AssignableRole,
-                      })
-                    }
-                  >
-                    {ASSIGNABLE.map((role) => (
-                      <option key={role} value={role}>
-                        {t(`roles.${role}`)}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label={t('roles.status')}
-                    className={`${inputClass} w-auto`}
-                    value={row.status}
-                    disabled={update.isPending}
-                    onChange={(e) =>
-                      update.mutate({
-                        id: row.id,
-                        status: e.target.value as MembershipStatus,
-                      })
-                    }
-                  >
-                    {STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {t(`roles.statusValue.${status}`)}
-                      </option>
-                    ))}
-                  </select>
+        <Card>
+          <ul className="divide-y divide-line">
+            {filteredRows.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
+              >
+                <div>
+                  {row.memberId ? (
+                    <NavButton
+                      to={`/staff/members/${row.memberId}`}
+                      className="font-medium hover:text-accent"
+                    >
+                      {nameOf(row.memberId)}
+                    </NavButton>
+                  ) : (
+                    <span className="font-medium">—</span>
+                  )}
+                  {row.status === 'SUSPENDED' ? (
+                    <span className="ms-2">
+                      <Badge tone="danger">
+                        {t('roles.statusValue.SUSPENDED')}
+                      </Badge>
+                    </span>
+                  ) : null}
+                  {row.role === 'ORG_ADMIN' || row.role === 'SHEIKH' ? (
+                    <p className="mt-1 text-xs text-muted">
+                      {t(`roles.${row.role}`)}
+                    </p>
+                  ) : null}
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
-        {memberships.isError ? <ErrorText error={memberships.error} /> : null}
-      </Card>
+                {row.role === 'SHEIKH' ? (
+                  <Badge tone="accent">{t('roles.SHEIKH')}</Badge>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      aria-label={t('roles.label')}
+                      className={`${inputClass} w-auto`}
+                      value={draft[row.id]?.role ?? row.role}
+                      disabled={update.isPending}
+                      onChange={(e) =>
+                        setDraft((current) => ({
+                          ...current,
+                          [row.id]: {
+                            ...current[row.id],
+                            role: e.target.value as AssignableRole,
+                          },
+                        }))
+                      }
+                    >
+                      {ASSIGNABLE.map((role) => (
+                        <option key={role} value={role}>
+                          {t(`roles.${role}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label={t('roles.status')}
+                      className={`${inputClass} w-auto`}
+                      value={draft[row.id]?.status ?? row.status}
+                      disabled={update.isPending}
+                      onChange={(e) =>
+                        setDraft((current) => ({
+                          ...current,
+                          [row.id]: {
+                            ...current[row.id],
+                            status: e.target.value as MembershipStatus,
+                          },
+                        }))
+                      }
+                    >
+                      {STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {t(`roles.statusValue.${status}`)}
+                        </option>
+                      ))}
+                    </select>
+                    {draft[row.id] &&
+                    ((draft[row.id]?.role ?? row.role) !== row.role ||
+                      (draft[row.id]?.status ?? row.status) !== row.status) ? (
+                      <>
+                        <Button
+                          type="button"
+                          disabled={update.isPending}
+                          onClick={() => {
+                            const patch = draft[row.id]!;
+                            update.mutate(
+                              { id: row.id, ...patch },
+                              {
+                                onSuccess: () =>
+                                  setDraft((current) => {
+                                    const next = { ...current };
+                                    delete next[row.id];
+                                    return next;
+                                  }),
+                              },
+                            );
+                          }}
+                        >
+                          {t('roles.applyAccessChange')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setDraft((current) => {
+                              const next = { ...current };
+                              delete next[row.id];
+                              return next;
+                            })
+                          }
+                        >
+                          {t('common.cancel')}
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+          {memberships.isError ? <ErrorText error={memberships.error} /> : null}
+        </Card>
       ) : null}
       {withoutAccess.length ? (
         <Card title={t('roles.noAccess')}>

@@ -16,7 +16,9 @@ import { emit } from '../events/emit';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassScopeService } from '../progress/class-scope.service';
 
-function toHomeworkResponse(row: Homework & { tasks: Pick<HomeworkTask, 'status'>[] }): HomeworkResponse {
+function toHomeworkResponse(
+  row: Homework & { tasks: Pick<HomeworkTask, 'status'>[] },
+): HomeworkResponse {
   const counts = { ASSIGNED: 0, DONE: 0, MISSED: 0 };
   for (const t of row.tasks) counts[t.status] += 1;
   return {
@@ -43,7 +45,11 @@ export class HomeworkService {
     private readonly scope: ClassScopeService,
   ) {}
 
-  async create(org: OrgContext, audit: AuditContext, input: CreateHomeworkInput): Promise<HomeworkResponse> {
+  async create(
+    org: OrgContext,
+    audit: AuditContext,
+    input: CreateHomeworkInput,
+  ): Promise<HomeworkResponse> {
     if (!org.memberId) throw forbidden('Your account has no member profile');
     const scope = await this.scope.forCourse(org, input.courseId, 'write');
     const db = this.prisma.forOrganization(org.organizationId);
@@ -51,15 +57,22 @@ export class HomeworkService {
     let enrollmentIds: string[];
     if (input.targetType === 'MEMBER') {
       const enrollment = await db.enrollment.findFirst({
-        where: { courseId: input.courseId, memberId: input.memberId!, status: 'ACTIVE' },
+        where: {
+          courseId: input.courseId,
+          memberId: input.memberId!,
+          status: 'ACTIVE',
+        },
       });
       if (!enrollment) throw notFound('Enrollment');
       await this.scope.assertStudent(org, scope, enrollment.id);
       enrollmentIds = [enrollment.id];
     } else if (input.targetType === 'GROUP') {
-      const group = await db.courseGroup.findFirst({ where: { id: input.groupId!, courseId: input.courseId } });
+      const group = await db.courseGroup.findFirst({
+        where: { id: input.groupId!, courseId: input.courseId },
+      });
       if (!group) throw notFound('Group');
-      if (scope.groupIds && !scope.groupIds.includes(group.id)) throw forbidden('This is not your group');
+      if (scope.groupIds && !scope.groupIds.includes(group.id))
+        throw forbidden('This is not your group');
       const members = await db.groupMember.findMany({
         where: { groupId: group.id, enrollment: { status: 'ACTIVE' } },
         select: { enrollmentId: true },
@@ -67,7 +80,10 @@ export class HomeworkService {
       enrollmentIds = [...new Set(members.map((m) => m.enrollmentId))];
     } else {
       // A teacher with groups reaches only their own students, even for a course-wide task.
-      const rows = await db.enrollment.findMany({ where: this.scope.enrollmentFilter(scope), select: { id: true } });
+      const rows = await db.enrollment.findMany({
+        where: this.scope.enrollmentFilter(scope),
+        select: { id: true },
+      });
       enrollmentIds = rows.map((r) => r.id);
     }
     if (enrollmentIds.length === 0) throw conflict('Nobody to assign this to');
@@ -100,7 +116,11 @@ export class HomeworkService {
           action: 'homework.assigned',
           entityType: 'homework',
           entityId: homework.id,
-          after: { courseId: input.courseId, targetType: input.targetType, tasks: enrollmentIds.length },
+          after: {
+            courseId: input.courseId,
+            targetType: input.targetType,
+            tasks: enrollmentIds.length,
+          },
         },
         tx,
       );
@@ -108,25 +128,37 @@ export class HomeworkService {
         type: 'homework.assigned',
         aggregateType: 'homework',
         aggregateId: homework.id,
-        payload: { homeworkId: homework.id, courseId: input.courseId, tasks: enrollmentIds.length },
+        payload: {
+          homeworkId: homework.id,
+          courseId: input.courseId,
+          tasks: enrollmentIds.length,
+        },
       });
-      return tx.homework.findFirstOrThrow({ where: { id: homework.id }, include: { tasks: true } });
+      return tx.homework.findFirstOrThrow({
+        where: { id: homework.id },
+        include: { tasks: true },
+      });
     });
     return toHomeworkResponse(row);
   }
 
   async list(org: OrgContext, courseId: string): Promise<HomeworkResponse[]> {
     await this.scope.forCourse(org, courseId, 'read');
-    const rows = await this.prisma.forOrganization(org.organizationId).homework.findMany({
-      where: { courseId },
-      include: { tasks: { select: { status: true } } },
-      orderBy: { dueDate: 'desc' },
-      take: 100,
-    });
+    const rows = await this.prisma
+      .forOrganization(org.organizationId)
+      .homework.findMany({
+        where: { courseId },
+        include: { tasks: { select: { status: true } } },
+        orderBy: { dueDate: 'desc' },
+        take: 100,
+      });
     return rows.map(toHomeworkResponse);
   }
 
-  async tasks(org: OrgContext, homeworkId: string): Promise<HomeworkTaskResponse[]> {
+  async tasks(
+    org: OrgContext,
+    homeworkId: string,
+  ): Promise<HomeworkTaskResponse[]> {
     const db = this.prisma.forOrganization(org.organizationId);
     const homework = await db.homework.findFirst({ where: { id: homeworkId } });
     if (!homework) throw notFound('Homework');
@@ -135,7 +167,16 @@ export class HomeworkService {
       where: {
         homeworkId,
         ...(scope.groupIds
-          ? { enrollmentId: { in: (await db.enrollment.findMany({ where: this.scope.enrollmentFilter(scope), select: { id: true } })).map((e) => e.id) } }
+          ? {
+              enrollmentId: {
+                in: (
+                  await db.enrollment.findMany({
+                    where: this.scope.enrollmentFilter(scope),
+                    select: { id: true },
+                  })
+                ).map((e) => e.id),
+              },
+            }
           : {}),
       },
     });
@@ -161,11 +202,23 @@ export class HomeworkService {
   }
 
   /** "Mark homework done": staff, or the teacher of that student's group. */
-  async mark(org: OrgContext, audit: AuditContext, taskId: string, status: HomeworkTaskStatus): Promise<void> {
+  async mark(
+    org: OrgContext,
+    audit: AuditContext,
+    taskId: string,
+    status: HomeworkTaskStatus,
+  ): Promise<void> {
     const db = this.prisma.forOrganization(org.organizationId);
-    const task = await db.homeworkTask.findFirst({ where: { id: taskId }, include: { homework: true } });
+    const task = await db.homeworkTask.findFirst({
+      where: { id: taskId },
+      include: { homework: true },
+    });
     if (!task) throw notFound('Task');
-    const scope = await this.scope.forCourse(org, task.homework.courseId, 'write');
+    const scope = await this.scope.forCourse(
+      org,
+      task.homework.courseId,
+      'write',
+    );
     await this.scope.assertStudent(org, scope, task.enrollmentId);
     await db.homeworkTask.updateMany({
       where: { id: taskId },

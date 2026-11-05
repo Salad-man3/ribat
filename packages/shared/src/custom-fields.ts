@@ -6,10 +6,15 @@ export const CustomFieldEntityTypeSchema = z.enum([
   'COURSE',
   'PROGRAM',
   'MATERIAL',
-]);
+] as const);
 export type CustomFieldEntityType = z.infer<typeof CustomFieldEntityTypeSchema>;
 
-export const CustomFieldTypeSchema = z.enum(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN']);
+export const CustomFieldTypeSchema = z.enum([
+  'TEXT',
+  'NUMBER',
+  'DATE',
+  'BOOLEAN',
+] as const);
 export type CustomFieldType = z.infer<typeof CustomFieldTypeSchema>;
 
 export const CustomFieldDefinitionResponseSchema = z.object({
@@ -43,17 +48,23 @@ export const UpdateCustomFieldSchema = z.object({
 });
 export type UpdateCustomFieldInput = z.infer<typeof UpdateCustomFieldSchema>;
 
-export const CustomValuesInputSchema = z.record(z.unknown()).optional();
+export const CustomValuesInputSchema = z
+  .record(z.string(), z.unknown())
+  .optional();
 export type CustomValuesInput = z.infer<typeof CustomValuesInputSchema>;
 
 export const CustomValuesSchema = z.record(
+  z.string(),
   z.union([z.string(), z.number(), z.boolean()]),
 );
 export type CustomValues = z.infer<typeof CustomValuesSchema>;
 
 type Def = Pick<CustomFieldDefinitionResponse, 'key' | 'type'>;
 
-function coerceValue(type: CustomFieldType, value: unknown): string | number | boolean | null {
+function coerceValue(
+  type: CustomFieldType,
+  value: unknown,
+): string | number | boolean | null {
   if (value === null || value === undefined || value === '') return null;
   switch (type) {
     case 'TEXT':

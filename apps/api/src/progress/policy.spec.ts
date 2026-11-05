@@ -2,6 +2,7 @@ import {
   clampCapturedAt,
   incomingAttendanceWins,
   summarize,
+  teacherMayEditSession,
   teacherMayWriteSession,
   type LedgerRow,
 } from './policy';
@@ -73,6 +74,25 @@ describe('teacherMayWriteSession', () => {
   });
 });
 
+describe('teacherMayEditSession', () => {
+  const session = {
+    date: new Date('2026-10-08T00:00:00Z'),
+    endsAt: new Date('2026-10-08T19:00:00Z'),
+  };
+
+  it('allows teachers within seven days after the session', () => {
+    expect(
+      teacherMayEditSession(new Date('2026-10-10T12:00:00Z'), session, TZ),
+    ).toBe(true);
+  });
+
+  it('refuses teachers after the edit window', () => {
+    expect(
+      teacherMayEditSession(new Date('2026-10-20T12:00:00Z'), session, TZ),
+    ).toBe(false);
+  });
+});
+
 describe('incomingAttendanceWins', () => {
   const t = new Date('2026-10-15T10:00:00Z');
   it('later or equal markedAt wins', () => {
@@ -130,13 +150,18 @@ describe('summarize', () => {
   });
 
   it('leaves coverage and position unchanged for a test, like a revision', () => {
-    const base = [quran('NEW', [78, 1, 78, 20], [582, 582], '2026-10-01T10:00:00Z')];
+    const base = [
+      quran('NEW', [78, 1, 78, 20], [582, 582], '2026-10-01T10:00:00Z'),
+    ];
     const withTest = summarize([
       ...base,
       quran('TEST', [1, 1, 1, 7], [1, 1], '2026-10-02T10:00:00Z'),
     ]);
     const before = summarize(base);
-    expect(withTest).toEqual({ ...before, lastLoggedAt: new Date('2026-10-02T10:00:00Z') });
+    expect(withTest).toEqual({
+      ...before,
+      lastLoggedAt: new Date('2026-10-02T10:00:00Z'),
+    });
   });
 
   it('takes the last position by class time, not by insertion order', () => {

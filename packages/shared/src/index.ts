@@ -1,5 +1,10 @@
 export { HealthStatusSchema, type HealthStatus } from './health.js';
-export { ApiErrorBodySchema, ApiErrorCodeSchema, type ApiErrorBody, type ApiErrorCode } from './errors.js';
+export {
+  ApiErrorBodySchema,
+  ApiErrorCodeSchema,
+  type ApiErrorBody,
+  type ApiErrorCode,
+} from './errors.js';
 export {
   formatValidationError,
   parseBody,
@@ -7,7 +12,10 @@ export {
   zodErrorToDetails,
   type ValidationDetails,
 } from './validation.js';
-export { CursorPaginationQuerySchema, type CursorPaginationQuery } from './pagination.js';
+export {
+  CursorPaginationQuerySchema,
+  type CursorPaginationQuery,
+} from './pagination.js';
 export {
   AuditLogResponseSchema,
   ListAuditQuerySchema,
@@ -180,6 +188,7 @@ export {
 } from './custom-fields.js';
 export * from './programs.js';
 export * from './courses.js';
+export * from './doroos.js';
 export * from './progress.js';
 export * from './hifz.js';
 export * from './families.js';

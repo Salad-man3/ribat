@@ -29,26 +29,41 @@ describe('quran-data helpers', () => {
 
   it('pagesForRange returns inclusive page span', () => {
     assert.deepEqual(
-      pagesForRange({ start: { surah: 1, ayah: 1 }, end: { surah: 1, ayah: 7 } }),
+      pagesForRange({
+        start: { surah: 1, ayah: 1 },
+        end: { surah: 1, ayah: 7 },
+      }),
       { from: 1, to: 1 },
     );
     assert.deepEqual(
-      pagesForRange({ start: { surah: 1, ayah: 1 }, end: { surah: 2, ayah: 5 } }),
+      pagesForRange({
+        start: { surah: 1, ayah: 1 },
+        end: { surah: 2, ayah: 5 },
+      }),
       { from: 1, to: 2 },
     );
   });
 
   it('validateRange rejects invalid ayahs and reversed ranges', () => {
     assert.equal(
-      validateRange({ start: { surah: 1, ayah: 1 }, end: { surah: 1, ayah: 7 } }),
+      validateRange({
+        start: { surah: 1, ayah: 1 },
+        end: { surah: 1, ayah: 7 },
+      }),
       true,
     );
     assert.equal(
-      validateRange({ start: { surah: 1, ayah: 7 }, end: { surah: 1, ayah: 1 } }),
+      validateRange({
+        start: { surah: 1, ayah: 7 },
+        end: { surah: 1, ayah: 1 },
+      }),
       false,
     );
     assert.equal(
-      validateRange({ start: { surah: 999, ayah: 1 }, end: { surah: 1, ayah: 1 } }),
+      validateRange({
+        start: { surah: 999, ayah: 1 },
+        end: { surah: 1, ayah: 1 },
+      }),
       false,
     );
   });
@@ -68,11 +83,29 @@ describe('quran-data helpers', () => {
   });
 
   it('ayahsInRange counts across surah boundaries', () => {
-    assert.equal(ayahsInRange({ start: { surah: 1, ayah: 1 }, end: { surah: 1, ayah: 7 } }), 7);
+    assert.equal(
+      ayahsInRange({
+        start: { surah: 1, ayah: 1 },
+        end: { surah: 1, ayah: 7 },
+      }),
+      7,
+    );
     // Al-Fatiha (7) + Al-Baqarah 1–5
-    assert.equal(ayahsInRange({ start: { surah: 1, ayah: 1 }, end: { surah: 2, ayah: 5 } }), 12);
+    assert.equal(
+      ayahsInRange({
+        start: { surah: 1, ayah: 1 },
+        end: { surah: 2, ayah: 5 },
+      }),
+      12,
+    );
     // An-Naba 1 to An-Nas 6: the whole of juz 30 = 564 ayahs
-    assert.equal(ayahsInRange({ start: { surah: 78, ayah: 1 }, end: { surah: 114, ayah: 6 } }), 564);
+    assert.equal(
+      ayahsInRange({
+        start: { surah: 78, ayah: 1 },
+        end: { surah: 114, ayah: 6 },
+      }),
+      564,
+    );
   });
 
   it('has 30 juz starts', () => {

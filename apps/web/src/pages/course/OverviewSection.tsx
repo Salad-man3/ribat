@@ -56,9 +56,7 @@ export function OverviewSection({ course, writable }: SectionProps) {
   const schedule = useQuery({
     queryKey: courseKey(course.id, 'schedule'),
     queryFn: () =>
-      apiFetch<ScheduleRuleResponse[]>(
-        `/api/v1/courses/${course.id}/schedule`,
-      ),
+      apiFetch<ScheduleRuleResponse[]>(`/api/v1/courses/${course.id}/schedule`),
   });
   const teachers = useQuery({
     queryKey: courseKey(course.id, 'teachers'),

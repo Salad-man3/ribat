@@ -25,10 +25,14 @@ const EDUCATION_KEYS = [
   'highestEducation',
 ] as const;
 type Values = Record<
-  Exclude<
-    keyof CreateMemberInput,
-    'householdId' | 'customValues' | 'tagIds' | (typeof EDUCATION_KEYS)[number]
-  > | (typeof EDUCATION_KEYS)[number],
+  | Exclude<
+      keyof CreateMemberInput,
+      | 'householdId'
+      | 'customValues'
+      | 'tagIds'
+      | (typeof EDUCATION_KEYS)[number]
+    >
+  | (typeof EDUCATION_KEYS)[number],
   string
 >;
 
@@ -88,7 +92,9 @@ export function MemberForm({
         event.preventDefault();
         const rest = Object.fromEntries(
           Object.entries(values)
-            .filter(([key]) => !(EDUCATION_KEYS as readonly string[]).includes(key))
+            .filter(
+              ([key]) => !(EDUCATION_KEYS as readonly string[]).includes(key),
+            )
             .map(([key, value]) => [key, value.trim()])
             .filter(([, value]) => value !== ''),
         );

@@ -5,8 +5,14 @@ import { SURAH_BY_NUMBER } from '@ribat/quran-data';
 import type { CourseHalaqaWall } from '@ribat/shared';
 import { apiFetch } from '../../api/api-fetch';
 import { courseKey } from '../../api/courses';
-import { HifzJuzStrip } from '../../components/HifzJuzStrip';
+import { HifzLegend, HifzMap } from '../../components/HifzMap';
+import { MemberNameLink } from '../../components/MemberNameLink';
 import { Card, Empty } from '../../components/ui/form';
+import { useCalendar } from '../../lib/calendar';
+import {
+  describeLastRecitation,
+  sameAsPosition,
+} from '../../lib/last-recitation';
 import type { SectionProps } from './types';
 
 function describePosition(
@@ -19,13 +25,18 @@ function describePosition(
   if (p.lastSurah && p.lastAyah) {
     const surah = SURAH_BY_NUMBER.get(p.lastSurah);
     const name = language === 'ar' ? surah?.nameAr : surah?.nameEn;
-    return t('classMode.last', { page: p.lastPageReached, surah: name, ayah: p.lastAyah });
+    return t('classMode.last', {
+      page: p.lastPageReached,
+      surah: name,
+      ayah: p.lastAyah,
+    });
   }
   return t('classMode.lastPage', { page: p.lastPageReached });
 }
 
 export function HalaqaWallSection({ course }: SectionProps) {
   const { t, i18n } = useTranslation();
+  const { calendar } = useCalendar();
   const wall = useQuery({
     queryKey: courseKey(course.id, 'halaqa-wall'),
     queryFn: () =>
@@ -49,29 +60,44 @@ export function HalaqaWallSection({ course }: SectionProps) {
         </p>
       ) : null}
       {!data.students.length ? <Empty>{t('groups.noStudents')}</Empty> : null}
-      {data.students.some((s) => s.juzMemorized) ? (
-        <p className="mb-2 text-xs text-muted">{t('hifz.legendMemorized')}</p>
-      ) : null}
+      {data.students.some((s) => s.juzFills) ? <HifzLegend /> : null}
       <ul className="grid gap-2">
-        {data.students.map((s) => (
-          <li
-            key={s.memberId}
-            className="grid gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-sm"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span dir="auto" className="font-medium">
-                {s.name}
-              </span>
-              <span className="text-xs text-muted">
-                {describePosition(s, i18n.language, t)}
-                {s.loggedToday
-                  ? ` · ${t('classMode.loggedToday')}${s.todayLogCount > 1 ? ` (${s.todayLogCount})` : ''}`
-                  : ''}
-              </span>
-            </div>
-            {s.juzMemorized ? <HifzJuzStrip juzMemorized={s.juzMemorized} /> : null}
-          </li>
-        ))}
+        {data.students.map((s) => {
+          const place = describePosition(s, i18n.language, t);
+          const last = s.lastLog
+            ? describeLastRecitation(s.lastLog, t, i18n.language, calendar)
+            : null;
+          const showProgress = Boolean(
+            s.lastLog &&
+            s.position?.lastPageReached &&
+            !sameAsPosition(s.lastLog, s.position),
+          );
+          return (
+            <li
+              key={s.memberId}
+              className="grid gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-sm"
+            >
+              <div className="grid gap-1">
+                <MemberNameLink memberId={s.memberId} className="text-base">
+                  {s.name}
+                </MemberNameLink>
+                <span className="text-muted">{last ?? place}</span>
+                {showProgress ? (
+                  <span className="text-muted">{place}</span>
+                ) : null}
+                {s.loggedToday ? (
+                  <span className="text-xs text-muted">
+                    {t('classMode.loggedToday')}
+                    {s.todayLogCount > 1 ? ` (${s.todayLogCount})` : ''}
+                  </span>
+                ) : null}
+              </div>
+              {s.juzFills ? (
+                <HifzMap showLegend={false} hifz={{ juzFills: s.juzFills }} />
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );

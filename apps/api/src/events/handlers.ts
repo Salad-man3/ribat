@@ -6,7 +6,11 @@ import type { OrgTx } from '../prisma/prisma.service';
 import type { EventPayload, EventType } from './emit';
 import { resolveAnnouncementMemberIdsForDelivery } from '../announcements/announcement-audience';
 
-type Handler = (tx: OrgTx, event: DomainEvent, p: EventPayload) => Promise<void>;
+type Handler = (
+  tx: OrgTx,
+  event: DomainEvent,
+  p: EventPayload,
+) => Promise<void>;
 const str = (v: EventPayload[string]) => (typeof v === 'string' ? v : '');
 
 /**
@@ -20,8 +24,14 @@ export const HANDLERS: Record<string, Handler> = {
     const replaced = str(p.supersededMemberId);
     if (!replaced || replaced === str(p.markedByMemberId)) return;
     const [enrollment, session] = await Promise.all([
-      tx.enrollment.findFirst({ where: { id: str(p.enrollmentId) }, include: { member: true } }),
-      tx.courseSession.findFirst({ where: { id: str(p.sessionId) }, include: { course: true } }),
+      tx.enrollment.findFirst({
+        where: { id: str(p.enrollmentId) },
+        include: { member: true },
+      }),
+      tx.courseSession.findFirst({
+        where: { id: str(p.sessionId) },
+        include: { course: true },
+      }),
     ]);
     if (!enrollment || !session) return;
     await notify(
@@ -85,10 +95,20 @@ export const HANDLERS: Record<string, Handler> = {
     await notify(
       tx,
       event.organizationId,
-      await identitiesOf(tx, await withGuardians(tx, enrollments.map((e) => e.memberId))),
+      await identitiesOf(
+        tx,
+        await withGuardians(
+          tx,
+          enrollments.map((e) => e.memberId),
+        ),
+      ),
       {
         type: 'HOMEWORK_ASSIGNED',
-        params: { title: homework.title, course: course?.name ?? '', dueDate: toDateString(homework.dueDate) },
+        params: {
+          title: homework.title,
+          course: course?.name ?? '',
+          dueDate: toDateString(homework.dueDate),
+        },
         entityType: 'homework',
         entityId: homework.id,
       },
@@ -98,17 +118,28 @@ export const HANDLERS: Record<string, Handler> = {
 
   /** Decision 10.4: the student, the guardians and the teacher who set it. */
   'notify.homeworkMissed': async (tx, event, p) => {
-    const homework = await tx.homework.findFirst({ where: { id: str(p.homeworkId) } });
-    const member = await tx.member.findFirst({ where: { id: str(p.memberId) } });
+    const homework = await tx.homework.findFirst({
+      where: { id: str(p.homeworkId) },
+    });
+    const member = await tx.member.findFirst({
+      where: { id: str(p.memberId) },
+    });
     if (!homework || !member) return;
-    const people = [...(await withGuardians(tx, [member.id])), homework.createdByMemberId];
+    const people = [
+      ...(await withGuardians(tx, [member.id])),
+      homework.createdByMemberId,
+    ];
     await notify(
       tx,
       event.organizationId,
       await identitiesOf(tx, people),
       {
         type: 'HOMEWORK_MISSED',
-        params: { title: homework.title, student: memberName(member), dueDate: toDateString(homework.dueDate) },
+        params: {
+          title: homework.title,
+          student: memberName(member),
+          dueDate: toDateString(homework.dueDate),
+        },
         entityType: 'homework',
         entityId: homework.id,
       },
@@ -117,7 +148,10 @@ export const HANDLERS: Record<string, Handler> = {
   },
 
   'notify.sessionCancelled': async (tx, event, p) => {
-    const session = await tx.courseSession.findFirst({ where: { id: str(p.sessionId) }, include: { course: true } });
+    const session = await tx.courseSession.findFirst({
+      where: { id: str(p.sessionId) },
+      include: { course: true },
+    });
     if (!session) return;
     const enrolled = await tx.enrollment.findMany({
       where: { courseId: session.courseId, status: 'ACTIVE' },
@@ -126,10 +160,20 @@ export const HANDLERS: Record<string, Handler> = {
     await notify(
       tx,
       event.organizationId,
-      await identitiesOf(tx, await withGuardians(tx, enrolled.map((e) => e.memberId))),
+      await identitiesOf(
+        tx,
+        await withGuardians(
+          tx,
+          enrolled.map((e) => e.memberId),
+        ),
+      ),
       {
         type: 'SCHEDULE_CHANGE',
-        params: { course: session.course.name, date: toDateString(session.date), startsAt: session.startsAt.toISOString() },
+        params: {
+          course: session.course.name,
+          date: toDateString(session.date),
+          startsAt: session.startsAt.toISOString(),
+        },
         entityType: 'course_session',
         entityId: session.id,
       },
@@ -138,8 +182,11 @@ export const HANDLERS: Record<string, Handler> = {
   },
 
   'notify.excuseDecided': async (tx, event, p) => {
-    const excuse = await tx.excuseRequest.findFirst({ where: { id: str(p.excuseId) } });
-    const member = excuse && (await tx.member.findFirst({ where: { id: excuse.memberId } }));
+    const excuse = await tx.excuseRequest.findFirst({
+      where: { id: str(p.excuseId) },
+    });
+    const member =
+      excuse && (await tx.member.findFirst({ where: { id: excuse.memberId } }));
     if (!excuse || !member) return;
     await notify(
       tx,
@@ -161,7 +208,9 @@ export const HANDLERS: Record<string, Handler> = {
   },
 
   'notify.announcement': async (tx, event, p) => {
-    const row = await tx.announcement.findFirst({ where: { id: str(p.announcementId) } });
+    const row = await tx.announcement.findFirst({
+      where: { id: str(p.announcementId) },
+    });
     if (!row) return;
     const memberIds = await resolveAnnouncementMemberIdsForDelivery(tx, row);
     if (memberIds.length === 0) return;
@@ -221,14 +270,29 @@ export const HANDLERS: Record<string, Handler> = {
   'members.closeOnArchive': async (tx, _event, p) => {
     const memberId = str(p.memberId);
     const today = new Date(new Date().toISOString().slice(0, 10));
-    const enrollments = await tx.enrollment.findMany({ where: { memberId, status: 'ACTIVE' }, select: { id: true } });
+    const enrollments = await tx.enrollment.findMany({
+      where: { memberId, status: 'ACTIVE' },
+      select: { id: true },
+    });
     const ids = enrollments.map((e) => e.id);
     await tx.groupMember.deleteMany({ where: { enrollmentId: { in: ids } } });
-    await tx.enrollment.updateMany({ where: { id: { in: ids } }, data: { status: 'WITHDRAWN', endedAt: today } });
-    const memberships = await tx.membership.findMany({ where: { memberId, status: 'ACTIVE' }, select: { id: true, identityId: true } });
-    await tx.membership.updateMany({ where: { id: { in: memberships.map((m) => m.id) } }, data: { status: 'SUSPENDED' } });
+    await tx.enrollment.updateMany({
+      where: { id: { in: ids } },
+      data: { status: 'WITHDRAWN', endedAt: today },
+    });
+    const memberships = await tx.membership.findMany({
+      where: { memberId, status: 'ACTIVE' },
+      select: { id: true, identityId: true },
+    });
+    await tx.membership.updateMany({
+      where: { id: { in: memberships.map((m) => m.id) } },
+      data: { status: 'SUSPENDED' },
+    });
     await tx.authSession.updateMany({
-      where: { identityId: { in: memberships.map((m) => m.identityId) }, revokedAt: null },
+      where: {
+        identityId: { in: memberships.map((m) => m.identityId) },
+        revokedAt: null,
+      },
       data: { revokedAt: new Date() },
     });
   },

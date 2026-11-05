@@ -329,6 +329,47 @@ describe('Courses and scheduling (S2, e2e)', () => {
           .status,
       ).toBe('WITHDRAWN');
     });
+
+    it('moves a student between halaqat atomically', async () => {
+      const from = await createCourse({ name: 'Morning halaqa' });
+      const to = await createCourse({ name: 'Evening halaqa' });
+      const student = await createMember('2012-01-01', 'Mover');
+      const enrolled = await api(sheikh)
+        .post(`/courses/${from}/enrollments`, { memberId: student })
+        .expect(201);
+      const enrollmentId = enrolled.body.enrollment.id;
+
+      const moved = await api(sheikh)
+        .post(`/courses/${from}/enrollments/${enrollmentId}/move`, {
+          toCourseId: to,
+        })
+        .expect(201);
+      expect(moved.body.toEnrollment.courseId).toBe(to);
+      expect(moved.body.toEnrollment.status).toBe('ACTIVE');
+      expect(moved.body.fromEnrollment.status).toBe('WITHDRAWN');
+
+      const fromList = await api(sheikh)
+        .get(`/courses/${from}/enrollments`)
+        .expect(200);
+      expect(
+        fromList.body.find((e: { id: string }) => e.id === enrollmentId)
+          ?.status,
+      ).toBe('WITHDRAWN');
+      const toList = await api(sheikh)
+        .get(`/courses/${to}/enrollments`)
+        .expect(200);
+      expect(
+        toList.body.some(
+          (e: { memberId: string; status: string }) =>
+            e.memberId === student && e.status === 'ACTIVE',
+        ),
+      ).toBe(true);
+
+      const board = await api(sheikh).get('/staff/placement').expect(200);
+      expect(
+        board.body.columns.some((c: { courseId: string }) => c.courseId === to),
+      ).toBe(true);
+    });
   });
 
   describe('groups (T206, DM-06)', () => {
@@ -544,7 +585,7 @@ describe('Courses and scheduling (S2, e2e)', () => {
                     Isha: '19:28',
                   },
                   date: { gregorian: { date: '08-10-2026' } },
-                meta: { timezone: 'Asia/Damascus' },
+                  meta: { timezone: 'Asia/Damascus' },
                 },
               };
           return new Response(JSON.stringify(body), { status: 200 });
@@ -569,6 +610,39 @@ describe('Courses and scheduling (S2, e2e)', () => {
       } finally {
         fetchSpy.mockRestore();
       }
+    });
+  });
+
+  describe('doroos and conflicts', () => {
+    it('creates a one-off dars excluded from the halaqat list', async () => {
+      const studentId = await createMember('2015-01-01', 'DoroosStudent');
+      const day = dateIn(new Date(), 'Asia/Damascus');
+      const created = await api(sheikh)
+        .post('/doroos', {
+          name: 'Special tafsir',
+          type: 'EXPLANATION',
+          date: day,
+          startTime: '10:00',
+          endTime: '11:00',
+          teacherMemberIds: [teacherMemberId],
+          memberIds: [studentId],
+          courseIds: [],
+        })
+        .expect(201);
+      const halaqat = await api(sheikh).get('/courses').expect(200);
+      expect(
+        halaqat.body.some(
+          (c: { id: string }) => c.id === created.body.courseId,
+        ),
+      ).toBe(false);
+      const listed = await api(sheikh)
+        .get(`/doroos?from=${day}&to=${day}`)
+        .expect(200);
+      expect(
+        listed.body.some(
+          (d: { courseId: string }) => d.courseId === created.body.courseId,
+        ),
+      ).toBe(true);
     });
   });
 });

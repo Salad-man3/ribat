@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { CustomValuesInputSchema, CustomValuesSchema } from './custom-fields.js';
+import {
+  CustomValuesInputSchema,
+  CustomValuesSchema,
+} from './custom-fields.js';
 import { isoDate, isoDateTime, requiredName, uuid } from './fields.js';
 import { PrayerMethodSchema } from './organization.js';
 
@@ -62,15 +65,18 @@ export type OrgPrayerTimesResponse = z.infer<
 // Materials (T201)
 // ---------------------------------------------------------------------------
 
-export const MaterialKindSchema = z.enum(['QURAN', 'TEXT', 'BOOK']);
+export const MaterialKindSchema = z.enum(['QURAN', 'TEXT', 'BOOK'] as const);
 export type MaterialKind = z.infer<typeof MaterialKindSchema>;
 
-export const MaterialTrackSchema = z.enum(['MEMORIZATION', 'EXPLANATION']);
+export const MaterialTrackSchema = z.enum([
+  'MEMORIZATION',
+  'EXPLANATION',
+] as const);
 export type MaterialTrack = z.infer<typeof MaterialTrackSchema>;
 
 /** The Quran row is created by the system, one per organization. */
 export const CreateMaterialSchema = z.object({
-  kind: z.enum(['TEXT', 'BOOK']),
+  kind: z.enum(['TEXT', 'BOOK'] as const),
   title: requiredName,
   author: z.string().trim().min(1).optional(),
   totalPages: z.number().int().positive().max(100_000).optional(),
@@ -104,7 +110,11 @@ export type MaterialResponse = z.infer<typeof MaterialResponseSchema>;
 // Courses (T202, T205)
 // ---------------------------------------------------------------------------
 
-export const CourseTypeSchema = z.enum(['MEMORIZATION', 'EXPLANATION', 'BOTH']);
+export const CourseTypeSchema = z.enum([
+  'MEMORIZATION',
+  'EXPLANATION',
+  'BOTH',
+] as const);
 export type CourseType = z.infer<typeof CourseTypeSchema>;
 
 export const CourseStatusSchema = z.enum([
@@ -113,7 +123,7 @@ export const CourseStatusSchema = z.enum([
   'PAUSED',
   'FINISHED',
   'ARCHIVED',
-]);
+] as const);
 export type CourseStatus = z.infer<typeof CourseStatusSchema>;
 
 /** OQ-1. FINISHED is read-only; ARCHIVED hides it from default lists. */
@@ -231,7 +241,7 @@ export type CourseMaterialResponse = z.infer<
   typeof CourseMaterialResponseSchema
 >;
 
-export const TeachingRoleSchema = z.enum(['LEAD', 'TEACHER']);
+export const TeachingRoleSchema = z.enum(['LEAD', 'TEACHER'] as const);
 export type TeachingRole = z.infer<typeof TeachingRoleSchema>;
 
 /** The first active teacher becomes LEAD; pass `role: 'LEAD'` to hand the lead over. */
@@ -269,7 +279,7 @@ export const RequirementTypeSchema = z.enum([
   'MAX_AGE',
   'COMPLETED_COURSE',
   'MANUAL',
-]);
+] as const);
 export type RequirementType = z.infer<typeof RequirementTypeSchema>;
 
 export const CreateRequirementSchema = z.discriminatedUnion('type', [
@@ -309,7 +319,7 @@ export const EnrollmentStatusSchema = z.enum([
   'ACTIVE',
   'WITHDRAWN',
   'COMPLETED',
-]);
+] as const);
 export type EnrollmentStatus = z.infer<typeof EnrollmentStatusSchema>;
 
 export const EnrollSchema = z.object({ memberId: uuid });
@@ -323,7 +333,7 @@ export const EnrollmentWarningSchema = z.object({
     'COMPLETED_COURSE',
     'MANUAL',
     'CAPACITY',
-  ]),
+  ] as const),
   message: z.string(),
 });
 export type EnrollmentWarning = z.infer<typeof EnrollmentWarningSchema>;
@@ -344,6 +354,38 @@ export const EnrollResultSchema = z.object({
   warnings: z.array(EnrollmentWarningSchema),
 });
 export type EnrollResult = z.infer<typeof EnrollResultSchema>;
+
+export const MoveEnrollmentSchema = z.object({
+  toCourseId: uuid,
+});
+export type MoveEnrollmentInput = z.infer<typeof MoveEnrollmentSchema>;
+
+export const MoveEnrollmentResultSchema = z.object({
+  fromEnrollment: EnrollmentResponseSchema,
+  toEnrollment: EnrollmentResponseSchema,
+  warnings: z.array(EnrollmentWarningSchema),
+});
+export type MoveEnrollmentResult = z.infer<typeof MoveEnrollmentResultSchema>;
+
+export const PlacementBoardEntrySchema = z.object({
+  enrollmentId: uuid,
+  memberId: uuid,
+  memberName: z.string(),
+});
+export type PlacementBoardEntry = z.infer<typeof PlacementBoardEntrySchema>;
+
+export const PlacementBoardColumnSchema = z.object({
+  courseId: uuid,
+  courseName: z.string(),
+  students: z.array(PlacementBoardEntrySchema),
+});
+export type PlacementBoardColumn = z.infer<typeof PlacementBoardColumnSchema>;
+
+export const PlacementBoardSchema = z.object({
+  columns: z.array(PlacementBoardColumnSchema),
+  unassigned: z.array(z.object({ memberId: uuid, memberName: z.string() })),
+});
+export type PlacementBoard = z.infer<typeof PlacementBoardSchema>;
 
 // ---------------------------------------------------------------------------
 // Groups (T206)
@@ -390,7 +432,7 @@ export const PrayerSchema = z.enum([
   'ASR',
   'MAGHRIB',
   'ISHA',
-]);
+] as const);
 export type Prayer = z.infer<typeof PrayerSchema>;
 
 /** "From Asr to 18:00" = start {PRAYER, ASR, 0}, end {FIXED, 18:00}. */
@@ -445,7 +487,11 @@ export const PauseResponseSchema = z.object({
 });
 export type PauseResponse = z.infer<typeof PauseResponseSchema>;
 
-export const SessionStatusSchema = z.enum(['SCHEDULED', 'HELD', 'CANCELLED']);
+export const SessionStatusSchema = z.enum([
+  'SCHEDULED',
+  'HELD',
+  'CANCELLED',
+] as const);
 
 export const ListSessionsQuerySchema = z
   .object({ from: isoDate.optional(), to: isoDate.optional() })
@@ -463,6 +509,8 @@ export const SessionResponseSchema = z.object({
   endsAt: isoDateTime,
   status: SessionStatusSchema,
   topic: z.string().nullable(),
+  attendanceCount: z.number().int().nonnegative().optional(),
+  rosterCount: z.number().int().nonnegative().optional(),
 });
 export type SessionResponse = z.infer<typeof SessionResponseSchema>;
 
@@ -485,6 +533,7 @@ export const StaffTodayOverviewSchema = z.object({
   absenceCount: z.number().int(),
   absences: z.array(
     z.object({
+      memberId: uuid,
       memberName: z.string(),
       courseName: z.string(),
     }),
@@ -492,6 +541,7 @@ export const StaffTodayOverviewSchema = z.object({
   memorizationLogCount: z.number().int(),
   memorizationLogs: z.array(
     z.object({
+      memberId: uuid,
       memberName: z.string(),
       courseName: z.string(),
       pageFrom: z.number().int(),

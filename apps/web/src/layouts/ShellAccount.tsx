@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { MembershipRole } from '@ribat/shared';
 import { Button } from '../components/ui/button';
 import { ThemePicker } from '../components/ThemePicker';
+import { CalendarPicker } from '../components/CalendarPicker';
 import { cn } from '../lib/utils';
 
 const rowClass =
@@ -53,6 +54,7 @@ export function ShellAccount({
       >
         {i18n.language === 'ar' ? t('switchToEnglish') : t('switchToArabic')}
       </Button>
+      <CalendarPicker variant="chrome" className={cn(rowClass, 'border-0')} />
       <ThemePicker
         variant="chrome"
         className={cn(rowClass, 'justify-start border-0')}
@@ -60,7 +62,10 @@ export function ShellAccount({
       <Button
         type="button"
         variant="chrome"
-        className={cn(rowClass, 'justify-start text-chrome-muted hover:text-chrome-ink')}
+        className={cn(
+          rowClass,
+          'justify-start text-chrome-muted hover:text-chrome-ink',
+        )}
         onClick={onSignOut}
       >
         {t('shell.signOut')}

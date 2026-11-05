@@ -23,10 +23,12 @@ export class ProgramsService {
   ) {}
 
   async list(organizationId: string): Promise<ProgramResponse[]> {
-    const rows = await this.prisma.forOrganization(organizationId).program.findMany({
-      where: { archivedAt: null },
-      orderBy: { name: 'asc' },
-    });
+    const rows = await this.prisma
+      .forOrganization(organizationId)
+      .program.findMany({
+        where: { archivedAt: null },
+        orderBy: { name: 'asc' },
+      });
     return rows.map(toProgramResponse);
   }
 
@@ -44,15 +46,19 @@ export class ProgramsService {
             'PROGRAM',
             customPatch,
           );
-    const row = await this.prisma.forOrganization(organizationId).program.create({
-      data: {
-        organizationId,
-        name: rest.name,
-        startDate: rest.startDate ? fromDateString(rest.startDate) : undefined,
-        endDate: rest.endDate ? fromDateString(rest.endDate) : undefined,
-        customValues,
-      },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .program.create({
+        data: {
+          organizationId,
+          name: rest.name,
+          startDate: rest.startDate
+            ? fromDateString(rest.startDate)
+            : undefined,
+          endDate: rest.endDate ? fromDateString(rest.endDate) : undefined,
+          customValues,
+        },
+      });
     await this.audit.record(auditCtx, {
       action: 'program.created',
       entityType: 'program',
@@ -114,9 +120,7 @@ export class ProgramsService {
           select: { id: true },
         });
       await Promise.all(
-        courses.map((c) =>
-          this.sessions.generateCourse(organizationId, c.id),
-        ),
+        courses.map((c) => this.sessions.generateCourse(organizationId, c.id)),
       );
     }
     return toProgramResponse(after);
@@ -144,9 +148,11 @@ export class ProgramsService {
   }
 
   private async find(organizationId: string, id: string) {
-    const row = await this.prisma.forOrganization(organizationId).program.findFirst({
-      where: { id },
-    });
+    const row = await this.prisma
+      .forOrganization(organizationId)
+      .program.findFirst({
+        where: { id },
+      });
     if (!row) throw notFound('Program');
     return row;
   }

@@ -24,7 +24,10 @@ export type ResultEntry = {
  */
 export type KitRow = { id: 'current'; kit: ClassKit; previous?: ClassKit };
 
-export type MetaRow = { key: 'lastSyncedAt' | 'needsLogin'; value: number | boolean };
+export type MetaRow = {
+  key: 'lastSyncedAt' | 'needsLogin';
+  value: number | boolean;
+};
 
 /** 05-offline-sync §3. SYNC-05: any change here ships a new `version()` and a replay test. */
 export class OfflineDb extends Dexie {

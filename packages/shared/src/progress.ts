@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { SessionResponseSchema, wallTime } from './courses.js';
+import {
+  CourseTypeSchema,
+  SessionResponseSchema,
+  wallTime,
+} from './courses.js';
 import { isoDate, isoDateTime, uuid } from './fields.js';
 import { RecitationKindResponseSchema } from './hifz.js';
 
@@ -13,16 +17,31 @@ export const AttendanceStatusSchema = z.enum([
   'ABSENT',
   'LATE',
   'EXCUSED',
-]);
+] as const);
 export type AttendanceStatus = z.infer<typeof AttendanceStatusSchema>;
 
-export const MemorizationTypeSchema = z.enum(['NEW', 'REVISION', 'INITIAL', 'TEST']);
+export const MemorizationTypeSchema = z.enum([
+  'NEW',
+  'REVISION',
+  'INITIAL',
+  'TEST',
+] as const);
 export type MemorizationType = z.infer<typeof MemorizationTypeSchema>;
 
-export const GradeSchema = z.enum(['EXCELLENT', 'VERY_GOOD', 'GOOD', 'REPEAT']);
+export const GradeSchema = z.enum([
+  'EXCELLENT',
+  'VERY_GOOD',
+  'GOOD',
+  'REPEAT',
+] as const);
 export type Grade = z.infer<typeof GradeSchema>;
 
-export const TestScopeSchema = z.enum(['JUZ', 'SURAH', 'RANGE', 'TEXT_PAGES']);
+export const TestScopeSchema = z.enum([
+  'JUZ',
+  'SURAH',
+  'RANGE',
+  'TEXT_PAGES',
+] as const);
 export type TestScope = z.infer<typeof TestScopeSchema>;
 
 /** Device time with its offset, e.g. 2026-09-18T15:04:11+03:00. */
@@ -156,7 +175,7 @@ export const SyncResultStatusSchema = z.enum([
   'duplicate',
   'superseded',
   'rejected',
-]);
+] as const);
 export type SyncResultStatus = z.infer<typeof SyncResultStatusSchema>;
 
 export const SyncResultSchema = z.object({
@@ -164,7 +183,7 @@ export const SyncResultSchema = z.object({
   status: SyncResultStatusSchema,
   entityId: uuid.optional(),
   /** The winning row, for `superseded`. */
-  server: z.record(z.unknown()).optional(),
+  server: z.record(z.string(), z.unknown()).optional(),
   error: z.object({ code: z.string(), message: z.string() }).optional(),
 });
 export type SyncResult = z.infer<typeof SyncResultSchema>;
@@ -269,7 +288,7 @@ export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
 
 export const UpdateSessionSchema = z
   .object({
-    status: z.enum(['SCHEDULED', 'CANCELLED']).optional(),
+    status: z.enum(['SCHEDULED', 'CANCELLED'] as const).optional(),
     topic: z.string().trim().max(200).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to change' });
@@ -298,8 +317,15 @@ export const RosterEntrySchema = z.object({
 });
 export type RosterEntry = z.infer<typeof RosterEntrySchema>;
 
+export const SessionForClassViewSchema = SessionResponseSchema.extend({
+  courseName: z.string(),
+  courseType: CourseTypeSchema,
+  testPassMark: z.number().int(),
+});
+export type SessionForClassView = z.infer<typeof SessionForClassViewSchema>;
+
 export const SessionAttendanceResponseSchema = z.object({
-  session: SessionResponseSchema,
+  session: SessionForClassViewSchema,
   roster: z.array(RosterEntrySchema),
 });
 export type SessionAttendanceResponse = z.infer<
@@ -364,6 +390,27 @@ export const MaterialLogResponseSchema = z.object({
 });
 export type MaterialLogResponse = z.infer<typeof MaterialLogResponseSchema>;
 
+export const JuzFillSchema = z.object({
+  juz: z.number().int().min(1).max(30),
+  newPages: z.number().int().nonnegative(),
+  initialPages: z.number().int().nonnegative(),
+  totalPages: z.number().int().positive(),
+  certified: z.boolean(),
+});
+export type JuzFill = z.infer<typeof JuzFillSchema>;
+
+export const LastRecitationSchema = z.object({
+  type: MemorizationTypeSchema,
+  pageFrom: z.number().int(),
+  pageTo: z.number().int(),
+  surahStart: z.number().int().nullable(),
+  ayahStart: z.number().int().nullable(),
+  surahEnd: z.number().int().nullable(),
+  ayahEnd: z.number().int().nullable(),
+  loggedAt: isoDateTime,
+});
+export type LastRecitation = z.infer<typeof LastRecitationSchema>;
+
 export const MemorizationSummaryResponseSchema = z.object({
   memberId: uuid,
   materialId: uuid,
@@ -412,12 +459,12 @@ export const ClassKitSchema = z.object({
       id: uuid,
       courseId: uuid,
       courseName: z.string(),
-      courseType: z.enum(['MEMORIZATION', 'EXPLANATION', 'BOTH']),
+      courseType: z.enum(['MEMORIZATION', 'EXPLANATION', 'BOTH'] as const),
       testPassMark: z.number().int(),
       date: isoDate,
       startsAt: isoDateTime,
       endsAt: isoDateTime,
-      status: z.enum(['SCHEDULED', 'HELD', 'CANCELLED']),
+      status: z.enum(['SCHEDULED', 'HELD', 'CANCELLED'] as const),
       topic: z.string().nullable(),
       /** The teacher's groups in this course; empty when the course has no groups. */
       groupIds: z.array(uuid),
@@ -436,8 +483,8 @@ export const ClassKitSchema = z.object({
       courseId: uuid,
       materialId: uuid,
       title: z.string(),
-      kind: z.enum(['QURAN', 'TEXT', 'BOOK']),
-      track: z.enum(['MEMORIZATION', 'EXPLANATION']),
+      kind: z.enum(['QURAN', 'TEXT', 'BOOK'] as const),
+      track: z.enum(['MEMORIZATION', 'EXPLANATION'] as const),
       totalPages: z.number().int().nullable(),
     }),
   ),
@@ -453,6 +500,8 @@ export const ClassKitSchema = z.object({
       memberId: uuid,
       materialId: uuid,
       juzMemorized: z.array(z.number().int().min(1).max(30)),
+      juzFills: z.array(JuzFillSchema),
+      lastLog: LastRecitationSchema.nullable(),
     }),
   ),
 });
@@ -478,6 +527,8 @@ export const CourseHalaqaWallSchema = z.object({
       loggedToday: z.boolean(),
       todayLogCount: z.number().int(),
       juzMemorized: z.array(z.number().int().min(1).max(30)).optional(),
+      juzFills: z.array(JuzFillSchema).optional(),
+      lastLog: LastRecitationSchema.nullable().optional(),
     }),
   ),
 });

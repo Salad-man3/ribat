@@ -41,7 +41,8 @@ export class ProgramsController {
   create(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Body(createZodValidationPipe(CreateProgramSchema)) body: CreateProgramInput,
+    @Body(createZodValidationPipe(CreateProgramSchema))
+    body: CreateProgramInput,
   ) {
     return this.programs.create(org.organizationId, body, audit);
   }
@@ -52,7 +53,8 @@ export class ProgramsController {
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
     @Param('id', id) programId: string,
-    @Body(createZodValidationPipe(UpdateProgramSchema)) body: UpdateProgramInput,
+    @Body(createZodValidationPipe(UpdateProgramSchema))
+    body: UpdateProgramInput,
   ) {
     return this.programs.update(org.organizationId, programId, body, audit);
   }

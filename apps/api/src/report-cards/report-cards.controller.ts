@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   CreateReportCardSchema,
   ListReportCardsQuerySchema,
@@ -7,7 +16,12 @@ import {
   type ListReportCardsQuery,
   type UpdateReportCardCommentInput,
 } from '@ribat/shared';
-import { CurrentAudit, CurrentOrg, OrgRoute, type OrgContext } from '../auth/org-context.guard';
+import {
+  CurrentAudit,
+  CurrentOrg,
+  OrgRoute,
+  type OrgContext,
+} from '../auth/org-context.guard';
 import type { AuditContext } from '../audit/audit-context';
 import { createZodValidationPipe } from '../common/zod-validation.pipe';
 import { ReportCardsService } from './report-cards.service';
@@ -20,7 +34,8 @@ export class ReportCardsController {
   @OrgRoute()
   list(
     @CurrentOrg() org: OrgContext,
-    @Query(createZodValidationPipe(ListReportCardsQuerySchema)) query: ListReportCardsQuery,
+    @Query(createZodValidationPipe(ListReportCardsQuerySchema))
+    query: ListReportCardsQuery,
   ) {
     return this.cards.list(org, query);
   }
@@ -30,7 +45,8 @@ export class ReportCardsController {
   create(
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
-    @Body(createZodValidationPipe(CreateReportCardSchema)) body: CreateReportCardInput,
+    @Body(createZodValidationPipe(CreateReportCardSchema))
+    body: CreateReportCardInput,
   ) {
     return this.cards.create(org, body, audit);
   }
@@ -47,7 +63,8 @@ export class ReportCardsController {
     @CurrentOrg() org: OrgContext,
     @CurrentAudit() audit: AuditContext,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(createZodValidationPipe(UpdateReportCardCommentSchema)) body: UpdateReportCardCommentInput,
+    @Body(createZodValidationPipe(UpdateReportCardCommentSchema))
+    body: UpdateReportCardCommentInput,
   ) {
     return this.cards.updateComment(org, id, body, audit);
   }

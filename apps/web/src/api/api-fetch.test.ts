@@ -76,6 +76,8 @@ describe('apiFetch', () => {
     vi.resetModules();
     const { apiFetch: demoFetch } = await import('./api-fetch');
 
-    await expect(demoFetch('/api/v1/ping')).rejects.toThrow(/Demo client is only available/);
+    await expect(demoFetch('/api/v1/ping')).rejects.toThrow(
+      /Demo client is only available/,
+    );
   });
 });

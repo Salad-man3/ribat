@@ -30,11 +30,15 @@ export function PublishedReportCards({
         <ul className="divide-y divide-line text-sm">
           {cards.data.map((c) => (
             <li key={c.id} className="py-2">
-              <Link to={`${basePath}/reports/cards/${c.id}`} className="font-medium hover:text-accent">
+              <Link
+                to={`${basePath}/reports/cards/${c.id}`}
+                className="font-medium hover:text-accent"
+              >
                 {c.courseName ?? t('reportCards.allCourses')}
               </Link>
               <p className="text-xs text-muted">
-                {formatGregorianNumeric(c.periodStart)} – {formatGregorianNumeric(c.periodEnd)}
+                {formatGregorianNumeric(c.periodStart)} –{' '}
+                {formatGregorianNumeric(c.periodEnd)}
               </p>
             </li>
           ))}

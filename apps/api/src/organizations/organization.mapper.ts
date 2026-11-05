@@ -22,7 +22,9 @@ type OrganizationSettings = {
   whatsappSetupTemplate?: string | null;
 };
 
-export function readOrganizationSettings(raw: Prisma.JsonValue): OrganizationSettings {
+export function readOrganizationSettings(
+  raw: Prisma.JsonValue,
+): OrganizationSettings {
   return readSettings(raw);
 }
 
@@ -41,7 +43,9 @@ export function orgAdminPermissionsFromSettings(
   return S1PermissionSchema.array().parse(settings.orgAdminPermissions);
 }
 
-export function toOrganizationResponse(org: Organization): OrganizationResponse {
+export function toOrganizationResponse(
+  org: Organization,
+): OrganizationResponse {
   const settings = readSettings(org.settings);
   const prayerOffsets = PrayerOffsetsSchema.safeParse(org.prayerOffsets).success
     ? (org.prayerOffsets as PrayerOffsets)
@@ -49,8 +53,9 @@ export function toOrganizationResponse(org: Organization): OrganizationResponse 
   const prayerMethod = PrayerMethodSchema.safeParse(org.prayerMethod).success
     ? (org.prayerMethod as PrayerMethod)
     : 'MuslimWorldLeague';
-  const orgAdminPermissions =
-    orgAdminPermissionsFromSettings(org.settings) ?? [...STAFF_ADMIN_PERMISSIONS];
+  const orgAdminPermissions = orgAdminPermissionsFromSettings(org.settings) ?? [
+    ...STAFF_ADMIN_PERMISSIONS,
+  ];
 
   return {
     id: org.id,
@@ -91,8 +96,10 @@ export function mergeUpdateData(
   const settings = readSettings(current.settings);
   const nextSettings: OrganizationSettings = { ...settings };
   if (input.locale !== undefined) nextSettings.locale = input.locale;
-  if (input.pointsEnabled !== undefined) nextSettings.pointsEnabled = input.pointsEnabled;
-  if (input.tagsEnabled !== undefined) nextSettings.tagsEnabled = input.tagsEnabled;
+  if (input.pointsEnabled !== undefined)
+    nextSettings.pointsEnabled = input.pointsEnabled;
+  if (input.tagsEnabled !== undefined)
+    nextSettings.tagsEnabled = input.tagsEnabled;
   if (input.orgAdminPermissions !== undefined) {
     nextSettings.orgAdminPermissions = input.orgAdminPermissions;
   }
@@ -106,6 +113,7 @@ export function mergeUpdateData(
   if (input.latitude !== undefined) data.latitude = input.latitude;
   if (input.longitude !== undefined) data.longitude = input.longitude;
   if (input.prayerMethod !== undefined) data.prayerMethod = input.prayerMethod;
-  if (input.prayerOffsets !== undefined) data.prayerOffsets = input.prayerOffsets;
+  if (input.prayerOffsets !== undefined)
+    data.prayerOffsets = input.prayerOffsets;
   return data;
 }

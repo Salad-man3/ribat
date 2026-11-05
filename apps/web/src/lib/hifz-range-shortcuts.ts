@@ -166,7 +166,10 @@ export function applyHifzShortcut(
   }
 }
 
-export function stepEndByPage(range: AyahRangeState, delta: number): AyahRangeState | null {
+export function stepEndByPage(
+  range: AyahRangeState,
+  delta: number,
+): AyahRangeState | null {
   const startRef = { surah: range.surahStart, ayah: range.ayahStart };
   const endPage = pageForAyah({ surah: range.surahEnd, ayah: range.ayahEnd });
   const targetPage = Math.min(604, Math.max(1, endPage + delta));
@@ -178,7 +181,10 @@ export function stepEndByPage(range: AyahRangeState, delta: number): AyahRangeSt
   return isValidAyahRangeState(next) ? next : null;
 }
 
-export function stepEndBySurah(range: AyahRangeState, delta: number): AyahRangeState | null {
+export function stepEndBySurah(
+  range: AyahRangeState,
+  delta: number,
+): AyahRangeState | null {
   let surah = range.surahEnd + delta;
   if (surah < 1 || surah > 114) return null;
   if (surah < range.surahStart) surah = range.surahStart;
@@ -190,7 +196,9 @@ export function stepEndBySurah(range: AyahRangeState, delta: number): AyahRangeS
   return isValidAyahRangeState(next) ? next : null;
 }
 
-export function rangeStats(range: AyahRangeState): { pages: number; ayahs: number } | null {
+export function rangeStats(
+  range: AyahRangeState,
+): { pages: number; ayahs: number } | null {
   const span = stateToSpan(range);
   if (!validateRange(span)) return null;
   const { from, to } = pagesForRange(span);

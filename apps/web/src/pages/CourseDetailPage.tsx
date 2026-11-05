@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import type { MyCourseResponse, SessionResponse } from '@ribat/shared';
 import { apiFetch, ApiError } from '../api/api-fetch';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
-import { NavButton } from '../components/ui/nav-button';
+import { useParams, useSearchParams } from 'react-router';
 import { courseKey, useCourse } from '../api/courses';
-import { Badge, ErrorText, SectionNav } from '../components/ui/form';
+import { BackLink, Badge, ErrorText, Segmented } from '../components/ui/form';
 import { useActiveMembership } from '../hooks/use-me';
 import { isWritable, today } from '../lib/domain';
 import { statusTone } from './CoursesPage';
@@ -16,7 +16,11 @@ import { OverviewSection } from './course/OverviewSection';
 import { StudentsSection, TeachersSection } from './course/PeopleSections';
 import { HalaqaWallSection } from './course/HalaqaWallSection';
 import { ScheduleSection } from './course/ScheduleSection';
+import { CourseTodayCard } from './course/CourseTodayCard';
+import { CourseSessionsSection } from './course/CourseSessionsSection';
 import { NotFoundPage } from './NotFoundPage';
+
+type CourseTab = 'overview' | 'wall' | 'people' | 'plan' | 'sessions';
 
 /**
  * One page for staff (/staff/courses/:id) and for the course's teachers (/member/courses/:id).
@@ -28,6 +32,23 @@ export function CourseDetailPage() {
   const { can } = useActiveMembership();
   const course = useCourse(id);
   const staff = can('courses.manage');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab: CourseTab =
+    tabFromUrl === 'overview' ||
+    tabFromUrl === 'wall' ||
+    tabFromUrl === 'people' ||
+    tabFromUrl === 'plan' ||
+    tabFromUrl === 'sessions'
+      ? tabFromUrl
+      : staff
+        ? 'people'
+        : 'wall';
+  const [tab, setTab] = useState<CourseTab>(initialTab);
+  const setCourseTab = (next: CourseTab) => {
+    setTab(next);
+    setSearchParams({ tab: next }, { replace: true });
+  };
   const myCourses = useQuery({
     queryKey: ['me', 'courses'],
     queryFn: () => apiFetch<MyCourseResponse[]>('/api/v1/me/courses'),
@@ -56,34 +77,21 @@ export function CourseDetailPage() {
   const data = course.data;
   const writable = isWritable(data.status);
   const ctx = { course: data, staff, writable, canOpenClass };
-  const openSession = (todaySessions.data ?? []).find(
-    (s) => s.status !== 'CANCELLED',
-  );
-
-  const sectionItems = [
+  const tabOptions: { value: CourseTab; label: string }[] = [
     ...(staff
-      ? [{ id: 'course-overview', label: t('courses.overview') }]
+      ? [{ value: 'overview' as const, label: t('courses.overview') }]
       : []),
-    { id: 'course-wall', label: t('hifz.halaqaWallTitle') },
-    { id: 'course-materials', label: t('materials.courseTitle') },
-    { id: 'course-teachers', label: t('teachers.title') },
-    { id: 'course-students', label: t('students.title') },
-    ...(data.isHierarchical && data.hasGroups
-      ? [{ id: 'course-groups', label: t('groups.title') }]
-      : []),
-    { id: 'course-schedule', label: t('schedule.title') },
-    { id: 'course-homework', label: t('homework.title') },
+    { value: 'wall', label: t('hifz.halaqaWallTitle') },
+    { value: 'people', label: t('courses.tabPeople') },
+    { value: 'sessions', label: t('courses.tabSessions') },
+    { value: 'plan', label: t('courses.tabPlan') },
   ];
 
   return (
     <section className="grid gap-6">
-      <NavButton
-        to={staff ? '/staff/courses' : '/member'}
-        className="text-sm text-accent"
-      >
-        <span className="inline-block rtl:rotate-180">←</span>{' '}
+      <BackLink to={staff ? '/staff/courses' : '/member'}>
         {staff ? t('courses.title') : t('nav.member')}
-      </NavButton>
+      </BackLink>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
@@ -103,50 +111,45 @@ export function CourseDetailPage() {
         </p>
       ) : null}
 
-      {openSession && canOpenClass ? (
-        <NavButton
-          to={`/teach/${openSession.id}`}
-          className="block w-full rounded-xl border border-accent bg-paper px-4 py-3 text-start text-sm font-semibold text-accent hover:bg-accent-soft"
-        >
-          {t('staff.openClass')} — {t('courses.todaySession')}
-        </NavButton>
-      ) : null}
+      <CourseTodayCard
+        {...ctx}
+        todaySessions={todaySessions.data}
+        sessionsLoading={todaySessions.isLoading}
+      />
 
-      <SectionNav items={sectionItems} />
+      <Segmented
+        value={tab}
+        onChange={setCourseTab}
+        aria-label={data.name}
+        options={tabOptions}
+      />
 
-      {staff ? (
-        <div id="course-overview" className="record-section">
-          <OverviewSection {...ctx} />
-        </div>
-      ) : null}
-      <div id="course-wall" className="record-section">
-        <HalaqaWallSection {...ctx} />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div id="course-materials" className="record-section">
+      {tab === 'overview' && staff ? <OverviewSection {...ctx} /> : null}
+      {tab === 'wall' ? <HalaqaWallSection {...ctx} /> : null}
+      {tab === 'people' ? (
+        <div className="grid gap-6 lg:grid-cols-2">
           <MaterialsSection
             {...ctx}
             canEdit={writable && (staff ? can('materials.manage') : true)}
           />
-        </div>
-        <div id="course-teachers" className="record-section">
           <TeachersSection {...ctx} />
-        </div>
-      </div>
-      <div id="course-students" className="record-section">
-        <StudentsSection {...ctx} />
-      </div>
-      {data.isHierarchical && data.hasGroups ? (
-        <div id="course-groups" className="record-section">
-          <GroupsSection {...ctx} />
+          <div className="lg:col-span-2">
+            <StudentsSection {...ctx} />
+          </div>
+          {data.isHierarchical && data.hasGroups ? (
+            <div className="lg:col-span-2">
+              <GroupsSection {...ctx} />
+            </div>
+          ) : null}
         </div>
       ) : null}
-      <div id="course-schedule" className="record-section">
-        <ScheduleSection {...ctx} />
-      </div>
-      <div id="course-homework" className="record-section">
-        <HomeworkSection {...ctx} />
-      </div>
+      {tab === 'sessions' ? <CourseSessionsSection {...ctx} /> : null}
+      {tab === 'plan' ? (
+        <div className="grid gap-6">
+          <ScheduleSection {...ctx} />
+          <HomeworkSection {...ctx} />
+        </div>
+      ) : null}
     </section>
   );
 }

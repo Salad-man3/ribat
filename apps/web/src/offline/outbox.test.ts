@@ -33,10 +33,17 @@ let store: OfflineDb;
 let sent: SyncMutationInput[][];
 
 const answer =
-  (status: (m: SyncMutationInput) => SyncResponse['results'][number]['status']) =>
+  (
+    status: (m: SyncMutationInput) => SyncResponse['results'][number]['status'],
+  ) =>
   async (mutations: SyncMutationInput[]): Promise<SyncResponse> => {
     sent.push(mutations);
-    return { results: mutations.map((m) => ({ idempotencyKey: m.idempotencyKey, status: status(m) })) };
+    return {
+      results: mutations.map((m) => ({
+        idempotencyKey: m.idempotencyKey,
+        status: status(m),
+      })),
+    };
   };
 
 beforeEach(async () => {
@@ -60,12 +67,24 @@ describe('outbox', () => {
   });
 
   it('stamps device time with its offset', () => {
-    expect(localIso(new Date())).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$/);
+    expect(localIso(new Date())).toMatch(
+      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$/,
+    );
   });
 
   it('refuses a payload the API would refuse, before it is queued (SYNC-07)', async () => {
     await expect(
-      enqueue({ type: 'attendance.mark', payload: { sessionId: 'nope', enrollmentId: enrollment(1), status: 'PRESENT' } }, store),
+      enqueue(
+        {
+          type: 'attendance.mark',
+          payload: {
+            sessionId: 'nope',
+            enrollmentId: enrollment(1),
+            status: 'PRESENT',
+          },
+        },
+        store,
+      ),
     ).rejects.toThrow();
     expect(await store.outbox.count()).toBe(0);
   });
@@ -74,10 +93,19 @@ describe('outbox', () => {
     const a = await enqueue(markDraft(1), store);
     const b = await enqueue(markDraft(2), store);
     const c = await enqueue(markDraft(3), store);
-    expect(await flush(store, answer(() => 'applied'))).toBe('ok');
-    expect(sent[0].map((m) => m.idempotencyKey)).toEqual([a, b, c].map((e) => e.idempotencyKey));
+    expect(
+      await flush(
+        store,
+        answer(() => 'applied'),
+      ),
+    ).toBe('ok');
+    expect(sent[0].map((m) => m.idempotencyKey)).toEqual(
+      [a, b, c].map((e) => e.idempotencyKey),
+    );
     expect(await store.outbox.count()).toBe(0);
-    expect((await store.meta.get('lastSyncedAt'))?.value).toEqual(expect.any(Number));
+    expect((await store.meta.get('lastSyncedAt'))?.value).toEqual(
+      expect.any(Number),
+    );
   });
 
   it('keeps the queue and the same keys through a network failure (SYNC-06)', async () => {
@@ -86,7 +114,12 @@ describe('outbox', () => {
       throw new TypeError('Failed to fetch');
     };
     expect(await flush(store, offline)).toBe('offline');
-    expect(await flush(store, answer(() => 'duplicate'))).toBe('ok');
+    expect(
+      await flush(
+        store,
+        answer(() => 'duplicate'),
+      ),
+    ).toBe('ok');
     expect(sent[0][0].idempotencyKey).toBe(entry.idempotencyKey);
     expect(await store.outbox.count()).toBe(0);
   });
@@ -94,7 +127,10 @@ describe('outbox', () => {
   it('keeps the queue when the session expired, and asks for the password (SYNC-15)', async () => {
     await enqueue(markDraft(1), store);
     const expired = async () => {
-      throw new ApiError({ error: { code: 'UNAUTHORIZED', message: 'Sign in required' } }, 401);
+      throw new ApiError(
+        { error: { code: 'UNAUTHORIZED', message: 'Sign in required' } },
+        401,
+      );
     };
     expect(await flush(store, expired)).toBe('needs-login');
     expect(await store.outbox.count()).toBe(1);
@@ -117,13 +153,24 @@ describe('outbox', () => {
     );
     expect(await store.outbox.count()).toBe(0);
     const results = await store.results.toArray();
-    expect(results.map((r) => r.status).sort()).toEqual(['rejected', 'superseded']);
+    expect(results.map((r) => r.status).sort()).toEqual([
+      'rejected',
+      'superseded',
+    ]);
   });
 
   it("does not replay another person's queue under the current login", async () => {
     await enqueue(markDraft(1), store);
-    await store.kit.put({ id: 'current', kit: kit('44444444-4444-4444-8444-444444444444') });
-    expect(await flush(store, answer(() => 'applied'))).toBe('idle');
+    await store.kit.put({
+      id: 'current',
+      kit: kit('44444444-4444-4444-8444-444444444444'),
+    });
+    expect(
+      await flush(
+        store,
+        answer(() => 'applied'),
+      ),
+    ).toBe('idle');
     expect(await store.outbox.count()).toBe(1);
   });
 
@@ -131,7 +178,12 @@ describe('outbox', () => {
     await enqueue(markDraft(1), store);
     store.close();
     const reopened = new OfflineDb(store.name);
-    expect(await flush(reopened, answer(() => 'applied'))).toBe('ok');
+    expect(
+      await flush(
+        reopened,
+        answer(() => 'applied'),
+      ),
+    ).toBe('ok');
     expect(sent[0]).toHaveLength(1);
   });
 });

@@ -46,7 +46,10 @@ export class TagsController {
   ) {
     if (body.permissions !== undefined && org.role !== 'SHEIKH') {
       throw new ForbiddenException({
-        error: { code: 'FORBIDDEN', message: 'Only the sheikh may set tag privileges' },
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Only the sheikh may set tag privileges',
+        },
       });
     }
     return this.tags.create(org.organizationId, body, audit);
@@ -62,7 +65,10 @@ export class TagsController {
   ) {
     if (body.permissions !== undefined && org.role !== 'SHEIKH') {
       throw new ForbiddenException({
-        error: { code: 'FORBIDDEN', message: 'Only the sheikh may set tag privileges' },
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Only the sheikh may set tag privileges',
+        },
       });
     }
     return this.tags.update(org.organizationId, tagId, body, audit);

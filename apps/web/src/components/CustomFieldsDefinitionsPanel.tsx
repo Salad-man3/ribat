@@ -11,7 +11,12 @@ import { apiFetch } from '../api/api-fetch';
 import { Button } from './ui/button';
 import { Card, ErrorText, Field, inputClass } from './ui/form';
 
-const ENTITIES: CustomFieldEntityType[] = ['MEMBER', 'COURSE', 'PROGRAM', 'MATERIAL'];
+const ENTITIES: CustomFieldEntityType[] = [
+  'MEMBER',
+  'COURSE',
+  'PROGRAM',
+  'MATERIAL',
+];
 const TYPES: CustomFieldType[] = ['TEXT', 'NUMBER', 'DATE', 'BOOLEAN'];
 
 export function CustomFieldsDefinitionsPanel() {
@@ -57,13 +62,17 @@ export function CustomFieldsDefinitionsPanel() {
 
   return (
     <Card title={t('settings.extraFields.title')}>
-      <p className="mb-4 text-sm text-muted">{t('settings.extraFields.hint')}</p>
+      <p className="mb-4 text-sm text-muted">
+        {t('settings.extraFields.hint')}
+      </p>
       {list.isError ? <ErrorText error={list.error} /> : null}
       <Field label={t('settings.extraFields.entity')}>
         <select
           className={inputClass}
           value={entityType}
-          onChange={(e) => setEntityType(e.target.value as CustomFieldEntityType)}
+          onChange={(e) =>
+            setEntityType(e.target.value as CustomFieldEntityType)
+          }
         >
           {ENTITIES.map((value) => (
             <option key={value} value={value}>

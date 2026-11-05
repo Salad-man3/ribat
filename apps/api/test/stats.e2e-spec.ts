@@ -10,7 +10,10 @@ import { ApiExceptionFilter } from '../src/common/api-exception.filter';
 import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import { StatsRollupService } from '../src/stats/stats-rollup.service';
 import { loginAs, type AuthenticatedSession } from './fixtures/auth-session';
-import { removeTwoOrganizations, twoOrganizations } from './fixtures/organizations';
+import {
+  removeTwoOrganizations,
+  twoOrganizations,
+} from './fixtures/organizations';
 
 const prisma = createPrismaClient();
 
@@ -22,7 +25,9 @@ describe('Statistics (e2e)', () => {
   let orgs: Awaited<ReturnType<typeof twoOrganizations>>;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleRef.createNestApplication({ bufferLogs: true });
     app.useLogger(app.get(Logger));
     app.setGlobalPrefix('api/v1');
@@ -52,6 +57,17 @@ describe('Statistics (e2e)', () => {
     expect(res.body.asOf).toBeDefined();
     expect(res.body.mosque).toBeDefined();
     expect(res.body.courses).toEqual(expect.any(Array));
+  });
+
+  it('rejects invalid belowRate and accepts threshold query params', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/stats/dashboard?belowRate=101')
+      .set('cookie', sheikh.cookie)
+      .expect(400);
+    await request(app.getHttpServer())
+      .get('/api/v1/stats/dashboard?belowRate=90&days=30')
+      .set('cookie', sheikh.cookie)
+      .expect(200);
   });
 
   it('hides dashboard from cross-tenant course stats', async () => {

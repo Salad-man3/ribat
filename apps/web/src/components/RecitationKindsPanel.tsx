@@ -12,7 +12,8 @@ export function RecitationKindsPanel() {
   const [name, setName] = useState('');
   const kinds = useQuery({
     queryKey: ['recitation-kinds'],
-    queryFn: () => apiFetch<RecitationKindResponse[]>('/api/v1/recitation-kinds'),
+    queryFn: () =>
+      apiFetch<RecitationKindResponse[]>('/api/v1/recitation-kinds'),
   });
 
   const create = useMutation({
@@ -40,7 +41,11 @@ export function RecitationKindsPanel() {
       <p className="text-sm text-muted">{t('hifz.kindsHint')}</p>
       <div className="mt-3 flex gap-2">
         <Field label={t('hifz.kindName')} className="flex-1">
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </Field>
         <Button
           className="self-end"
@@ -50,12 +55,19 @@ export function RecitationKindsPanel() {
           {t('tags.add')}
         </Button>
       </div>
-      {kinds.isError ? null : kinds.data?.length === 0 ? <Empty>{t('hifz.noKinds')}</Empty> : null}
+      {kinds.isError ? null : kinds.data?.length === 0 ? (
+        <Empty>{t('hifz.noKinds')}</Empty>
+      ) : null}
       <ul className="mt-3 grid gap-1 text-sm">
         {kinds.data?.map((k) => (
-          <li key={k.id} className="flex items-center justify-between rounded-lg bg-paper px-3 py-2">
+          <li
+            key={k.id}
+            className="flex items-center justify-between rounded-lg bg-paper px-3 py-2"
+          >
             <span>{k.name}</span>
-            <Button variant="ghost" onClick={() => void archive.mutate(k.id)}>{t('members.delete')}</Button>
+            <Button variant="ghost" onClick={() => void archive.mutate(k.id)}>
+              {t('members.delete')}
+            </Button>
           </li>
         ))}
       </ul>
