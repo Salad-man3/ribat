@@ -1,4 +1,4 @@
-import { parseCsv, validateImportRows } from './import-members';
+import { parseCsv, validateImportRows } from './import-members-csv';
 
 describe('import-members', () => {
   it('validates all rows before accepting any', () => {

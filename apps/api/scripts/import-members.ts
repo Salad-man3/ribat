@@ -1,68 +1,9 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
-import type { PrismaClient } from '../generated/prisma/client.js';
 import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
-import { CreateMemberSchema } from '@ribat/shared';
+import { parseCsv, validateImportRows } from './import-members-csv.js';
 
-let prisma: PrismaClient | undefined;
-
-function db(): PrismaClient {
-  if (!prisma) prisma = createPrismaClient();
-  return prisma;
-}
-
-export type ParsedImportRow = {
-  line: number;
-  data: Record<string, string>;
-};
-
-export function parseCsv(content: string): ParsedImportRow[] {
-  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  if (lines.length === 0) return [];
-  const headers = lines[0].split(',').map((header) => header.trim());
-  const rows: ParsedImportRow[] = [];
-  for (let index = 1; index < lines.length; index += 1) {
-    const values = lines[index].split(',').map((value) => value.trim());
-    const data: Record<string, string> = {};
-    headers.forEach((header, column) => {
-      data[header] = values[column] ?? '';
-    });
-    rows.push({ line: index + 1, data });
-  }
-  return rows;
-}
-
-export function validateImportRows(rows: ParsedImportRow[]) {
-  const errors: string[] = [];
-  const valid: Array<{ line: number; input: ReturnType<typeof CreateMemberSchema.parse> }> = [];
-  for (const row of rows) {
-    const payload = {
-      firstName: row.data.firstName,
-      fatherName: row.data.fatherName,
-      familyName: row.data.familyName,
-      motherName: row.data.motherName || undefined,
-      birthDate: row.data.birthDate,
-      joinedAt: row.data.joinedAt,
-      phone: row.data.phone || undefined,
-      address: row.data.address || undefined,
-      schoolGrade: row.data.schoolGrade || undefined,
-      schoolName: row.data.schoolName || undefined,
-      studyStatus: row.data.study_status || undefined,
-      university: row.data.university || undefined,
-      faculty: row.data.faculty || undefined,
-      universityYear: row.data.university_year ? Number(row.data.university_year) : undefined,
-      highestEducation: row.data.highest_education || undefined,
-      notes: row.data.notes || undefined,
-    };
-    const parsed = CreateMemberSchema.safeParse(payload);
-    if (!parsed.success) {
-      errors.push(`line ${row.line}: validation failed`);
-      continue;
-    }
-    valid.push({ line: row.line, input: parsed.data });
-  }
-  return { errors, valid };
-}
+const prisma = createPrismaClient();
 
 async function main() {
   const fileArg = process.argv.find((arg) => arg.startsWith('--file='));
@@ -73,7 +14,7 @@ async function main() {
 
   const file = fileArg.slice('--file='.length);
   const slug = orgArg.slice('--org='.length);
-  const org = await db().organization.findUnique({ where: { slug } });
+  const org = await prisma.organization.findUnique({ where: { slug } });
   if (!org) throw new Error(`Unknown organization slug: ${slug}`);
 
   const rows = parseCsv(readFileSync(file, 'utf8'));
@@ -85,7 +26,7 @@ async function main() {
   }
 
   const householdKeys = new Map<string, string>();
-  await db().$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     for (const row of rows) {
       const key = row.data.householdKey?.trim();
       let householdId: string | undefined;
@@ -96,7 +37,7 @@ async function main() {
             data: { organizationId: org.id, name: key },
           });
           householdId = created.id;
-          householdKeys.set(key, householdId);
+          householdKeys.set(key, created.id);
         }
       }
       const validated = valid.find((entry) => entry.line === row.line);
@@ -124,5 +65,5 @@ if (require.main === module) {
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     })
-    .finally(() => void prisma?.$disconnect());
+    .finally(() => prisma.$disconnect());
 }
