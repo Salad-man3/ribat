@@ -1,9 +1,15 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
+import type { PrismaClient } from '../generated/prisma/client.js';
 import { createPrismaClient } from '../src/prisma/create-prisma-client.js';
 import { CreateMemberSchema } from '@ribat/shared';
 
-const prisma = createPrismaClient();
+let prisma: PrismaClient | undefined;
+
+function db(): PrismaClient {
+  if (!prisma) prisma = createPrismaClient();
+  return prisma;
+}
 
 export type ParsedImportRow = {
   line: number;
@@ -67,7 +73,7 @@ async function main() {
 
   const file = fileArg.slice('--file='.length);
   const slug = orgArg.slice('--org='.length);
-  const org = await prisma.organization.findUnique({ where: { slug } });
+  const org = await db().organization.findUnique({ where: { slug } });
   if (!org) throw new Error(`Unknown organization slug: ${slug}`);
 
   const rows = parseCsv(readFileSync(file, 'utf8'));
@@ -79,7 +85,7 @@ async function main() {
   }
 
   const householdKeys = new Map<string, string>();
-  await prisma.$transaction(async (tx) => {
+  await db().$transaction(async (tx) => {
     for (const row of rows) {
       const key = row.data.householdKey?.trim();
       let householdId: string | undefined;
@@ -118,5 +124,5 @@ if (require.main === module) {
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     })
-    .finally(() => prisma.$disconnect());
+    .finally(() => void prisma?.$disconnect());
 }
